@@ -1,0 +1,6 @@
+{
+  "day": "NASA Blue Marble, supplied via the Basemap data package (bmng.jpg). Resized and recompressed.",
+  "night": "ILLUSTRATIVE FALLBACK. Procedural lights on a dimmed NASA day map; NOT NASA Black Marble.",
+  "authenticNight": false,
+  "replacement": "Run tools/prepare_assets.py on a network-enabled machine to replace with NASA Black Marble."
+}
