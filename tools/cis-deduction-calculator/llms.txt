@@ -1,0 +1,33 @@
+# CIS Deduction Calculator (UK)
+
+> Free, client-side web calculator that estimates UK Construction Industry Scheme (CIS) deductions. It applies 20% (registered subcontractor), 30% (unregistered or unverified) or 0% (gross payment status) to the labour element of an invoice, after excluding materials, VAT, plant hire, consumable stores, non-travel fuel and prefabrication costs, as GOV.UK sets out. The output is an estimate, not tax advice.
+
+Key facts (from GOV.UK, last reviewed 6 October 2026):
+
+- CIS rates: 20% registered and verified; 30% unregistered or unverified; 0% gross payment status. HMRC confirms the rate when the contractor verifies the subcontractor.
+- Deduct from: labour, travel and subsistence. Do not deduct from VAT, materials the subcontractor paid for directly, consumable stores, fuel (except travel), plant hire, or manufacturing and prefabrication costs.
+- Formula: net payable = (labour − labour × rate) + materials + VAT.
+- Example: £1,500 labour + £200 materials at 20% gives a £300 deduction and £1,400 paid to the subcontractor.
+- Contractors pay deductions to HMRC by the 22nd monthly (19th by post), file monthly returns by the 19th, and give payment and deduction statements within 14 days of the end of each tax month (tax months run from the 6th to the 5th).
+- Deductions are advance payments of the subcontractor's tax and NI. Sole traders reclaim them through Self Assessment; limited companies reclaim them through their payroll using an EPS.
+
+## Pages
+
+- [Calculator (HTML)](https://dexmlabs.app/tools/cis-deduction-calculator/): the interactive calculator, explainer, worked example and FAQ
+- [Calculator page (Markdown)](https://dexmlabs.app/tools/cis-deduction-calculator/index.md): the same explainer, worked example and FAQ as clean markdown
+
+## Official sources
+
+- [GOV.UK: make deductions and pay subcontractors](https://www.gov.uk/what-you-must-do-as-a-cis-contractor/make-deductions-and-pay-subcontractors): the rates and how to calculate the deduction
+- [GOV.UK: subcontractor, get paid](https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/get-paid): what does not count as pay, and statements
+- [GOV.UK: pay deductions to HMRC](https://www.gov.uk/what-you-must-do-as-a-cis-contractor/pay-deductions-to-hmrc): payment deadlines
+- [GOV.UK: file your monthly returns](https://www.gov.uk/what-you-must-do-as-a-cis-contractor/file-your-monthly-returns): return deadlines and penalties
+- [GOV.UK: pay tax and claim back deductions](https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/pay-tax-and-claim-back-deductions): how subcontractors reclaim deductions
+- [HMRC CIS 340 guide](https://www.gov.uk/government/publications/construction-industry-scheme-cis-340/construction-industry-scheme-a-guide-for-contractors-and-subcontractors-cis-340): the full guidance, with worked examples in Appendix D
+
+## Optional
+
+- [CIS tax refund estimator](https://dexmlabs.app/tools/cis-refund-estimator/): sister tool for subcontractors that estimates the Self Assessment refund or bill after CIS deductions, with SA103 box numbers
+- [UK CIS & trade money tools](https://dexmlabs.app/tools/): hub listing all the free tools
+- [UK CIS Subcontractor Self Assessment Tracker 2026/27](https://arthurverse67.gumroad.com/l/vszqef): a paid Excel and Google Sheets record-keeping template from the same maker
+- [UK CIS Contractor Monthly Return Tracker 2026/27](https://arthurverse67.gumroad.com/l/cis-contractor-tracker): a paid Excel and Google Sheets template for contractors who pay subcontractors (verifications, payments, deductions, monthly return totals), from the same maker

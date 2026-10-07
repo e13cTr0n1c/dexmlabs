@@ -1,0 +1,40 @@
+# CIS Tax Refund Estimator (UK)
+
+> Free, client-side web tool for UK self-employed construction subcontractors under the Construction Industry Scheme (CIS). It estimates Income Tax (rest of UK or Scottish bands), Class 2 and Class 4 National Insurance and student loan repayments on self-employed profit plus any PAYE wages, for 2025/26 or 2026/27, and compares that with CIS deductions and tax already paid to give an estimated refund or amount owed. It also shows which SA103S/SA103F boxes the figures go in and whether payments on account are likely. Estimate only, not tax advice.
+
+Key facts (from GOV.UK, last checked 6 October 2026):
+
+- Refund = CIS deducted + PAYE tax + loan repayments already taken − (Income Tax + Class 4 + Class 2 + student loan due). Sole traders claim it through Self Assessment after 5 April; HMRC refunds any overpayment.
+- Turnover is the gross amount before CIS deductions, including materials charged (SA103S box 9 / SA103F box 15). CIS deductions go in SA103S box 38 / SA103F box 81 (2025/26 forms). Materials: box 11 / 17. Car, van and travel: box 12 / 20.
+- Personal Allowance £12,570 (2025/26 and 2026/27), reduced by £1 for every £2 over £100,000. Basic rate 20% on the first £37,700 of taxable income, 40% to £125,140, 45% above.
+- Scotland 2026/27 (taxable income after allowance): 19% to £3,967, 20% to £16,956, 21% to £31,092, 42% to £62,430, 45% to £125,140, 48% above. 2025/26: £2,827 / £14,921 / £31,092 / £62,430 / £125,140.
+- Class 4 NI: 6% on profits £12,570 to £50,270, 2% above (both years). Class 2: treated as paid if profits are at least £6,845 (2025/26) or £7,105 (2026/27); voluntary £3.50 or £3.65 a week below that.
+- Simplified mileage for cars and vans: 55p a mile for the first 10,000 business miles in 2026/27 (backdated to 6 April 2026; 45p before), then 25p.
+- Student loans via Self Assessment: 9% of total income above Plan 1 £26,900 / Plan 2 £29,385 / Plan 4 £33,795 / Plan 5 £25,000 (2026/27); 2025/26: £26,065 / £28,470 / £32,745 (no Plan 5 repayments before April 2026). Postgraduate Loan 6% above £21,000.
+- Payments on account are not needed if less than £1,000 is owed through Self Assessment or more than 80% of the tax was collected at source (CIS deductions count).
+- Example (England, 2026/27): £40,000 gross, £6,400 CIS deducted, £14,000 expenses → £26,000 profit, £2,686.00 Income Tax, £805.80 Class 4, estimated refund £2,908.20.
+
+## Pages
+
+- [Estimator (HTML)](https://dexmlabs.app/tools/cis-refund-estimator/): the interactive estimator, rates table, worked example and FAQ
+- [Estimator page (Markdown)](https://dexmlabs.app/tools/cis-refund-estimator/index.md): the same explainer, rates, box mapping and FAQ as clean markdown
+
+## Official sources
+
+- [GOV.UK: pay tax and claim back CIS deductions](https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/pay-tax-and-claim-back-deductions)
+- [GOV.UK: Income Tax rates and allowances](https://www.gov.uk/government/publications/rates-and-allowances-income-tax/income-tax-rates-and-allowances-current-and-past)
+- [GOV.UK: Scottish Income Tax](https://www.gov.uk/scottish-income-tax)
+- [GOV.UK: National Insurance rates and allowances](https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions/rates-and-allowances-national-insurance-contributions)
+- [GOV.UK: simplified expenses, vehicles](https://www.gov.uk/simpler-income-tax-simplified-expenses/vehicles)
+- [GOV.UK: increasing mileage rates (17 June 2026)](https://www.gov.uk/government/publications/increase-to-approved-mileage-allowance-payments-amaps-and-self-employed-simplified-mileage-rates/increasing-mileage-rates)
+- [GOV.UK: repaying your student loan](https://www.gov.uk/repaying-your-student-loan/what-you-pay)
+- [HMRC SA103S form and notes](https://www.gov.uk/government/publications/self-assessment-self-employment-short-sa103s)
+- [HMRC SA103F form and notes](https://www.gov.uk/government/publications/self-assessment-self-employment-full-sa103f)
+- [GOV.UK: payments on account](https://www.gov.uk/understand-self-assessment-bill/payments-on-account)
+
+## Optional
+
+- [CIS deduction calculator](https://dexmlabs.app/tools/cis-deduction-calculator/): what a contractor should deduct from an invoice
+- [UK CIS & trade money tools](https://dexmlabs.app/tools/): all free tools from the same maker
+- [UK CIS Subcontractor Self Assessment Tracker 2026/27](https://arthurverse67.gumroad.com/l/vszqef): a paid Excel and Google Sheets record-keeping template from the same maker
+- [CIS Mileage & Expenses Lite 2026/27](https://arthurverse67.gumroad.com/l/cis-mileage-lite): a pay-what-you-want (from £1) mileage and expenses log from the same maker
