@@ -86,3 +86,7 @@ body[data-screen]:not([data-screen=title]) .storage-note{display:none}
 .document-page .log-list time{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px}.document-page .log-list li{margin-bottom:20px}
 .me-and-radio{max-width:640px}
 @media(max-width:760px){.document-page p,.document-page li{font-size:16px}.document-page .lede{font-size:18px}.document-page .disclaimer{font-size:14px}.help-grid p{font-size:15px}.document-page h2{margin-top:36px}}
+/* QSO card fully opaque, so pin labels and the legend don't show through it */
+.qso-card{background:#0a0d0b}
+/* Title screen on shorter laptop screens (up to about 820px tall): tighter spacing so the note and the links sit higher */
+@media(min-width:761px) and (min-height:561px) and (max-height:820px){.title-copy{padding-top:34px;padding-bottom:44px}.title-copy h1{font-size:clamp(56px,10vh,80px);margin-bottom:16px}.hero-copy{margin-bottom:8px}.hero-detail{margin-bottom:18px}.hero-facts{margin-top:16px}.signed-note{margin:16px 0 12px;padding-top:14px}.title-copy .disclaimer{margin-top:10px}.title-links{margin-top:14px}}
