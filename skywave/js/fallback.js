@@ -1,7 +1,8 @@
 /** Canvas safety net for a blocked CDN / absent WebGL2. Not the primary 3D renderer.
  * Game rules are identical. This mode is explicitly labelled in the interface. */
 import {toVector,fromVector,subsolarPoint} from './solar.js';
-import {intermediatePoint,isPathResult,CONFIG} from './propagation.js';
+import {intermediatePoint,isPathResult,CONFIG,greatCircleDistance} from './propagation.js';
+import {cometFraction,COMET_TRAVEL,REWARD} from './reward.js';
 export async function createFallback(container,options={}) {
   const g=new CanvasGlobe(container,options);await g.init();return g;
 }
@@ -21,8 +22,8 @@ class CanvasGlobe {
   }
   line(points){const ctx=this.ctx;ctx.beginPath();let started=false;for(const p of points){const q=this.project(p,p.alt||1.003);if(q.front<0){started=false;continue;}if(!started){ctx.moveTo(q.x,q.y);started=true;}else ctx.lineTo(q.x,q.y);}ctx.stroke();}
   setDay(day){this.day=day;this.paths=[];this.lon=day.qth.lon;this.lat=day.qth.lat;this.render();}
-  clearDay(){this.day=null;this.selected=null;this.paths=[];this.render();}
-  clearArcs(){this.paths=[];this.render();}
+  clearDay(){this.clearComets();this.day=null;this.selected=null;this.paths=[];this.render();}
+  clearArcs(){this.clearComets();this.paths=[];this.render();}
   focusPath(fraction=.5){const t=this.day?.targets.find(t=>t.id===this.selected);if(!t)return;const m=intermediatePoint(this.day.qth,t,fraction);this.lon=m.lon;this.lat=m.lat;this.render();}
   setTime(date){this.date=date;this.render();}
   setScreen(screen){this.screen=screen;this.render();}
@@ -30,7 +31,17 @@ class CanvasGlobe {
   focus(p){this.lon=p.lon;this.lat=p.lat;this.render();}
   /** Current call only, plus a faded ghost of the previous one; schedule failures draw nothing. */
   addAttempt(e){const previous=this.paths.filter(p=>!p.ghost).at(-1);this.paths=previous?[{...previous,ghost:true}]:[];if(e&&isPathResult(e.result))this.paths.push(e);this.render();}
-  setResults(){this.paths=[];this.render();}
+  setResults(){this.clearComets();this.paths=[];this.render();}
+  /** 2D version of the QSO comet: a short-lived overlay canvas, removed when done. */
+  celebrate(entry,duration=REWARD.cometMs){if(this.settings.reducedMotion||!this.day||!entry?.result?.ok||!this.axes)return false;const t=this.day.targets.find(t=>t.id===entry.targetId);if(!t)return false;this.clearComets();
+    const c=document.createElement('canvas');c.className='fallback-comet';c.width=this.canvas.width;c.height=this.canvas.height;c.setAttribute('aria-hidden','true');this.container.append(c);const ctx=c.getContext('2d'),start=performance.now(),qth=this.day.qth,peak=.06+.3*Math.min(1,greatCircleDistance(qth,t)/CONFIG.earthRadiusKm/1.6);
+    const at=f=>this.project(intermediatePoint(qth,t,f),1.034+peak*Math.sin(Math.PI*f));
+    const step=now=>{const k=(now-start)/duration;ctx.clearRect(0,0,c.width,c.height);if(k>=1){this.clearComets();return;}const s=Math.max(0,(k-COMET_TRAVEL)/(1-COMET_TRAVEL)),fade=k<.06?k/.06:1-s*s;ctx.globalCompositeOperation='lighter';
+      for(let i=47;i>=0;i--){const q=at(cometFraction(k-i*.007));if(q.front<-.2)continue;const r=i?2+9*(1-i/48):16+40*s,g=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,r);g.addColorStop(0,`rgba(255,255,230,${fade*(i?(1-i/48)**1.4:1)})`);g.addColorStop(.35,`rgba(214,255,0,${fade*(i?.5*(1-i/48)**1.4:.7)})`);g.addColorStop(1,'rgba(214,255,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(q.x,q.y,r,0,Math.PI*2);ctx.fill();}
+      this.cometFrame=requestAnimationFrame(step);};
+    this.comet=c;this.cometFrame=requestAnimationFrame(step);return true;}
+  clearComets(){cancelAnimationFrame(this.cometFrame);this.cometFrame=null;this.comet?.remove();this.comet=null;}
+  get effectCount(){return this.comet?1:0;}
   updateSettings(settings){this.settings=settings;this.render();}
   pause(p){this.paused=p;if(!p)this.render();}
   dispose(){this.resizeObserver.disconnect();this.canvas.remove();}

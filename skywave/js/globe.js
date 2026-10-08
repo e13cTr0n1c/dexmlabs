@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {toVector,subsolarPoint} from './solar.js';
 import {CONFIG,intermediatePoint,greatCircleDistance,isPathResult} from './propagation.js';
+import {cometFraction,COMET_TRAVEL,REWARD} from './reward.js';
 const GREEN=0xd6ff00,AMBER=0xffbf69,RED=0xff7272;
 const vector=(p,r=1)=>{const v=toVector(p);return new THREE.Vector3(v.x*r,v.y*r,v.z*r);};
 /** View-only exaggeration of layer heights (8x, as in the brief). Never used by the model. */
@@ -19,6 +20,12 @@ gl_FragColor=vec4(mix(night,day,light),1.0);
 #include <tonemapping_fragment>
 #include <colorspace_fragment>
 }`;
+/* QSO comet: one Points cloud (head + tail) and a Line through the same samples. Additive, cheap, fully disposed. */
+const COMET_TAIL=64,COMET_LAG=.0055,COMET_HEAD=64;
+const cometVertex='attribute float size;attribute float alpha;uniform float scale;varying float a;void main(){a=alpha;vec4 mv=modelViewMatrix*vec4(position,1.0);gl_PointSize=size*scale/max(.1,-mv.z);gl_Position=projectionMatrix*mv;}';
+const cometFragment='uniform vec3 color;uniform float fade;varying float a;void main(){vec2 c=gl_PointCoord-.5;float d=length(c)*2.0;if(d>1.0)discard;float core=exp(-d*d*5.0);gl_FragColor=vec4(mix(color,vec3(1.0),core*.75),core*a*fade);}';
+const trailVertex='attribute float alpha;varying float a;void main(){a=alpha;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
+const trailFragment='uniform vec3 color;uniform float fade;varying float a;void main(){gl_FragColor=vec4(color,a*fade*.8);}';
 function disposeGroup(group){for(const child of [...group.children]){group.remove(child);child.traverse(o=>{o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose();});}}
 export async function createGlobe(container,options={}) {const g=new SkyGlobe(container,options);try{await g.init();return g;}catch(error){g.dispose();throw error;}}
 class SkyGlobe {
@@ -35,7 +42,7 @@ class SkyGlobe {
     /* Earth, shells, pins and arcs all live in one group, so they always share a frame. */
     this.world=new THREE.Group();this.scene.add(this.world);
     this.earth=new THREE.Mesh(new THREE.SphereGeometry(1,80,48),new THREE.ShaderMaterial({vertexShader:vertex,fragmentShader:earthFragment,uniforms:{dayMap:{value:null},nightMap:{value:null},sun:this.sunUniform}}));this.world.add(this.earth);
-    this.pins=new THREE.Group();this.world.add(this.pins);this.paths=new THREE.Group();this.world.add(this.paths);this.transient=new THREE.Group();this.world.add(this.transient);this.shells={};this.labels=[];
+    this.pins=new THREE.Group();this.world.add(this.pins);this.paths=new THREE.Group();this.world.add(this.paths);this.transient=new THREE.Group();this.world.add(this.transient);this.effects=new THREE.Group();this.world.add(this.effects);this.comet=null;this.shells={};this.labels=[];
     this.raycaster=new THREE.Raycaster();this.pointer=new THREE.Vector2();this.paused=false;this.screen='title';this.raf=null;this.lastTime=0;this.frames=0;this.sampleStart=0;this.elapsed=0;this.tier='low';this.textureSize='';this.textureGeneration=0;this.textureCache={};
     this.resizeObserver=new ResizeObserver(()=>this.resize());this.resizeObserver.observe(container);
     this.setupDecoration();this.setupInput();
@@ -96,7 +103,39 @@ gl_FragColor=vec4(col,a*strength);}`});
     /* Phone layout: the radio sheet covers the bottom of the globe stage. Shift the view up so the globe and
      * its hop arcs are centred in the part that is still visible. */
     const shift=this.coveredShift(h);if(shift)this.camera.setViewOffset(w,h,0,shift,w,h);else this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.renderer.setSize(w,h,false);this.composer?.setSize(w,h);}
-  clearArcs(){disposeGroup(this.paths);disposeGroup(this.transient);}
+  clearArcs(){disposeGroup(this.paths);disposeGroup(this.transient);this.clearComets();}
+  clearComets(){disposeGroup(this.effects);this.comet=null;}
+  get effectCount(){return this.effects.children.length;}
+  /** Successful QSO: a comet streaks along the great circle from your QTH to the station, then flares out
+   * there. About 2 s. A new QSO replaces any comet still in flight. Never runs with reduced motion. */
+  celebrate(entry,duration=REWARD.cometMs/1000){
+    if(this.settings.reducedMotion||!this.day||!entry?.result?.ok)return false;
+    const target=this.day.targets.find(t=>t.id===entry.targetId);if(!target)return false;
+    this.clearComets();
+    const a=vector(this.day.qth),b=vector(target),n=new THREE.Vector3().crossVectors(a,b);
+    if(n.lengthSq()<1e-10){n.set(0,1,0).cross(a);if(n.lengthSq()<1e-10)n.set(1,0,0);}
+    n.normalize();const p=new THREE.Vector3().crossVectors(n,a).normalize(),angle=greatCircleDistance(this.day.qth,target)/CONFIG.earthRadiusKm,peak=.06+.3*Math.min(1,angle/1.6);
+    const positions=new Float32Array(COMET_TAIL*3),sizes=new Float32Array(COMET_TAIL),alphas=new Float32Array(COMET_TAIL);
+    const position=new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage),size=new THREE.BufferAttribute(sizes,1).setUsage(THREE.DynamicDrawUsage),alpha=new THREE.BufferAttribute(alphas,1);
+    for(let k=0;k<COMET_TAIL;k++){const q=1-k/COMET_TAIL;sizes[k]=k?3+30*q**.8:COMET_HEAD;alphas[k]=k?q**1.4:1;}
+    const color={value:new THREE.Color(GREEN)},fade={value:1},scale={value:4*this.renderer.getPixelRatio()*Math.max(.6,this.container.clientHeight/800)};
+    const head=new THREE.BufferGeometry();head.setAttribute('position',position);head.setAttribute('size',size);head.setAttribute('alpha',alpha);
+    const tail=new THREE.BufferGeometry();tail.setAttribute('position',position);tail.setAttribute('alpha',alpha);
+    const common={transparent:true,depthWrite:false,blending:THREE.AdditiveBlending};
+    const points=new THREE.Points(head,new THREE.ShaderMaterial({...common,uniforms:{color,fade,scale},vertexShader:cometVertex,fragmentShader:cometFragment}));
+    const line=new THREE.Line(tail,new THREE.ShaderMaterial({...common,uniforms:{color,fade},vertexShader:trailVertex,fragmentShader:trailFragment}));
+    points.frustumCulled=line.frustumCulled=false;points.renderOrder=line.renderOrder=3;
+    const group=new THREE.Group();group.add(line,points);this.effects.add(group);
+    const at=(f,out)=>{const th=f*angle;return out.copy(a).multiplyScalar(Math.cos(th)).addScaledVector(p,Math.sin(th)).multiplyScalar(SURFACE+.03+peak*Math.sin(Math.PI*f));};
+    this.comet={group,start:this.elapsed,duration,at,position,size,fade,tmp:new THREE.Vector3()};this.updateComet();
+    /* If the path is round the back of the globe, swing round so the comet can be seen. */
+    const mid=at(.5,new THREE.Vector3()).normalize();if(mid.dot(this.camera.position.clone().normalize())<.25)this.focusPath(.5);
+    return true;
+  }
+  updateComet(){const c=this.comet;if(!c)return;const t=(this.elapsed-c.start)/c.duration;if(t>=1||this.settings.reducedMotion){this.clearComets();return;}
+    const arr=c.position.array,sizes=c.size.array;for(let k=0;k<COMET_TAIL;k++){c.at(cometFraction(t-k*COMET_LAG),c.tmp);arr[k*3]=c.tmp.x;arr[k*3+1]=c.tmp.y;arr[k*3+2]=c.tmp.z;}
+    const s=Math.max(0,(t-COMET_TRAVEL)/(1-COMET_TRAVEL));sizes[0]=COMET_HEAD+150*s;c.fade.value=t<.06?t/.06:1-s*s;
+    c.position.needsUpdate=true;c.size.needsUpdate=true;}
   clearDay(){this.day=null;this.selected=null;this.clearArcs();disposeGroup(this.pins);this.hitPins=[];this.labels.forEach(l=>l.node.remove());this.labels=[];}
   setDay(day){this.clearDay();this.day=day;
     for(const p of [{...day.qth,id:'home',callsign:'YOUR QTH'},...day.targets]){
@@ -156,6 +195,7 @@ gl_FragColor=vec4(col,a*strength);}`});
     if(this.flight){const t=Math.min(1,(this.elapsed-this.flight.start)/.9),e=t*t*(3-2*t),r=THREE.MathUtils.lerp(this.flight.from.length(),this.flight.to.length(),e);this.camera.position.lerpVectors(this.flight.from,this.flight.to,e).normalize().multiplyScalar(r);if(t===1)this.flight=null;}
     this.controls.update(dt);
     for(const parent of [this.paths,this.transient])for(const group of parent.children){const {points,pulse,start}=group.userData;if(pulse){pulse.visible=!this.settings.reducedMotion&&this.screen!=='briefing';const t=((this.elapsed-start)/3)%1*(points.length-1),i=Math.floor(t);pulse.position.copy(points[i]).lerp(points[Math.min(i+1,points.length-1)],t-i);}}
+    this.updateComet();
     const view=this.camera.position.clone().normalize();
     for(const l of this.labels){const world=this.world.localToWorld(l.vector.clone()),visible=(l.id==='home'||l.id===this.selected)&&world.clone().normalize().dot(view)>.18;l.node.hidden=!visible;if(visible){const p=world.project(this.camera);l.node.style.transform=`translate(${(p.x*.5+.5)*this.container.clientWidth+12}px,${(-p.y*.5+.5)*this.container.clientHeight-10}px)`;}}
     if(this.tier==='high'&&this.composer)this.composer.render(dt);else this.renderer.render(this.scene,this.camera);

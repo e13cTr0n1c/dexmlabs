@@ -3,7 +3,8 @@ import {utcDateKey,dailySeed} from './seed.js';
 import {generateDay} from './stations.js';
 import {BANDS,CONFIG,antennaAllowed,initialBearing} from './propagation.js';
 import {createGame,openingState,advanceTime,callTarget,revealHint,gameDate,selectedTarget,shareText,updateStats} from './game.js';
-import {UI,$} from './ui.js';
+import {UI,$,escapeHTML} from './ui.js';
+import {QsoReward} from './reward.js';
 import {RadioAudio} from './audio.js';
 import {adBreak} from './ads.js';
 /** Deployment placeholders are intentionally empty; share URLs derive from this
@@ -26,7 +27,9 @@ export const LINKS=Object.freeze({
 });
 const defaults={quality:'auto',units:'km',sound:false,reducedMotion:typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches,layers:{D:false,E:false,F2:true}};
 const app={state:null,screen:'title',settings:defaults,globe:null,busy:false,hasPlayed:false,roundsFinished:0,stats:{},countdown:null,adEvents:[]};
-const ui=new UI(),audio=new RadioAudio();let storageWarning=false;
+const ui=new UI(),audio=new RadioAudio();let storageWarning=false,reward=null;
+/** The in-game setting, or the system preference: either one turns the comet and count-up off. */
+const reducedMotion=()=>Boolean(app.settings.reducedMotion||(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches));
 function read(key,fallback){try{return JSON.parse(localStorage.getItem('skywave:'+key))??fallback;}catch{return fallback;}}
 function write(key,value){try{localStorage.setItem('skywave:'+key,JSON.stringify(value));return true;}catch{if(!storageWarning){storageWarning=true;ui.toast('Browser storage is unavailable. This round will not survive a reload.');}return false;}}
 function validSave(s,day){return s?.version===1&&s.mode==='daily'&&s.day?.key===day.key&&s.day?.seed===day.seed&&Array.isArray(s.log)&&s.log.length<=144&&Array.isArray(s.worked)&&s.worked.length<=10&&Number.isInteger(s.minute)&&s.minute>=0&&s.minute<=1440&&day.targets.some(t=>t.id===s.selected)&&antennaAllowed(s.rig?.antenna,s.rig?.band)&&Object.hasOwn(CONFIG.modes,s.rig?.mode)&&CONFIG.powers.includes(s.rig?.power);}
@@ -37,6 +40,7 @@ function refreshTitle(){const d=today(),saved=read('round:'+d.key,null);$('heade
 function setState(state){app.state=state;persist();}
 function navigate(screen,push=true){if(!['title','briefing','operating','results'].includes(screen))screen='title';if(screen!=='title'&&!app.state)screen='title';if(screen==='operating'&&app.state?.finished)screen='results';app.screen=screen;if(push)history.pushState({screen},'',`#${screen}`);ui.route(screen);app.globe?.setScreen(screen);
   if(screen!=='title')syncGlobeDay();
+  if(screen!=='operating')reward?.hide();
   if(screen==='title'){refreshTitle();app.globe?.clearDay();app.globe?.setTime(new Date(`${utcDateKey()}T12:00:00Z`));app.globe?.focus({lat:18,lon:5});}
   if(screen==='briefing')ui.briefing(app.state);
   if(screen==='operating'){ui.operating(app.state,app.busy);app.globe?.setTime(gameDate(app.state));}
@@ -55,7 +59,7 @@ function selectTarget(id){if(app.busy||!app.state||!app.state.day.targets.some(t
 function rigChange(change){if(app.busy||!app.state||app.state.finished)return;const rig={...app.state.rig,...change};if(!antennaAllowed(rig.antenna,rig.band)){ui.toast('That antenna cannot use this band. Change antenna first.');return;}if(rig.band==='30m'&&rig.mode==='SSB'){rig.mode='CW';ui.toast('30m is CW / FT8 only. Mode changed to CW.');}setState({...app.state,rig});ui.operating(app.state);}
 function advance(minute){if(app.busy||!app.state||app.state.finished)return;setState(advanceTime(app.state,minute));app.globe?.setTime(gameDate(app.state));if(app.state.minute>=1440)finishRound();else ui.operating(app.state);}
 function visibleDelay(duration){return new Promise(resolve=>{if(!duration){resolve();return;}let elapsed=0,previous=0;const tick=time=>{if(previous)elapsed+=Math.min(60,time-previous);previous=time;if(elapsed>=duration)resolve();else requestAnimationFrame(tick);};requestAnimationFrame(tick);});}
-async function transmit(){if(app.busy||!app.state)return;const {state,entry}=callTarget(app.state);if(!entry)return;app.busy=true;setState(state);ui.operating(state,true);app.globe?.addAttempt(entry);audio.transmit(entry.rig.mode,entry.result.ok);await visibleDelay(app.settings.reducedMotion?0:850);app.busy=false;app.globe?.setTime(gameDate(state));ui.operating(state);if(state.finished)finishRound();else $('feedback').scrollIntoView({block:'nearest',behavior:app.settings.reducedMotion?'auto':'smooth'});}
+async function transmit(){if(app.busy||!app.state)return;const {state,entry}=callTarget(app.state);if(!entry)return;app.busy=true;setState(state);app.globe?.addAttempt(entry);reward?.handle(entry,state);ui.operating(state,true);audio.transmit(entry.rig.mode,entry.result.ok);await visibleDelay(reducedMotion()?0:850+(state.finished&&entry.result.ok?1300:0));app.busy=false;app.globe?.setTime(gameDate(state));ui.operating(state);if(state.finished)finishRound();else $('feedback').scrollIntoView({block:'nearest',behavior:app.settings.reducedMotion?'auto':'smooth'});}
 function finishRound(){if(!app.state||app.busy)return;if(!app.state.finished)app.roundsFinished++;setState({...app.state,finished:true});if(app.state.mode==='daily'){app.stats=updateStats(app.stats,app.state);write('stats',app.stats);}navigate('results');}
 /** Ad breaks only at natural breaks: NEXT ROUND after a practice result, and RETURN TO TITLE from the
  * results screen once the session has already finished a round before this one. Never mid-round, never
@@ -89,10 +93,10 @@ async function initGlobe(){let timeout;try{const module=await Promise.race([impo
   $('loading').hidden=true;if(!app.globe)return;const state=app.state;app.globe.setScreen(app.screen);if(state&&app.screen!=='title'){showDayOnGlobe(app.globe,state);if(app.screen==='results')app.globe.setResults(state);}else{app.globe.setTime(new Date(`${utcDateKey()}T12:00:00Z`));app.globe.focus({lat:18,lon:5},true);}if(document.hidden)app.globe.pause(true);
 }
 export function getState(){return app.state?JSON.parse(JSON.stringify(app.state)):null;}
-export function getDiagnostics(){return {phase:BUILD_PHASE,screen:app.screen,busy:app.busy,renderer:app.globe?.tier||'none',fps:app.globe?.fps||null,adEvents:[...app.adEvents]};}
+export function getDiagnostics(){const memory=app.globe?.renderer?.info?.memory;return {phase:BUILD_PHASE,screen:app.screen,busy:app.busy,renderer:app.globe?.tier||'none',fps:app.globe?.fps||null,adEvents:[...app.adEvents],effects:app.globe?.effectCount??0,geometries:memory?.geometries??null,rewards:reward?.fired??0};}
 function boot(){document.querySelectorAll('[data-link]').forEach(e=>{const url=LINKS[e.dataset.link];if(url){e.href=url;e.rel='noopener noreferrer';e.target='_blank';}else e.hidden=true;});document.body.classList.toggle('phase1',BUILD_PHASE===1);
   if(!$('globe-stage')){if($('night-provenance'))fetch('./assets/textures/provenance.json').then(r=>r.json()).then(data=>{if(data.authenticNight){$('night-provenance').textContent='NASA Black Marble night imagery is installed. See CREDITS.md for source attribution.';}}).catch(()=>{});return;}
-  ui.init();const savedSettings=read('settings',{});app.settings={...defaults,...savedSettings,layers:{...defaults.layers,...savedSettings.layers}};if(!['auto','low','medium','high'].includes(app.settings.quality))app.settings.quality='auto';if(!['km','mi'].includes(app.settings.units))app.settings.units='km';app.stats=read('stats',{});ui.setSettings(app.settings);audio.setEnabled(BUILD_PHASE>1&&app.settings.sound);$('practice-date').value=utcDateKey();bind();refreshTitle();
+  ui.init();reward=new QsoReward({card:$('qso-card'),counter:ui.score,globe:()=>app.globe,reducedMotion,escape:escapeHTML});const savedSettings=read('settings',{});app.settings={...defaults,...savedSettings,layers:{...defaults.layers,...savedSettings.layers}};if(!['auto','low','medium','high'].includes(app.settings.quality))app.settings.quality='auto';if(!['km','mi'].includes(app.settings.units))app.settings.units='km';app.stats=read('stats',{});ui.setSettings(app.settings);audio.setEnabled(BUILD_PHASE>1&&app.settings.sound);$('practice-date').value=utcDateKey();bind();refreshTitle();
   const requested=location.hash.slice(1),validScreens=['title','briefing','operating','results'];if(validScreens.includes(requested)&&requested!=='title'){const day=today(),saved=read('round:'+day.key,null);if(validSave(saved,day)){app.state=saved;ui.setupDay(saved);}}
   navigate(validScreens.includes(requested)?requested:'title',false);initGlobe();
 }
