@@ -1,4 +1,4 @@
-/** All sound is synthesized. No samples, recording, network, or autoplay. */
+/** All sound is synthesised in the browser. No samples, recordings, network requests or autoplay. */
 export class RadioAudio {
   constructor(){this.enabled=false;this.context=null;this.nodes=new Set();}
   async unlock(){if(!this.enabled)return;try{if(!this.context)this.context=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended')await this.context.resume();}catch{this.enabled=false;}}

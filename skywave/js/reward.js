@@ -17,8 +17,8 @@ const mult=n=>String(n);
 export function scoreBreakdown({distanceKm,rarity,mode,power,greyLine=false,penalty=0}){
   const base=Math.round(distanceKm/100),modeMult=RULES.modeMult[mode],powerMult=RULES.powerMult[power],grey=greyLine?1.2:1;
   const gross=base*rarity*modeMult*powerMult*grey,total=Math.round(gross*(1-penalty));
-  const factors=[{label:'RARITY',value:rarity},{label:mode,value:modeMult},{label:`${power} W`,value:powerMult}];if(greyLine)factors.push({label:'GREY LINE',value:1.2});
-  const formula=`${fmt(base)} × ${factors.map(f=>mult(f.value)).join(' × ')}${penalty>0?` − ${Math.round(penalty*100)}% intel`:''} = ${fmt(total)}`;
+  const factors=[{label:'Rarity',value:rarity},{label:mode,value:modeMult},{label:`${power} W`,value:powerMult}];if(greyLine)factors.push({label:'Grey line',value:1.2});
+  const formula=`${fmt(base)} × ${factors.map(f=>mult(f.value)).join(' × ')}${penalty>0?` − ${Math.round(penalty*100)}% hints`:''} = ${fmt(total)}`;
   return {base,factors,penalty,gross,total,formula};
 }
 export const shouldReward=entry=>Boolean(entry?.result?.ok);
@@ -29,21 +29,21 @@ export function qsoCardModel(entry,target,penalty=0){
   return {callsign:entry.callsign,band:entry.rig.band,mhz:band.mhz.toFixed(3),mode:entry.rig.mode,power:entry.rig.power,km:Math.round(r.distanceKm),miles:Math.round(kmToMiles(r.distanceKm)),qsb:Boolean(r.qsb),breakdown:b,points:entry.points};
 }
 export function cardHTML(m,escape=s=>String(s)){
-  const rows=[[`BASE / ${fmt(m.km)} km ÷ 100`,fmt(m.breakdown.base)],...m.breakdown.factors.map(f=>[`× ${f.label}`,mult(f.value)])];
-  if(m.breakdown.penalty>0)rows.push(['− INTEL',`${Math.round(m.breakdown.penalty*100)}%`]);
-  return `<div class="qso-card-top"><span class="eyebrow">\u2713 QSO CONFIRMED${m.qsb?' / QSB':''}</span><button type="button" class="qso-card-close" aria-label="Close QSO card">&#215;</button></div>`
+  const rows=[[`Base: ${fmt(m.km)} km ÷ 100`,fmt(m.breakdown.base)],...m.breakdown.factors.map(f=>[`× ${f.label}`,mult(f.value)])];
+  if(m.breakdown.penalty>0)rows.push(['− Hints',`${Math.round(m.breakdown.penalty*100)}%`]);
+  return `<div class="qso-card-top"><span class="eyebrow">\u2713 QSO confirmed${m.qsb?', QSB':''}</span><button type="button" class="qso-card-close" aria-label="Close QSO card">&#215;</button></div>`
    +`<strong class="qso-card-call">${escape(m.callsign)}</strong>`
-   +`<p class="qso-card-meta">${escape(m.band)} / ${m.mhz} MHz / ${escape(m.mode)} / ${m.power} W</p>`
-   +`<p class="qso-card-meta">${fmt(m.km)} km / ${fmt(m.miles)} mi</p>`
+   +`<p class="qso-card-meta">${escape(m.band)}, ${m.mhz} MHz, ${escape(m.mode)}, ${m.power} W</p>`
+   +`<p class="qso-card-meta">${fmt(m.km)} km (${fmt(m.miles)} mi)</p>`
    +`<dl class="qso-card-sum">${rows.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`
    +`<p class="qso-card-formula">${m.breakdown.formula}</p>`
-   +`<p class="qso-card-total"><span>TOTAL</span><span>+${fmt(m.points)} PTS</span></p>`;
+   +`<p class="qso-card-total"><span>Total</span><span>+${fmt(m.points)} pts</span></p>`;
 }
 /** Score counter. animateTo() starts from whatever is on screen, so a second QSO mid-count carries on
  * smoothly instead of jumping back. show() is for normal re-renders: it never interrupts a count heading
  * to the same total. Clock and frame scheduler are injectable for tests. */
 export class ScoreCounter {
-  constructor(el,{format=v=>`${fmt(v)} PTS`,now=()=>performance.now(),raf=f=>requestAnimationFrame(f),caf=id=>cancelAnimationFrame(id),duration=REWARD.countMs,setTimer=(f,ms)=>setTimeout(f,ms),clearTimer=id=>clearTimeout(id)}={}){Object.assign(this,{el,format,now,raf,caf,duration,setTimer,clearTimer});this.value=null;this.target=null;this.frame=null;this.pulseTimer=null;}
+  constructor(el,{format=v=>`${fmt(v)} pts`,now=()=>performance.now(),raf=f=>requestAnimationFrame(f),caf=id=>cancelAnimationFrame(id),duration=REWARD.countMs,setTimer=(f,ms)=>setTimeout(f,ms),clearTimer=id=>clearTimeout(id)}={}){Object.assign(this,{el,format,now,raf,caf,duration,setTimer,clearTimer});this.value=null;this.target=null;this.frame=null;this.pulseTimer=null;}
   get running(){return this.frame!==null;}
   render(v){this.value=v;if(this.el)this.el.textContent=this.format(v);}
   stop(){if(this.frame!==null)this.caf(this.frame);this.frame=null;}

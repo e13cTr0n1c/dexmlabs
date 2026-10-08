@@ -40,7 +40,7 @@ export function bandScope(state) {return Array.from({length:7},(_,i)=>Math.min(1
 export const formatTime = minute => `${String(Math.floor(minute/60)).padStart(2,'0')}:${String(minute%60).padStart(2,'0')}`;
 export function shareText(state,url) {
   const squares=state.day.targets.map(t=>{const win=state.log.find(e=>e.targetId===t.id&&e.result.ok);return win?(win.result.qsb?'\u{1F7E8}':'\u{1F7E9}'):'\u{1F7E5}';}).join('');
-  return `SKYWAVE ${state.mode==='daily'?'#'+state.day.number:'PRACTICE'} ${state.worked.length}/10 ${state.score.toLocaleString('en-GB')}pts\n${squares}\n${url}`;
+  return `Skywave ${state.mode==='daily'?'#'+state.day.number:'practice'} ${state.worked.length}/10 ${state.score.toLocaleString('en-GB')} pts\n${squares}\n${url}`;
 }
 export function missedTip(state) {
   const fails=state.log.filter(e=>!e.result.ok),reason=fails.at(-1)?.result.reason;
