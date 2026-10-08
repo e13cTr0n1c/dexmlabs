@@ -3,6 +3,7 @@
 import {toVector,fromVector,subsolarPoint} from './solar.js';
 import {intermediatePoint,isPathResult,CONFIG,greatCircleDistance} from './propagation.js';
 import {cometFraction,COMET_TRAVEL,REWARD} from './reward.js';
+import {overlayRects,placeLabel} from './labels.js';
 export async function createFallback(container,options={}) {
   const g=new CanvasGlobe(container,options);await g.init();return g;
 }
@@ -18,7 +19,7 @@ class CanvasGlobe {
     ctx.strokeStyle='#50727a';ctx.globalAlpha=.14;ctx.lineWidth=1;for(let lat=-60;lat<=60;lat+=30)this.line(Array.from({length:181},(_,i)=>({lat,lon:-180+i*2})));for(let lon=-180;lon<180;lon+=30)this.line(Array.from({length:91},(_,i)=>({lat:-90+i*2,lon})));ctx.globalAlpha=1;
     if(this.settings.layers?.F2){ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius*1.377,0,Math.PI*2);ctx.strokeStyle='#6b87914d';ctx.stroke();}
     for(const entry of this.paths){const color=entry.result.qsb?'#ffbf69':entry.result.ok?'#d6ff00':'#ff7272';ctx.strokeStyle=color;ctx.lineWidth=1.7;const t=this.day?.targets.find(t=>t.id===entry.targetId);if(!t)continue;ctx.globalAlpha=entry.ghost?.22:1;const ground=entry.result.mechanism==='Ground wave',hops=entry.result.hops?.length?entry.result.hops:[{from:this.day.qth,to:t,heightKm:CONFIG.f2HeightKm}];for(const hop of hops){const lift=ground?.01:(hop.heightKm>0?hop.heightKm:CONFIG.f2HeightKm)/CONFIG.earthRadiusKm*8;this.line(Array.from({length:65},(_,i)=>({...intermediatePoint(hop.from,hop.to,i/64),alt:1.004+Math.sin(Math.PI*i/64)*lift})));}ctx.globalAlpha=1;}
-    this.pinPositions=[];if(this.day)for(const p of [{...this.day.qth,id:'home',callsign:'Your QTH'},...this.day.targets]){const q=this.project(p,1.01);if(q.front<.04)continue;const active=p.id===this.selected||p.id==='home';ctx.fillStyle=active?'#d6ff00':'#8db7c0';ctx.beginPath();ctx.arc(q.x,q.y,active?4:3,0,Math.PI*2);ctx.fill();ctx.strokeStyle=ctx.fillStyle;ctx.globalAlpha=.32;ctx.beginPath();ctx.arc(q.x,q.y,active?10:7,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;if(active){ctx.font='11px monospace';ctx.fillText(p.callsign,q.x+13,q.y-8);}if(p.id!=='home')this.pinPositions.push({...q,id:p.id});}
+    this.pinPositions=[];if(this.day)for(const p of [{...this.day.qth,id:'home',callsign:'Your QTH'},...this.day.targets]){const q=this.project(p,1.01);if(q.front<.04)continue;const active=p.id===this.selected||p.id==='home';ctx.fillStyle=active?'#d6ff00':'#8db7c0';ctx.beginPath();ctx.arc(q.x,q.y,active?4:3,0,Math.PI*2);ctx.fill();ctx.strokeStyle=ctx.fillStyle;ctx.globalAlpha=.32;ctx.beginPath();ctx.arc(q.x,q.y,active?10:7,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;if(active){ctx.font='11px monospace';const w=ctx.measureText(p.callsign).width+2,spot=placeLabel(q.x,q.y,w,14,this.canvas.width,this.canvas.height,overlayRects(this.container));if(spot)ctx.fillText(p.callsign,spot.x+1,spot.y+11);}if(p.id!=='home')this.pinPositions.push({...q,id:p.id});}
   }
   line(points){const ctx=this.ctx;ctx.beginPath();let started=false;for(const p of points){const q=this.project(p,p.alt||1.003);if(q.front<0){started=false;continue;}if(!started){ctx.moveTo(q.x,q.y);started=true;}else ctx.lineTo(q.x,q.y);}ctx.stroke();}
   setDay(day){this.day=day;this.paths=[];this.lon=day.qth.lon;this.lat=day.qth.lat;this.render();}

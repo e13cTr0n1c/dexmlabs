@@ -3,6 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {toVector,subsolarPoint} from './solar.js';
 import {CONFIG,intermediatePoint,greatCircleDistance,isPathResult} from './propagation.js';
 import {cometFraction,COMET_TRAVEL,REWARD} from './reward.js';
+import {overlayRects,placeLabel,resetLabelCache} from './labels.js';
 const GREEN=0xd6ff00,AMBER=0xffbf69,RED=0xff7272;
 const vector=(p,r=1)=>{const v=toVector(p);return new THREE.Vector3(v.x*r,v.y*r,v.z*r);};
 /** Layer heights are drawn 8x higher than scale so you can see them. Never used by the model. */
@@ -99,7 +100,7 @@ gl_FragColor=vec4(col,a*strength);}`});
   }
   applyLayers(){for(const [name,shell]of Object.entries(this.shells)){shell.visible=Boolean(this.settings.layers?.[name])&&(this.tier!=='low'||name==='F2');shell.material.uniforms.strength.value=this.tier==='high'?.5:this.tier==='low'?.6:1;/* High adds bloom, which roughly doubles the limb glow */}}
   updateSettings(settings){this.settings=settings;this.controls.enableDamping=!settings.reducedMotion;this.controls.autoRotate=this.screen==='title'&&!settings.reducedMotion;if(settings.reducedMotion)this.flight=null;this.applyLayers();const t=settings.quality==='auto'?(this.autoTier||'low'):settings.quality;this.setQuality(t).catch(()=>this.onStatus('Texture loading failed. Retry or choose Low quality.'));}
-  resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.camera.aspect=w/h;
+  resize(){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h)return;this.labels?.forEach(l=>{l.w=0;});resetLabelCache();this.camera.aspect=w/h;
     /* Phone layout: the radio sheet covers the bottom of the globe stage. Shift the view up so the globe and
      * its hop arcs are centred in the part that is still visible. */
     const shift=this.coveredShift(h);if(shift)this.camera.setViewOffset(w,h,0,shift,w,h);else this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.renderer.setSize(w,h,false);this.composer?.setSize(w,h);}
@@ -197,7 +198,8 @@ gl_FragColor=vec4(col,a*strength);}`});
     for(const parent of [this.paths,this.transient])for(const group of parent.children){const {points,pulse,start}=group.userData;if(pulse){pulse.visible=!this.settings.reducedMotion&&this.screen!=='briefing';const t=((this.elapsed-start)/3)%1*(points.length-1),i=Math.floor(t);pulse.position.copy(points[i]).lerp(points[Math.min(i+1,points.length-1)],t-i);}}
     this.updateComet();
     const view=this.camera.position.clone().normalize();
-    for(const l of this.labels){const world=this.world.localToWorld(l.vector.clone()),visible=(l.id==='home'||l.id===this.selected)&&world.clone().normalize().dot(view)>.18;l.node.hidden=!visible;if(visible){const p=world.project(this.camera);l.node.style.transform=`translate(${(p.x*.5+.5)*this.container.clientWidth+12}px,${(-p.y*.5+.5)*this.container.clientHeight-10}px)`;}}
+    const cw=this.container.clientWidth,ch=this.container.clientHeight,avoid=this.labels.length?overlayRects(this.container):[];
+    for(const l of this.labels){const world=this.world.localToWorld(l.vector.clone()),visible=(l.id==='home'||l.id===this.selected)&&world.clone().normalize().dot(view)>.18;l.node.hidden=!visible;if(visible){const p=world.project(this.camera);if(!l.w){l.w=l.node.offsetWidth;l.h=l.node.offsetHeight;}const spot=placeLabel((p.x*.5+.5)*cw,(-p.y*.5+.5)*ch,l.w,l.h,cw,ch,avoid);if(spot)l.node.style.transform=`translate(${spot.x}px,${spot.y}px)`;else l.node.hidden=true;}}
     if(this.tier==='high'&&this.composer)this.composer.render(dt);else this.renderer.render(this.scene,this.camera);
     this.start();
   }
