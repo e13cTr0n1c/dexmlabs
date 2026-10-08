@@ -39,13 +39,14 @@ body[data-screen]:not([data-screen=title]) .storage-note{display:none}
 /* Header links, and the QSO card, score count-up and comet */
 .site-header nav{flex-wrap:nowrap;white-space:nowrap}.site-header .wordmark{flex:0 0 auto}
 .header-feedback{color:var(--muted);border-bottom:1px dotted var(--edge)}.header-feedback:hover{color:var(--acid);border-color:var(--acid)}.fb-short{display:none}
-.header-coffee{color:var(--acid);border:1px solid var(--line);padding:5px 9px;line-height:1.2}.header-coffee:hover{border-color:var(--acid)}
+.header-coffee{display:inline-flex;align-items:center;line-height:0;flex:0 0 auto}.header-coffee img{display:block;height:30px;width:auto}.header-coffee:hover img{filter:brightness(1.06)}
 @media(max-width:1360px){.site-header nav{gap:18px}}
 @media(max-width:1240px){.fb-long{display:none}.fb-short{display:inline}}
 @media(max-width:860px){.header-day{display:none}}
-@media(max-width:760px){.site-header nav{gap:12px}.header-coffee{padding:4px 7px}.coffee-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}}
+@media(max-width:760px){.site-header nav{gap:12px}.header-coffee img{height:26px}}
 @media(max-width:440px){.site-header{padding:0 14px;gap:10px}.wordmark{font-size:19px;gap:8px}.wordmark svg{width:19px;margin-right:2px}.site-header nav{gap:10px}.site-header nav a[href="./help.html"] span{display:none}.site-header .icon-button{min-width:28px}}
 @media(max-width:375px){.wordmark svg{display:none}}
+@media(max-width:380px){.site-header{padding:0 10px;gap:8px}.site-header nav{gap:6px}.wordmark{font-size:16px}.site-header .header-coffee img{height:22px}}
 @media(max-width:340px){.header-feedback{display:none}}
 .qso-card{position:absolute;z-index:6;right:calc(var(--radio) + 22px);bottom:68px;width:min(310px,calc(100% - var(--radio) - 44px));background:#0a0d0bf2;border:1px solid var(--acid);padding:14px 16px 12px;pointer-events:auto;box-shadow:0 12px 40px #000a;animation:qso-in .28s ease-out}
 .qso-card-top{display:flex;justify-content:space-between;align-items:center}.qso-card-top .eyebrow{color:var(--acid);margin:0}
@@ -61,3 +62,15 @@ body[data-screen]:not([data-screen=title]) .storage-note{display:none}
 .fallback-comet{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 @media(max-width:760px){.qso-card{left:12px;right:12px;width:auto;top:auto;bottom:calc(100% - 36svh + 8px);padding:9px 12px 8px}.qso-card-call{font-size:20px;margin:2px 0 0}.qso-card-sum{display:none}.qso-card-formula{margin-top:4px}.qso-card-total{margin-top:4px;padding-top:4px}@keyframes qso-in{from{opacity:0}to{opacity:1}}}
 @media(max-width:930px) and (orientation:landscape) and (max-height:560px){.qso-card{top:auto;bottom:12px;left:auto;right:calc(var(--radio) + 12px);width:min(300px,calc(100% - var(--radio) - 24px));padding:9px 12px 8px}.qso-card-sum{display:none}}
+/* Arthur's photo: the initial shows until img/arthur.jpg loads (js/photo.js) */
+.signed-note{display:flex;gap:16px;align-items:flex-start}.signed-text{flex:1;min-width:0}
+.arthur-photo{margin:2px 0 0;flex:0 0 auto;text-align:center;font-size:12px;color:var(--muted)}
+.photo-frame{position:relative;display:block;width:56px;height:56px;border-radius:50%;overflow:hidden;border:1px solid var(--edge);background:#111710}
+.photo-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.photo-initial{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font:900 26px/1 'Arial Black',Arial,sans-serif;color:var(--acid);transform:rotate(-6deg)}
+.has-photo .photo-initial{display:none}
+.arthur-photo figcaption{margin-top:5px}
+.me-and-radio{display:flex;gap:20px;align-items:flex-start;max-width:680px}.me-and-radio .prose{flex:1;margin-top:0}
+.arthur-photo-large .photo-frame{width:88px;height:88px}.arthur-photo-large .photo-initial{font-size:40px}
+.bmc-link{display:inline-block;line-height:0}.bmc-link img{display:block;height:42px;width:auto}
+@media(max-width:440px){.site-header nav{gap:8px}.header-coffee img{height:24px}.wordmark svg{display:none}.signed-note{gap:12px}.photo-frame{width:48px;height:48px}.photo-initial{font-size:22px}.arthur-photo-large .photo-frame{width:64px;height:64px}.arthur-photo-large .photo-initial{font-size:30px}}

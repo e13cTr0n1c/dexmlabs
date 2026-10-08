@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./css/style.css">
   <script type="module" src="./js/main.js"></script>
   <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
+  <script src="./js/photo.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -32,7 +33,13 @@
     <p class="prose">I'm studying for my Foundation licence, and HF is the next rabbit hole. Skywave is how I'm learning propagation.</p>
 
     <h2>Me and radio</h2>
-    <p class="prose">I'm into planes and I live near RAF Coningsby. I got into SDR recently: instead of using Flightradar all the time, I bought a Raspberry Pi and an SDR to pick up ADS-B myself. There's now a retro radar-style screen running 24/7 at home, showing flight info and a few other bits.</p>
+    <div class="me-and-radio">
+      <figure class="arthur-photo arthur-photo-large" data-photo="./img/arthur.jpg">
+        <span class="photo-frame"><span class="photo-initial" aria-hidden="true">A</span><img alt="Arthur" width="88" height="88" hidden></span>
+        <figcaption>Arthur</figcaption>
+      </figure>
+      <p class="prose">I'm into planes and I live near RAF Coningsby. I got into SDR recently: instead of using Flightradar all the time, I bought a Raspberry Pi and an SDR to pick up ADS-B myself. There's now a retro radar-style screen running 24/7 at home, showing flight info and a few other bits.</p>
+    </div>
 
     <h2>Things I know are simplified on purpose</h2>
     <p class="prose">If you know HF properly, some of this will make you wince. It's a game, so I've kept the model small enough to play in a browser:</p>
@@ -76,7 +83,7 @@
 
       <h2>If you'd like to buy me a coffee</h2>
       <p class="prose">Skywave's free and staying free. If you've enjoyed it, a coffee helps.</p>
-      <a class="primary" style="max-width:330px" data-link="support" href="https://buymeacoffee.com/arthurdeusexmachina" rel="noopener noreferrer" target="_blank">Buy me a coffee <span aria-hidden="true">&#8599;</span></a>
+      <a class="bmc-link" data-link="support" href="https://buymeacoffee.com/arthurdeusexmachina" rel="noopener noreferrer" target="_blank"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="150" height="42"></a>
     </section>
 
     <h2>Under the hood</h2>
