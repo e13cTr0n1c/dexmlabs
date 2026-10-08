@@ -82,7 +82,7 @@ body[data-screen]:not([data-screen=title]) .storage-note{display:none}
 .document-page .prose,.document-page ul,.document-page ol,.document-page .disclaimer,.document-page>p{max-width:640px}
 .document-page .disclaimer{font-size:14px;line-height:1.6;color:var(--muted)}
 .document-page h1{margin-bottom:26px}.document-page h2{margin:42px 0 12px}
-.help-grid{gap:0 44px}.help-grid h2{font-size:20px;margin:16px 0 8px}.help-grid p{font-size:15px;line-height:1.6}
+.help-grid{gap:0 44px}.document-page .help-grid h2{font-size:20px;margin:16px 0 8px}.help-grid p{font-size:15px;line-height:1.6}
 .document-page .log-list time{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px}.document-page .log-list li{margin-bottom:20px}
 .me-and-radio{max-width:640px}
 @media(max-width:760px){.document-page p,.document-page li{font-size:16px}.document-page .lede{font-size:18px}.document-page .disclaimer{font-size:14px}.help-grid p{font-size:15px}.document-page h2{margin-top:36px}}
