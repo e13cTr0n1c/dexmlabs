@@ -5,7 +5,7 @@ import {CONFIG,intermediatePoint,greatCircleDistance,isPathResult} from './propa
 import {cometFraction,COMET_TRAVEL,REWARD} from './reward.js';
 const GREEN=0xd6ff00,AMBER=0xffbf69,RED=0xff7272;
 const vector=(p,r=1)=>{const v=toVector(p);return new THREE.Vector3(v.x*r,v.y*r,v.z*r);};
-/** View-only exaggeration of layer heights (8x, as in the brief). Never used by the model. */
+/** Layer heights are drawn 8x higher than scale so you can see them. Never used by the model. */
 const HEIGHT_SCALE=8/CONFIG.earthRadiusKm,SURFACE=1.004,GHOST_OPACITY=.22;
 const shellVertex=`varying vec3 vNormal; varying vec3 vViewNormal; varying vec3 vView;
 void main(){vNormal=normalize(normal); vViewNormal=normalize(normalMatrix*normal); vec4 mv=modelViewMatrix*vec4(position,1.0); vView=normalize(-mv.xyz); gl_Position=projectionMatrix*mv;}`;
@@ -95,7 +95,7 @@ gl_FragColor=vec4(col,a*strength);}`});
       }catch{this.onStatus('Bloom unavailable; standard rendering is still active.');}
     }
     if(this.tier!=='high'&&this.composer){this.composer.passes.forEach(p=>p.dispose?.());this.composer.dispose();this.composer=null;}
-    this.applyLayers();this.resize();this.onStatus(`${this.tier.toUpperCase()} / 3D`);
+    this.applyLayers();this.resize();this.onStatus(`3D, ${this.tier} quality`);
   }
   applyLayers(){for(const [name,shell]of Object.entries(this.shells)){shell.visible=Boolean(this.settings.layers?.[name])&&(this.tier!=='low'||name==='F2');shell.material.uniforms.strength.value=this.tier==='high'?.5:this.tier==='low'?.6:1;/* High adds bloom, which roughly doubles the limb glow */}}
   updateSettings(settings){this.settings=settings;this.controls.enableDamping=!settings.reducedMotion;this.controls.autoRotate=this.screen==='title'&&!settings.reducedMotion;if(settings.reducedMotion)this.flight=null;this.applyLayers();const t=settings.quality==='auto'?(this.autoTier||'low'):settings.quality;this.setQuality(t).catch(()=>this.onStatus('Texture loading failed. Retry or choose Low quality.'));}
@@ -138,7 +138,7 @@ gl_FragColor=vec4(col,a*strength);}`});
     c.position.needsUpdate=true;c.size.needsUpdate=true;}
   clearDay(){this.day=null;this.selected=null;this.clearArcs();disposeGroup(this.pins);this.hitPins=[];this.labels.forEach(l=>l.node.remove());this.labels=[];}
   setDay(day){this.clearDay();this.day=day;
-    for(const p of [{...day.qth,id:'home',callsign:'YOUR QTH'},...day.targets]){
+    for(const p of [{...day.qth,id:'home',callsign:'Your QTH'},...day.targets]){
       const v=vector(p,1.014),pin=new THREE.Mesh(new THREE.SphereGeometry(p.id==='home'?.017:.013,10,8),new THREE.MeshBasicMaterial({color:p.id==='home'?0xd6ff00:0x86bac0,toneMapped:false}));pin.position.copy(v);pin.userData.id=p.id;this.pins.add(pin);if(p.id!=='home')this.hitPins.push(pin);
       const label=document.createElement('span');label.className='globe-pin-label';label.textContent=p.callsign;label.hidden=true;this.container.append(label);this.labels.push({node:label,vector:v,id:p.id});
     }
