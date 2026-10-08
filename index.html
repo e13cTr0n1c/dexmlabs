@@ -16,7 +16,7 @@
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"Deus Ex Machina Labs","alternateName":"DEXM LABS","inLanguage":"en-GB"}</script>
 </head><body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><path d="M16 8a8 8 0 1 1 0 16a8 8 0 1 1 0-16z" fill="#d6ff00"/><rect x="6" y="15" width="20" height="2.4" fill="#0a0b09"/><rect x="14.8" y="5" width="2.4" height="5" fill="#0a0b09"/></svg><span>DEXM LABS</span></a><nav aria-label="Main"><a href="./">HOME</a><a href="#games">GAMES</a><a href="tools/">TOOLS</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><path d="M16 8a8 8 0 1 1 0 16a8 8 0 1 1 0-16z" fill="#d6ff00"/><rect x="6" y="15" width="20" height="2.4" fill="#0a0b09"/><rect x="14.8" y="5" width="2.4" height="5" fill="#0a0b09"/></svg><span>DEXM LABS</span></a><nav aria-label="Main"><a href="./">HOME</a><a href="#cis">CIS</a><a href="#games">GAMES</a><a href="tools/">TOOLS</a></nav></div></header>
 <div class="stripe" aria-hidden="true"></div>
 <main id="main">
 <section class="hero"><div class="wrap hero-grid">
@@ -33,6 +33,40 @@
 </div>
 </div></section>
 
+<section class="block cis" id="cis" aria-labelledby="cis-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">SECTION 01 / CIS BAY</p><h2 id="cis-h">Getting 20% taken off?</h2></div><p class="label">FOR UK CONSTRUCTION TRADES</p></div>
+<p class="sec-lead cis-lead">Free calculators for UK subcontractors and contractors on the Construction Industry Scheme. Check a deduction, estimate your refund, then grab the free mileage log. No accounts needed.</p>
+<p class="cis-small">Estimates, not tax advice.</p>
+<div class="grid cis-grid">
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>TOOL 01 / LIVE</span><span class="label">CIS</span></div>
+<div class="card-body"><h3 class="tool-h">CIS tax refund estimator</h3><p>For subcontractors. Estimate your CIS refund or tax bill for 2025/26 or 2026/27, and see which Self Assessment boxes the figures go in.</p>
+<a class="btn" href="tools/cis-refund-estimator/">Estimate my refund <span aria-hidden="true">&rarr;</span></a></div>
+</article>
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>TOOL 02 / LIVE</span><span class="label">CIS</span></div>
+<div class="card-body"><h3 class="tool-h">CIS deduction calculator</h3><p>For contractors and subcontractors. Check what should come off an invoice at 20%, 30% or gross: labour only, with materials and VAT left out.</p>
+<a class="btn" href="tools/cis-deduction-calculator/">Check a deduction <span aria-hidden="true">&rarr;</span></a></div>
+</article>
+</div>
+<div class="plate cis-free">
+<div class="stripe" aria-hidden="true"></div>
+<div class="plate-head"><span class="label acid">FREE DOWNLOAD</span></div>
+<div class="cis-free-body">
+<h3>Mileage &amp; expenses log Lite</h3>
+<p>Excel or Google Sheets. Log every site mile and receipt, totals ready for Self Assessment. Free, pay what you like.</p>
+<a class="btn" href="https://arthurverse67.gumroad.com/l/cis-mileage-lite?ref=dexm-home" rel="noopener">Get the free log <span class="arr" aria-hidden="true">&#8599;</span></a>
+<p class="cis-more">Want the whole year tracked? <span class="cis-opts"><span class="cis-opt"><a href="https://arthurverse67.gumroad.com/l/vszqef?ref=dexm-home" rel="noopener">Subcontractor tracker &pound;14.99 <span class="arr" aria-hidden="true">&#8599;</span></a></span><span class="cis-sep" aria-hidden="true"> &middot; </span><span class="cis-opt"><a href="https://arthurverse67.gumroad.com/l/cis-contractor-tracker?ref=dexm-home" rel="noopener">Contractor tracker &pound;14.99 <span class="arr" aria-hidden="true">&#8599;</span></a></span><span class="cis-sep" aria-hidden="true"> &middot; </span><span class="cis-opt"><a href="https://arthurverse67.gumroad.com/l/cis-bundle?ref=dexm-home" rel="noopener">Both plus the Lite: &pound;21.99 <span class="arr" aria-hidden="true">&#8599;</span></a> (&pound;29.98 bought separately)</span></span></p>
+<p class="cis-launch" data-until="2026-10-31T23:59:00Z">LAUNCH25 takes 25% off either tracker until 31 Oct!!</p>
+<script>
+document.querySelectorAll('[data-until]').forEach(function(el){
+  if(Date.now()>Date.parse(el.getAttribute('data-until')))el.remove();
+});
+</script>
+</div>
+</div>
+</div></section>
+
 <section class="block" id="games" aria-labelledby="games-h"><div class="wrap">
 <div class="sec-head"><div><p class="label acid">SECTION 02 / TEST CHAMBERS</p><h2 id="games-h">Games</h2></div><p class="label">PLAYS IN THE BROWSER / FREE</p></div>
 <div class="grid">
@@ -43,12 +77,12 @@
 <a class="btn" href="skywave/">Play Skywave <span aria-hidden="true">&rarr;</span></a></div>
 </article>
 <article class="card sealed">
-<div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>CHAMBER 02 - IN DEVELOPMENT</span></div>
+<div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>CHAMBER 02 / IN DEVELOPMENT</span></div>
 <div class="thumb" aria-hidden="true"><span>SEALED</span></div>
 <div class="card-body"><h3>Chamber 02</h3><p>In development. Nothing to see yet.</p></div>
 </article>
 <article class="card sealed">
-<div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>CHAMBER 03 - IN DEVELOPMENT</span></div>
+<div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>CHAMBER 03 / IN DEVELOPMENT</span></div>
 <div class="thumb" aria-hidden="true"><span>SEALED</span></div>
 <div class="card-body"><h3>Chamber 03</h3><p>In development. Nothing to see yet.</p></div>
 </article>
@@ -57,18 +91,8 @@
 
 <section class="block" id="tools" aria-labelledby="tools-h"><div class="wrap">
 <div class="sec-head"><div><p class="label acid">SECTION 03 / INSTRUMENTS</p><h2 id="tools-h">Tools</h2></div><p class="label"><a href="tools/">ALL TOOLS &rarr;</a></p></div>
-<p class="sec-lead">Free UK money calculators. Estimates, not advice.</p>
-<div class="grid tools-grid">
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>TOOL 01 / LIVE</span><span class="label">CIS</span></div>
-<div class="card-body"><h3 class="tool-h">CIS tax refund estimator</h3><p>For subcontractors. Estimate your CIS refund or tax bill for 2025/26 or 2026/27, and see which Self Assessment boxes the figures go in.</p>
-<a class="btn" href="tools/cis-refund-estimator/">Open tool <span aria-hidden="true">&rarr;</span></a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>TOOL 02 / LIVE</span><span class="label">CIS</span></div>
-<div class="card-body"><h3 class="tool-h">CIS deduction calculator</h3><p>For contractors and subcontractors. Check what should come off an invoice at 20%, 30% or gross: labour only, with materials and VAT left out.</p>
-<a class="btn" href="tools/cis-deduction-calculator/">Open tool <span aria-hidden="true">&rarr;</span></a></div>
-</article>
+<p class="sec-lead">More free UK money calculators. Estimates, not advice.</p>
+<div class="grid tools-grid tools-four">
 <article class="card">
 <div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>TOOL 03 / LIVE</span><span class="label">PROBATE</span></div>
 <div class="card-body"><h3 class="tool-h">Probate and Inheritance Tax calculator</h3><p>For England and Wales. Estimate the Inheritance Tax on an estate, with the residence allowance, gifts and the probate fee.</p>

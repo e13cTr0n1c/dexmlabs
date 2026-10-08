@@ -113,3 +113,25 @@ section.block{padding:40px 0;border-bottom:1px solid var(--edge)}
 .hero h1.h1-sm{font-size:clamp(48px,10vw,96px)}
 .tools-grid .thumb{aspect-ratio:1200/630}
 @media(min-width:1040px){.grid.tools-grid{grid-template-columns:repeat(3,1fr)}.grid.tools-grid .card:first-child{grid-row:auto}}
+/* CIS bay: two CIS cards and a free download plate, first section under the hero on / and /tools/ */
+.cis-lead{margin-bottom:6px;color:var(--ink);max-width:760px}
+.cis-small{margin:0 0 18px;color:var(--muted);font-size:13px}
+.grid.cis-grid{grid-template-columns:1fr}
+.grid.cis-grid .card:first-child{grid-row:auto}
+.cis-grid .thumb{aspect-ratio:1200/630}
+.cis-free{margin-top:16px}
+.cis-free>.stripe{border-top:0}
+.cis-free-body{padding:16px;display:grid;gap:12px;justify-items:start}
+.cis-free-body h3{font:900 24px/1.1 var(--head);text-transform:uppercase;margin:0}
+.cis-free-body p{margin:0}
+.cis-free-body .btn{margin-top:4px}
+.cis-free-body .arr{color:inherit;font-weight:700}
+.cis-more{color:var(--muted)}
+.cis-more a{color:var(--acid)}
+.cis-more .arr{color:var(--acid)}
+.cis-launch{color:var(--acid);font-weight:700}
+.tools-four .card:first-child{grid-row:auto}
+@media(min-width:760px){.grid.cis-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1040px){.grid.tools-grid.tools-four{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:759px){.cis .btn,.cis-free-body .btn{width:100%;box-sizing:border-box;min-height:48px}}
+@media(max-width:520px){.cis-sep{display:none}.cis-opts{display:grid;gap:0;margin-top:6px}.cis-opt{display:block}.cis-opt a{display:inline-flex;align-items:center;gap:.4em;min-height:44px}}
