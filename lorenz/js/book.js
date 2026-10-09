@@ -7,8 +7,8 @@ export const SMUDGE_NOTE = 'The book got damp in the truck. Where a tens figure 
 
 export const bookHeadHTML = () => `<tr><th scope="col">QEP</th>${WHEELS.map(w => `<th scope="col" class="grp-${w.group}"><abbr title="${w.label}, ${w.size} cams">${w.label}</abbr></th>`).join('')}</tr>`;
 
-export function bookBodyHTML(round, revealed = false) {
-  return round.book.map(e => { const mine = e.qep === round.qep;
+export function bookBodyHTML(round, revealed = false, {highlight = true} = {}) {
+  return round.book.map(e => { const mine = highlight && e.qep === round.qep;
     return `<tr data-qep="${pad2(e.qep)}"${mine ? ' class="today-line" aria-current="true"' : ''}><td>${pad2(e.qep)}${mine ? `<span class="sr-only">, ${round.mode === 'daily' ? "today's line" : 'your line'}</span>` : ''}</td>${WHEELS.map(w => {
     const c = bookCell(round, e, w.id, revealed);
     if (!c.smudged) return `<td class="grp-${w.group}">${c.text}</td>`;

@@ -18,6 +18,7 @@
 <h1 id="title-heading" tabindex="-1">Lorenz</h1>
 <p class="hero-copy">A daily cipher puzzle on the German Lorenz teleprinter machine, the one Bletchley Park called Tunny.</p>
 <p class="hero-detail">Look up today's QEP number in the book, set the twelve wheels, and run the intercepted tape. Get it right and the teleprinter prints the message. Get one wheel wrong and you get garbage.</p>
+<div class="mode-switch"><span class="eyebrow" id="mode-label">Mode</span><span class="segmented" role="group" aria-labelledby="mode-label"><button type="button" data-difficulty="normal" aria-pressed="true">Normal</button><button type="button" data-difficulty="hard" aria-pressed="false">Hard</button></span><p class="tiny" id="mode-note">Normal: the QEP number is given and the teleprinter prints the message.</p></div>
 <div class="hero-buttons"><button class="primary" id="play-daily">Play today's round</button><button id="play-practice" class="secondary">Practice</button></div>
 <div class="stl-slot stl-large" data-stl="title" hidden><a class="stl-button"><span class="stl-label">Support me by downloading the Lorenz machine STL</span><span class="stl-sub">Free to download, tip if you like.</span></a><a class="stl-alt" hidden>Also on Printables</a></div>
 <p class="hero-facts" id="title-stats">Twelve wheels, 501 cams, a new intercept every day at 00:00 UTC.</p>
@@ -38,13 +39,20 @@
 <h1 id="game-heading" tabindex="-1">QEP <span id="qep-number">00</span></h1>
 <p class="muted" id="round-intro">The operator sent this QEP number in clear before the message. Find it in the book below and set the wheels to match.</p>
 <p class="model-line"><span class="eyebrow">Machine</span> <span id="model-name">SZ40</span><span id="practice-model" class="segmented" role="group" aria-label="Machine model" hidden><button data-model="SZ40" aria-pressed="true">SZ40</button><button data-model="SZ42A" aria-pressed="false">SZ42A</button></span><button id="practice-new" class="text-button" hidden>New random settings</button></p>
+<p class="model-line" id="today-line" hidden><span class="eyebrow">Today</span> <span id="today-date"></span></p>
+<div id="preamble-box" class="preamble-box" hidden><div class="section-top"><h2 class="small-heading">Preamble, sent in clear</h2><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
+<div id="preamble-tape" class="punch-tape" role="img"></div>
+<p class="tiny">The operator sent the QEP number in clear, not enciphered, before the message. Read it off the tape: impulse 1 is the top hole.</p>
+<div class="qep-guess"><label for="qep-guess" class="field-label">The QEP number you read</label><div class="qep-guess-row"><input type="text" id="qep-guess" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false"><button type="button" id="qep-guess-go" class="secondary small">Check it</button></div></div>
+</div>
 <div class="section-top"><h2 class="small-heading">Intercepted tape</h2><span id="cipher-count" class="tiny"></span></div>
 <p id="cipher-text" class="cipher-text" aria-label="Intercepted ciphertext in Bletchley Park letters"></p>
 </article>
 
 <article class="qep-book card-box" aria-labelledby="book-heading">
 <div class="section-top"><h2 id="book-heading" class="small-heading">QEP book, page <span id="book-page">1</span></h2><span class="tiny">Start positions</span></div>
-<div class="book-scroll"><table id="qep-table" class="qep-table"><caption class="sr-only">QEP numbers and the twelve wheel start positions for each</caption><thead><tr><th scope="col">QEP</th></tr></thead><tbody></tbody></table></div>
+<div id="book-pager" class="book-pager" hidden><button type="button" id="page-prev" class="page-turn" aria-label="Previous page">&#8249;</button><p id="book-date" class="book-date" aria-live="polite"></p><button type="button" id="page-next" class="page-turn" aria-label="Next page">&#8250;</button></div>
+<div class="book-scroll" id="book-scroll"><table id="qep-table" class="qep-table"><caption class="sr-only">QEP numbers and the twelve wheel start positions for each</caption><thead><tr><th scope="col">QEP</th></tr></thead><tbody></tbody></table></div>
 <p class="tiny" id="smudge-note"></p>
 </article>
 </div>
@@ -82,7 +90,7 @@
 </section>
 
 <div class="action-bar">
-<div id="hint-row" class="hint-row"><span class="eyebrow">Hints</span><button data-hint="check">Check a wheel <small>&minus;100</small></button><button data-hint="reveal">Read the smudge <small>&minus;300</small></button></div>
+<div id="hint-row" class="hint-row"><span class="eyebrow">Hints</span><button data-hint="qep" hidden>Reveal the QEP <small>&minus;200</small></button><button data-hint="char" hidden>Reveal a character <small>&minus;50</small></button><button data-hint="check">Check a wheel <small>&minus;100</small></button><button data-hint="reveal">Read the smudge <small>&minus;300</small></button></div>
 <section id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"><p>Set the wheels, then run the tape.</p></section>
 <div class="run-row"><span id="score-display" class="score-display">1,000 pts</span><button id="run-button" class="primary run-button">Decode the tape <small>key D</small></button></div>
 </div>
@@ -93,8 +101,15 @@
 <section class="teleprinter" aria-labelledby="tp-heading">
 <div class="section-top"><h2 id="tp-heading" class="small-heading">Teleprinter</h2><div class="tp-controls"><label for="speed-select" class="tiny">Speed</label><select id="speed-select"><option value="7">Real (7 a second)</option><option value="20" selected>Quick</option><option value="60">Fast</option></select><button id="skip-button" class="secondary small" disabled>Skip</button></div></div>
 <div class="tape-wrap"><canvas id="tape-canvas" class="tape-canvas" height="128" aria-hidden="true"></canvas></div>
-<p class="tiny tape-legend">Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.</p>
-<div class="printed"><div class="section-top"><span class="eyebrow" id="printed-label">Printed</span><button id="printed-copy" class="text-button" hidden>Copy</button></div><p id="printed-text" class="printed-text"></p></div>
+<p class="tiny tape-legend" id="tape-legend">Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.</p>
+<div id="hard-out" class="hard-out" hidden><div class="section-top"><span class="eyebrow">Tape out, punched</span><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
+<div id="out-tape" class="punch-tape out-tape" aria-label="The tape the machine punched"><p class="tiny">Run the tape and the machine punches its output here.</p></div>
+<p class="tiny">No printer in hard mode. Read each row with the cheat sheet. Tap a row to mark it as read.</p>
+<label for="hard-answer" class="field-label">What the tape says</label><textarea id="hard-answer" rows="3" maxlength="400" spellcheck="false" autocomplete="off"></textarea>
+<p class="tiny" id="revealed-chars" hidden></p>
+<button type="button" id="hard-answer-go" class="primary wide">Check my reading</button>
+</div>
+<div class="printed" id="printed-box"><div class="section-top"><span class="eyebrow" id="printed-label">Printed</span><button id="printed-copy" class="text-button" hidden>Copy</button></div><p id="printed-text" class="printed-text"></p></div>
 <section id="decoded-card" class="decoded-card" hidden aria-labelledby="decoded-heading"></section>
 </section>
 </div>
@@ -106,5 +121,9 @@
 <dialog id="settings-dialog" aria-labelledby="settings-heading"><div class="section-top"><h2 id="settings-heading">Settings</h2><button data-close="settings-dialog" aria-label="Close settings">&#215;</button></div><label class="checkbox-row"><input id="motion-setting" type="checkbox"> Reduced motion</label><label class="checkbox-row"><input id="flat-setting" type="checkbox"> Use the flat 2D view</label><p class="tiny">Your settings and daily progress stay in this browser. There are no cookies and no account.</p><button class="primary wide" data-close="settings-dialog">Done</button></dialog>
 <dialog id="check-dialog" aria-labelledby="check-heading"><div class="section-top"><h2 id="check-heading">Check a wheel</h2><button data-close="check-dialog" aria-label="Close">&#215;</button></div><p class="muted">Pick a wheel and I'll tell you if it's set right. It costs 100 points each time.</p><label class="field-label" for="check-select">Wheel</label><select id="check-select"></select><button id="check-go" class="primary wide">Check it</button></dialog>
 <dialog id="share-dialog" aria-labelledby="share-heading"><div class="section-top"><h2 id="share-heading">Your result</h2><button data-close="share-dialog" aria-label="Close result text">&#215;</button></div><p class="muted">Select and copy the text below.</p><textarea id="share-text" rows="5" readonly aria-label="Shareable result"></textarea><button id="share-copy" class="primary wide">Copy text</button></dialog>
+<dialog id="cheat-dialog" class="cheat-dialog" aria-labelledby="cheat-heading"><div class="section-top"><h2 id="cheat-heading">Telecode cheat sheet</h2><button type="button" data-close="cheat-dialog" aria-label="Close the cheat sheet">&#215;</button></div>
+<p class="tiny">Each row on the tape is one of these 32 codes, impulse 1 at the top. The teleprinter starts in letters. After a figure shift it prints the figure column until a letter shift comes along, so watch for those two.</p>
+<div class="cheat-scroll"><table class="cheat-table"><caption class="sr-only">The 32 teleprinter codes</caption><thead><tr><th scope="col">Holes</th><th scope="col">Letters</th><th scope="col">Figures</th><th scope="col"><abbr title="Bletchley Park name">BP</abbr></th></tr></thead><tbody id="cheat-body"></tbody></table></div>
+<button type="button" class="primary wide" data-close="cheat-dialog">Done</button></dialog>
 <noscript><div class="noscript">Lorenz needs JavaScript to run the machine. The <a href="./help.html">guide</a> and <a href="./about.html">about page</a> work without it.</div></noscript>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics --></body></html>
