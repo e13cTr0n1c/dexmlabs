@@ -1343,6 +1343,18 @@ await t('Copy: no double exclamation marks anywhere a player can see', () => {
   for (const f of files) { const v = fs.readFileSync(f, 'utf8').replace(/!!(?=[\w$(\[])/g, ''); assert.ok(!v.includes('!!'), f); }
   const sky = path.join(ROOT, '../skywave'); if (fs.existsSync(sky)) for (const f of fs.readdirSync(sky, {recursive: true}).filter(f => /\.(js|html)$/.test(f) && !/test/.test(f))) assert.ok(!fs.readFileSync(path.join(sky, f), 'utf8').replace(/!!(?=[\w$(\[])/g, '').includes('!!'), f);
 });
+await t('Motor first: in hard, a wheel you were not asked to set is overwritten from the sheet when yours is right, before or after', () => {
+  const h = HD.makeHardRound({}); let st = HD.newHardState(h);
+  for (const i of [0, 1, 2, 5]) st = HD.togglePin(st, 'mu37', i); st = HD.togglePin(st, 'psi2', 3);
+  h.patterns.chi1.forEach((b, i) => { if (b) st = HD.togglePin(st, 'chi1', i); });
+  assert.equal(st.pins.auto, true); assert.ok(HD.pinsMatch(h, st.pins.grid), 'the touched motor and psi wheels are the sheet\'s now');
+  const after = HD.togglePin(st, 'mu61', 4); assert.ok(HD.pinsMatch(h, after.pins.grid), 'and stay so while χ1 is right');
+  const broken = HD.togglePin(st, 'chi1', 0); assert.equal(broken.pins.grid.chi1[0], h.patterns.chi1[0] ? 0 : 1, 'χ1 itself is yours to change');
+  assert.ok(HD.pinsMatch(h, HD.togglePin(broken, 'chi1', 0).pins.grid));
+  // realistic: nothing of yours is ever touched
+  const r = HD.makeHardRound({realistic: true}); let rs = HD.togglePin(HD.newHardState(r), 'mu37', 0); r.patterns.chi1.forEach((b, i) => { if (b) rs = HD.togglePin(rs, 'chi1', i); });
+  assert.equal(rs.pins.grid.mu37[0], 1); assert.equal(rs.pins.auto, false);
+});
 await t('Framing: every wheel label projects inside the canvas, for every stage size the page uses', () => {
   const LY = LAYOUT_MOD;
   for (const [w, h] of [[640, 308], [640, 352], [730, 396], [348, 250], [348, 250 + 196], [540, 400], [1000, 400], [300, 200], [900, 560]]) for (const yaw of [-0.55, -0.35, 0, 0.6, 1.1, -1.1]) {
