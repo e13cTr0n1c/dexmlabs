@@ -19,6 +19,8 @@
   motor wheels a little over half raised (mu61 about 62%, mu37 about 57%) with no run over five.
 - Made up: every message. Original text, written in English for the game. None is a real intercept.
 - Made up: the QEP book page layout, page numbers and the smudges, which are a game device.
+- Made up: the example key behind the Worked example button in chi only mode. It's the key on the fixed wheels of the
+  printable chi wheel model, made for that model, with the model's own test vectors. It isn't a wartime key.
 
 ## Sources for the history and the machine
 
