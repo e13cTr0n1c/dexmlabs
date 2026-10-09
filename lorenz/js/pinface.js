@@ -9,6 +9,9 @@ export const dragSteps = (deg, size) => Math.round(deg / (360 / size));
 /** Where cam i sits, in degrees clockwise from the top, when cam `pos` is at the reading point. */
 export const camAngle = (i, pos, size) => wrap(i - pos, size) * 360 / size;
 const ord = id => WHEELS.findIndex(w => w.id === id);
+/** How many pins show either side of the middle in a strip `width` pixels wide, with 44 pixel pins: 4 when the
+ *  width isn't known yet, never fewer than 2 or more than 5. */
+export const stripReach = width => width > 0 ? Math.max(2, Math.min(5, Math.floor((width / 44 - 1) / 2))) : 4;
 export const nextWheel = (id, dir) => WHEELS[wrap(ord(id) + dir, WHEELS.length)].id;
 
 /** The SVG for one wheel: every cam (raised ones stand out), its number outside, the one at the top marked. */
@@ -26,15 +29,37 @@ export function faceSVG(bits, pos) {
 }
 
 /** The face on view inside `root`. `get()` returns {grid, locked}; `toggle(id, i)` flips a pin; `back()` closes. */
-export function createPinFace(root, {get, toggle, back, onWheel = () => {}}) {
+export function createPinFace(root, {get, toggle, back, onWheel = () => {}, reducedMotion = () => false}) {
   let id = 'chi1', pos = 0, drag = null;
   root.innerHTML = `<div class="face-top"><p class="face-name" id="face-name" aria-live="polite"></p><button type="button" class="secondary face-back" data-face="back">Back to the machine</button></div>
+<div class="face-strip" role="group" aria-label="The rim unrolled: the pin at the top in the middle, with its neighbours either side"><span class="strip-pointer" aria-hidden="true"></span><div class="strip-track"></div></div>
 <div class="face-wheel" tabindex="0" role="group" aria-roledescription="wheel" aria-describedby="face-help"></div>
 <p class="sr-only" id="face-help">Left and right arrow keys turn the wheel, Space or Enter raises or lowers the pin at the top, Escape goes back to the machine.</p>
 <div class="face-controls"><button type="button" class="secondary" data-face="prev-wheel">Previous wheel</button><button type="button" class="secondary" data-face="turn-back">Turn back</button><button type="button" class="primary face-pin" data-face="pin" aria-pressed="false"></button><button type="button" class="secondary" data-face="turn-on">Turn on</button><button type="button" class="secondary" data-face="next-wheel">Next wheel</button></div>`;
-  const wheel = root.querySelector('.face-wheel'), pinBtn = root.querySelector('[data-face=pin]');
+  const strip = root.querySelector('.face-strip'), track = root.querySelector('.strip-track'), wheel = root.querySelector('.face-wheel'), pinBtn = root.querySelector('[data-face=pin]');
+  /** The rim unrolled into a straight window: the pin at the top sits in the middle under the pointer, with a few
+   *  pins either side that wrap past the last pin back to pin 1. One extra pin each side, out of sight, lets it slide. */
+  let shownPos = null, shownWheel = null;
+  function drawStrip(bits, locked) {
+    const size = bits.length, k = stripReach(root.clientWidth - 20), slots = [];
+    for (let o = -k - 1; o <= k + 1; o++) slots.push(wrap(pos + o, size));
+    strip.style.setProperty('--reach', String(k));
+    track.innerHTML = slots.map((i, n) => {
+      const edge = n === 0 || n === slots.length - 1, up = bits[i] === 1, cur = n === k + 1;
+      return `<button type="button" class="strip-pin${up ? ' up' : ''}${cur ? ' cur' : ''}" data-strip="${i}" aria-pressed="${up}" aria-label="Pin ${i + 1}"${cur ? ' aria-current="true"' : ''}${edge ? ' tabindex="-1" aria-hidden="true"' : ''}${locked ? ' disabled' : ''}><span class="strip-n" aria-hidden="true">${i + 1}</span><span class="strip-line" aria-hidden="true"></span></button>`;
+    }).join('');
+    // slide from where it was: a step or a few, the short way round; instant under reduced motion
+    let step = shownWheel === id && shownPos !== null ? wrap(pos - shownPos, size) : 0; if (step > size / 2) step -= size;
+    shownPos = pos; shownWheel = id;
+    track.style.transition = 'none'; track.style.transform = '';
+    if (!step || Math.abs(step) > k || reducedMotion()) return;
+    const w = track.firstElementChild?.offsetWidth || 0; if (!w) return;
+    track.style.transform = `translateX(${step * w}px)`; void track.offsetWidth;
+    track.style.transition = 'transform .18s ease-out'; track.style.transform = '';
+  }
   function draw() {
     const {grid, locked} = get(), bits = grid[id], w = WHEEL[id], up = bits[pos] === 1;
+    drawStrip(bits, locked);
     wheel.innerHTML = faceSVG(bits, pos); wheel.dataset.wheel = id; wheel.dataset.pos = String(pos);
     wheel.setAttribute('aria-label', `${w.label}, pin ${pos + 1} of ${w.size} at the top, ${up ? 'raised' : 'lowered'}`);
     root.querySelector('#face-name').textContent = `${w.label}: pin ${pos + 1} of ${w.size}, ${bits.filter(Boolean).length} raised`;
@@ -50,6 +75,7 @@ export function createPinFace(root, {get, toggle, back, onWheel = () => {}}) {
       else setWheel(nextWheel(id, a === 'next-wheel' ? 1 : -1));
       return;
     }
+    const sp = e.target.closest('[data-strip]'); if (sp) { pos = Number(sp.dataset.strip); flip(); return; }
     const cam = e.target.closest('[data-cam]'); if (cam && !drag?.moved) { pos = Number(cam.dataset.cam); flip(); }
   });
   wheel.addEventListener('keydown', e => {
@@ -69,7 +95,7 @@ export function createPinFace(root, {get, toggle, back, onWheel = () => {}}) {
   });
   wheel.addEventListener('pointerup', () => { setTimeout(() => { drag = null; }, 0); });
   return {
-    open(w = id) { id = w; pos = 0; draw(); root.hidden = false; wheel.focus({preventScroll: true}); onWheel(id); },
+    open(w = id) { id = w; pos = 0; root.hidden = false; draw(); wheel.focus({preventScroll: true}); onWheel(id); },
     close() { root.hidden = true; },
     draw, turn, flip,
     get wheel() { return id; }, get pos() { return pos; }

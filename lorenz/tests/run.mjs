@@ -1099,6 +1099,46 @@ await t('Pin view: pick a wheel on the machine, it turns face on, pins toggle an
   assert.match(css, /:root\[data-theme=light\] \.face-svg \.cam\.up\{stroke:#5f7800\}/);
   const faceRules = base.match(/[^}]*\.(face-|pin-face|panel-)[^{]*\{[^}]*\}/g).join(''); assert.ok(!/animation|transition/.test(faceRules), 'nothing moves by itself, so reduced motion is safe');
 });
+await t('Pin strip: a window on the rim under a fixed pointer, the top pin in the middle, wrapping, in step with the cog and model', async () => {
+  const r = HD.makeHardRound({realistic: true}), key = `lorenz:real:round:${r.key}`;
+  assert.equal(PF.stripReach(0), 4); assert.equal(PF.stripReach(350), 3, '44px pins on a phone'); assert.equal(PF.stripReach(540), 5); assert.equal(PF.stripReach(2000), 5); assert.equal(PF.stripReach(120), 2);
+  await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {
+    const shown = []; w.addEventListener('lorenz:view', e => shown.push(e.detail.patterns));
+    d.getElementById('play-daily').click(); d.getElementById('pin-open').click();
+    const face = d.getElementById('pin-face'), strip = face.querySelector('.face-strip'), wheel = face.querySelector('.face-wheel');
+    assert.ok(strip.compareDocumentPosition(wheel) & w.Node.DOCUMENT_POSITION_FOLLOWING, 'the strip sits above the cog'); assert.ok(strip.querySelector('.strip-pointer'), 'with its pointer');
+    const visible = () => [...strip.querySelectorAll('.strip-pin:not([aria-hidden])')];
+    const nums = () => visible().map(b => b.querySelector('.strip-n').textContent);
+    const centre = () => { const v = visible(); return v[(v.length - 1) / 2]; };
+    // pin 1 at the top: 38 to 41 wrap round on its left
+    assert.deepEqual(nums(), ['38', '39', '40', '41', '1', '2', '3', '4', '5']); assert.equal(strip.querySelectorAll('.strip-pin').length, 11, 'one hidden either side to slide in');
+    assert.equal(centre().dataset.strip, '0'); assert.ok(centre().classList.contains('cur')); assert.equal(centre().getAttribute('aria-current'), 'true'); assert.equal(strip.querySelectorAll('.cur').length, 1);
+    assert.ok(visible().every(b => b.tagName === 'BUTTON' && b.getAttribute('aria-pressed') === 'false')); assert.equal(visible()[0].getAttribute('aria-label'), 'Pin 38');
+    // turning the cog slides the window, wrapping back past the last pin
+    face.querySelector('[data-face=turn-back]').click(); assert.equal(wheel.dataset.pos, '40'); assert.deepEqual(nums(), ['37', '38', '39', '40', '41', '1', '2', '3', '4']); assert.equal(centre().dataset.strip, '40');
+    face.querySelector('[data-face=turn-on]').click(); face.querySelector('[data-face=turn-on]').click(); assert.deepEqual(nums(), ['39', '40', '41', '1', '2', '3', '4', '5', '6']);
+    // tapping a visible pin toggles it on the cog and the model, and brings it to the middle
+    visible().find(b => b.dataset.strip === '40').click();
+    assert.equal(wheel.dataset.pos, '40'); assert.equal(centre().dataset.strip, '40'); assert.equal(centre().getAttribute('aria-pressed'), 'true'); assert.ok(centre().classList.contains('up'));
+    assert.ok(face.querySelector('.cam.up.cur[data-cam="40"]'), 'raised on the cog'); assert.equal(shown.at(-1).chi1[40], 1, 'and on the model'); assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi1[40], '1');
+    assert.deepEqual(nums(), ['37', '38', '39', '40', '41', '1', '2', '3', '4']);
+    centre().click(); assert.equal(centre().getAttribute('aria-pressed'), 'false'); assert.equal(shown.at(-1).chi1[40], 0, 'and down again');
+    // the cog's own controls show up in the strip
+    face.querySelector('[data-face=pin]').click(); assert.equal(centre().getAttribute('aria-pressed'), 'true');
+    wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true})); wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: ' ', bubbles: true}));
+    assert.equal(centre().dataset.strip, '0'); assert.equal(centre().getAttribute('aria-pressed'), 'true'); assert.equal(visible().find(b => b.dataset.strip === '40').getAttribute('aria-pressed'), 'true');
+    face.querySelector('.cam[data-cam="20"]').dispatchEvent(new w.MouseEvent('click', {bubbles: true})); assert.equal(centre().dataset.strip, '20'); assert.equal(centre().getAttribute('aria-pressed'), 'true');
+    // reduced motion (on in these tests): the window steps with no slide
+    const track = strip.querySelector('.strip-track'); face.querySelector('[data-face=turn-on]').click(); assert.equal(track.style.transform, ''); assert.notEqual(track.style.transition, 'transform .18s ease-out');
+    face.querySelector('[data-face=next-wheel]').click(); assert.equal(centre().dataset.strip, '0'); assert.equal(nums().at(-1), '5'); assert.equal(nums()[0], String(L.WHEEL.chi2.size - 3));
+  });
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'), base = css.split('/* light theme')[0];
+  assert.match(base, /\.face-strip\{position:relative;overflow:hidden;/); assert.ok(!/\.face-strip\{[^}]*overflow-x:auto/.test(base), 'no sideways scrolling');
+  assert.match(base, /\.strip-pin\{flex:0 0 44px;min-width:44px;min-height:64px/); assert.match(base, /\.strip-pointer\{[^}]*border-top:12px solid #ff4d3d/);
+  assert.match(base, /@media\(prefers-reduced-motion:reduce\)\{\.strip-track\{transition:none!important\}\}/);
+  assert.match(css, /:root\[data-theme=light\] \.strip-pin\.up \.strip-line\{background:#5f7800\}/);
+  assert.match(fs.readFileSync(path.join(ROOT, 'js/pinface.js'), 'utf8'), /\|\| reducedMotion\(\)\) return;/, 'the slide is skipped under reduced motion');
+});
 await t('Panels: every info panel can be hidden with a button that says so, and the page remembers', async () => {
   let stored;
   await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {

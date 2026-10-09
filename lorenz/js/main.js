@@ -600,7 +600,7 @@ function closeFace() {
   syncView(false);
 }
 function bindPins() {
-  app.face = createPinFace($('pin-face'), {get: () => ({grid: app.state.pins.grid, locked: app.state.solved}), toggle: setPin, back: () => { closeFace(); $('pin-open').focus({preventScroll: true}); }, onWheel: id => { app.pinWheel = id; renderPins(); }});
+  app.face = createPinFace($('pin-face'), {get: () => ({grid: app.state.pins.grid, locked: app.state.solved}), toggle: setPin, back: () => { closeFace(); $('pin-open').focus({preventScroll: true}); }, onWheel: id => { app.pinWheel = id; renderPins(); }, reducedMotion});
   $('pin-open').addEventListener('click', () => openFace());
   // pick a wheel on the machine: its label, or a tap on the rack nearest to it
   const pick = el => { const i = app.labels.indexOf(el); if (i >= 0) openFace(WHEELS[i].id); };
