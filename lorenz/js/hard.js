@@ -17,7 +17,9 @@ export const pageDate = key => new Date(key + 'T12:00:00Z').toLocaleDateString('
  *  other settings, so the date is what tells you which one to use. Uses its own random stream, so normal
  *  mode's round is untouched. */
 export function makePages(round) {
-  const rng = mulberry32(hashString(`${SEED_VERSION}:hard:${round.key}`)), today = Date.parse(round.key);
+  // Daily pages come from the date; practice pages from the practice seed, so every practice book is different.
+  const salt = round.mode === 'practice' ? `practice:${round.seed}` : round.key;
+  const rng = mulberry32(hashString(`${SEED_VERSION}:hard:${salt}`)), today = Date.parse(round.key);
   const offsets = shuffle(rng, [-7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7]).slice(0, HARD_RULES.pages - 1);
   const decoys = offsets.map(off => {
     const key = new Date(today + off * DAY).toISOString().slice(0, 10), seen = new Set([round.qep]), book = [];
@@ -37,8 +39,10 @@ export const pageRound = (round, page) => ({...round, book: page.book, qep: page
 export const preambleCodes = qep => [SHIFT.LTRS, ...encodeText(`QEP ${pad2(qep)}`)];
 export function readPreamble(codes) { const m = decodeText(codes).match(/QEP\s*(\d{1,2})/); return m ? Number(m[1]) : null; }
 
+/** A hard round. By default it's today's daily; with mode 'practice' it's a random practice round (any seed and
+ *  model), dated today, with its own book pages, preamble and message. */
 export function makeHardRound(opts = {}) {
-  const round = makeRound({...opts, mode:'daily'}), book = makePages(round);
+  const round = makeRound({...opts, mode: opts.mode === 'practice' ? 'practice' : 'daily'}), book = makePages(round);
   return {...round, hard:true, ...book, preamble: preambleCodes(round.qep)};
 }
 
@@ -183,13 +187,13 @@ export function restoreHard(round, saved) {
 }
 /** Hard mode stats, kept apart from normal mode's. */
 export function updateHardStats(previous, st) {
-  if (!st.solved) return previous || statsFrom({});
+  if (!st.solved || st.round.mode === 'practice') return previous || statsFrom({});
   const history = {...(previous?.history || {})};
   history[st.round.key] = {score: Math.max(history[st.round.key]?.score || 0, st.score), tries: st.answers.length};
   return statsFrom(history);
 }
 export function hardShareText(st, url) {
   const r = st.round, squares = st.answers.map(a => a.ok ? '\u{1F7E8}' : '\u{1F7E5}').join(''), n = st.hints.length;
-  return `Lorenz #${r.number} HARD\n${st.solved ? `Read on try ${st.answers.length}${n ? `, ${n} hint${n > 1 ? 's' : ''}` : ''}` : 'Not read yet'}\n${squares} ${st.score.toLocaleString('en-GB')} pts\n${url}`;
+  return `Lorenz ${r.mode === 'practice' ? 'practice' : `#${r.number}`} HARD\n${st.solved ? `Read on try ${st.answers.length}${n ? `, ${n} hint${n > 1 ? 's' : ''}` : ''}` : 'Not read yet'}\n${squares} ${st.score.toLocaleString('en-GB')} pts\n${url}`;
 }
 export {RULES};
