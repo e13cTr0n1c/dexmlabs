@@ -65,7 +65,7 @@ section.block{padding:40px 0;border-bottom:1px solid var(--edge)}
 .dot.off{background:transparent;border:1px solid var(--muted)}
 /* support */
 .support{display:grid;gap:12px}
-.support a{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--edge);background:var(--panel);color:var(--ink);text-decoration:none}
+.support a{display:grid;grid-template-columns:1fr;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--edge);background:var(--panel);color:var(--ink);text-decoration:none}
 .support a:hover{border-color:var(--acid)}
 .support .n{font:900 22px/1 var(--head);color:var(--acid)}
 .support b{display:block;font:900 15px/1.2 var(--head);text-transform:uppercase;letter-spacing:.02em}
