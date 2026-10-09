@@ -13,12 +13,12 @@
 <main id="main">
 
 <section id="screen-title" class="screen title-screen" aria-labelledby="title-heading">
-<div id="title-stage-slot" class="stage-slot"><div id="machine-stage" class="machine-stage" role="group" aria-label="The twelve wheels of the machine, with the active cams raised"><div id="machine-labels" class="machine-labels" aria-hidden="true"></div><div id="demo-overlay" class="demo-overlay" role="group" aria-label="How each character goes through the machine" hidden></div><p id="renderer-note" class="renderer-note" role="status"></p></div></div>
+<div id="title-stage-slot" class="stage-slot"><div id="machine-stage" class="machine-stage" role="group" aria-label="The twelve wheels of the machine, with the active cams raised"><div id="machine-labels" class="machine-labels" aria-hidden="true"></div><div id="demo-overlay" class="demo-overlay" role="group" aria-label="How each character goes through the machine" hidden></div><p id="renderer-note" class="renderer-note" role="status"></p><div id="pin-face" class="pin-face" hidden></div></div></div>
 <div class="title-copy">
 <h1 id="title-heading" tabindex="-1">Lorenz</h1>
 <p class="hero-copy">A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny, a cipher attachment used with a teleprinter.</p>
 <p class="hero-detail">Look up today's QEP number in the book, set the twelve wheels, and run the intercepted tape. Get it right and the teleprinter prints the message. Get one wheel wrong and you get garbage.</p>
-<div class="mode-switch"><span class="eyebrow" id="mode-label">Mode</span><span class="segmented" role="group" aria-labelledby="mode-label"><button type="button" data-difficulty="normal" aria-pressed="true">Normal</button><button type="button" data-difficulty="hard" aria-pressed="false">Hard</button></span><p class="tiny" id="mode-note">Normal: the QEP number is given and the teleprinter prints the message.</p></div>
+<div class="mode-switch"><span class="eyebrow" id="mode-label">Mode</span><span class="segmented" role="group" aria-labelledby="mode-label"><button type="button" data-difficulty="normal" aria-pressed="true">Normal</button><button type="button" data-difficulty="hard" aria-pressed="false">Hard</button><button type="button" data-difficulty="realistic" aria-pressed="false">Realistic</button></span><p class="tiny" id="mode-note">Normal: the QEP number is given and the teleprinter prints the message.</p></div>
 <div class="hero-buttons"><button class="primary" id="play-daily">Play today's round</button><button id="play-practice" class="secondary">Practice</button></div>
 
 <p class="hero-facts" id="title-stats">Twelve wheels, 501 cams, a new intercept every day at 00:00 UTC.</p>
@@ -41,30 +41,36 @@
 <p class="muted" id="round-intro">The operator sent this QEP number in clear before the message. Find it in the book below and set the wheels to match.</p>
 <p class="model-line"><span class="eyebrow">Machine</span> <span id="model-name">SZ40</span><span id="practice-model" class="segmented" role="group" aria-label="Machine model" hidden><button data-model="SZ40" aria-pressed="true">SZ40</button><button data-model="SZ42A" aria-pressed="false">SZ42A</button></span><button id="practice-new" class="text-button" hidden>New random settings</button></p>
 <p class="model-line" id="today-line" hidden><span class="eyebrow">Today</span> <span id="today-date"></span></p>
-<div id="preamble-box" class="preamble-box" hidden><div class="section-top"><h2 class="small-heading">Preamble, sent in clear</h2><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
+<div id="preamble-box" class="preamble-box" hidden><div class="section-top" data-panel="preamble" data-panel-name="the preamble"><h2 class="small-heading">Preamble, sent in clear</h2><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
+<div id="panel-preamble">
 <div id="preamble-tape" class="punch-tape" role="img"></div>
 <p class="tiny">The operator sent the QEP number in clear, not enciphered, before the message. Read it off the tape: impulse 1 is the top hole.</p>
 <div class="qep-guess"><label for="qep-guess" class="field-label">The QEP number you read</label><div class="qep-guess-row"><input type="text" id="qep-guess" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false"><button type="button" id="qep-guess-go" class="secondary small">Check it</button></div></div>
 </div>
-<div class="section-top"><h2 class="small-heading">Intercepted tape</h2><span id="cipher-count" class="tiny"></span></div>
-<p id="cipher-text" class="cipher-text" aria-label="Intercepted ciphertext in Bletchley Park letters"></p>
+</div>
+<div class="section-top" data-panel="tape" data-panel-name="the intercepted tape"><h2 class="small-heading">Intercepted tape</h2><span id="cipher-count" class="tiny"></span></div>
+<div id="panel-tape"><p id="cipher-text" class="cipher-text" aria-label="Intercepted ciphertext in Bletchley Park letters"></p></div>
 </article>
 
 <article class="qep-book card-box" aria-labelledby="book-heading">
-<div class="section-top"><h2 id="book-heading" class="small-heading">QEP book, page <span id="book-page">1</span></h2><span class="tiny">Start positions</span></div>
+<div class="section-top" data-panel="book" data-panel-name="the QEP book"><h2 id="book-heading" class="small-heading">QEP book, page <span id="book-page">1</span></h2><span class="tiny">Start positions</span></div>
+<div id="panel-book">
 <div id="book-pager" class="book-pager" hidden><button type="button" id="page-prev" class="page-turn" aria-label="Previous page">&#8249;</button><p id="book-date" class="book-date" aria-live="polite"></p><button type="button" id="page-next" class="page-turn" aria-label="Next page">&#8250;</button></div>
 <div class="book-scroll" id="book-scroll"><table id="qep-table" class="qep-table"><caption class="sr-only">QEP numbers and the twelve wheel start positions for each</caption><thead><tr><th scope="col">QEP</th></tr></thead><tbody></tbody></table></div>
 <p class="tiny" id="smudge-note"></p>
+</div>
 </article>
 <article id="pin-sheet" class="pin-sheet card-box" aria-labelledby="pin-heading" hidden>
-<div class="section-top"><h2 id="pin-heading" class="small-heading">Wheel pattern sheet</h2><span class="tiny" id="pin-state"></span></div>
-<label class="pin-toggle"><input type="checkbox" id="pins-on"> Set wheel patterns too</label>
-<p class="tiny">Operators set the pins on every wheel as well as the start positions. Tick this and the machine runs on your pins, not the day's. Copy the sheet onto each wheel (x is a raised pin), then set the wheels and run the tape. Every pin has to be right for the message to come out, and for the bonus.</p>
-<div id="pin-work" hidden>
+<div class="section-top" data-panel="pins" data-panel-name="the wheel pattern sheet"><h2 id="pin-heading" class="small-heading">Wheel pattern sheet</h2><span class="tiny" id="pin-state"></span></div>
+<div id="panel-pins">
+<p class="tiny">In realistic mode you set the pins on every wheel yourself, as the operators did. Copy this sheet onto the machine: x is a raised pin, a dot is a lowered one. Tap a wheel on the machine, or use the button, to see it face on and set its pins. Every pin has to be right for the message to come out.</p>
 <div class="pin-scroll"><table class="pin-table"><caption class="sr-only">Today's pin patterns, x raised and dot lowered, in fives</caption><tbody id="pin-sheet-body"></tbody></table></div>
+<button type="button" id="pin-open" class="secondary pin-open">Set the pins on the machine</button>
+<details class="pin-list" id="pin-list"><summary>List view</summary>
 <div id="pin-wheels" class="pin-wheels" role="group" aria-label="Wheel to set"></div>
 <div class="section-top"><p id="pin-wheel-name" class="tiny"></p><button type="button" id="pin-clear" class="secondary small">Clear this wheel</button></div>
 <div id="pin-grid" class="pin-grid" role="group"></div>
+</details>
 </div>
 </article>
 </div>
@@ -96,13 +102,13 @@
 </div>
 
 <section class="wheels card-box" aria-labelledby="wheels-heading" id="wheels-panel">
-<div class="section-top"><h2 id="wheels-heading" class="small-heading">Wheel settings</h2><button id="wheels-reset" class="text-button">All to 01</button></div>
-<p class="tiny">Click the arrows, drag a number up or down, or type it. Left to right as on the machine: psi, motors, chi.</p>
-<div id="dials" class="dials"></div>
+<div class="section-top" data-panel="wheels" data-panel-name="the wheel settings"><h2 id="wheels-heading" class="small-heading">Wheel settings</h2><button id="wheels-reset" class="text-button">All to 01</button></div>
+<div id="panel-wheels"><p class="tiny">Click the arrows, drag a number up or down, or type it. Left to right as on the machine: psi, motors, chi.</p>
+<div id="dials" class="dials"></div></div>
 </section>
 
 <div class="action-bar">
-<div id="hint-row" class="hint-row"><span class="eyebrow">Hints</span><button data-hint="qep" hidden>Reveal the QEP <small class="dexm-cost">40 pts</small></button><button data-hint="char" hidden>Reveal a character <small class="dexm-cost">10 pts</small></button><button data-hint="check">Check a wheel <small class="dexm-cost">20 pts</small></button><button data-hint="reveal">Read the smudge <small class="dexm-cost">50 pts</small></button></div>
+<div id="hint-row" class="hint-row"><span class="hint-head" data-panel="hints" data-panel-name="the hints"><span class="eyebrow">Hints</span></span><span id="panel-hints" class="hint-buttons"><button data-hint="qep" hidden>Reveal the QEP <small class="dexm-cost">40 pts</small></button><button data-hint="char" hidden>Reveal a character <small class="dexm-cost">10 pts</small></button><button data-hint="check">Check a wheel <small class="dexm-cost">20 pts</small></button><button data-hint="reveal">Read the smudge <small class="dexm-cost">50 pts</small></button></span></div>
 <section id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"><p>Set the wheels, then run the tape.</p></section>
 <div class="run-row"><span id="score-display" class="score-display">1,000 pts</span><button id="run-button" class="primary run-button">Decode the tape <small>key D</small></button></div>
 </div>
@@ -111,7 +117,8 @@
 <div class="game-view">
 <div id="game-stage-slot" class="stage-slot"></div>
 <section class="teleprinter" aria-labelledby="tp-heading">
-<div class="section-top"><h2 id="tp-heading" class="small-heading">Teleprinter</h2><div class="tp-controls"><label for="speed-select" class="tiny">Speed</label><select id="speed-select"><option value="7">Real (7 a second)</option><option value="20" selected>Quick</option><option value="60">Fast</option><option value="demo">Visual demonstration</option></select><button id="skip-button" class="secondary small" disabled>Skip</button></div></div>
+<div class="section-top" data-panel="teleprinter" data-panel-name="the teleprinter"><h2 id="tp-heading" class="small-heading">Teleprinter</h2><div class="tp-controls"><label for="speed-select" class="tiny">Speed</label><select id="speed-select"><option value="7">Real (7 a second)</option><option value="20" selected>Quick</option><option value="60">Fast</option><option value="demo">Visual demonstration</option></select><button id="skip-button" class="secondary small" disabled>Skip</button></div></div>
+<div id="panel-teleprinter">
 <div class="tape-wrap"><canvas id="tape-canvas" class="tape-canvas" height="128" aria-hidden="true"></canvas></div>
 <p class="tiny tape-legend" id="tape-legend">Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.</p>
 <div id="hard-out" class="hard-out" hidden><div class="section-top"><span class="eyebrow">Tape out, punched</span><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
@@ -137,6 +144,7 @@
 </div>
 </div>
 <div class="printed" id="printed-box"><div class="section-top"><span class="eyebrow" id="printed-label">Printed</span><button id="printed-copy" class="text-button" hidden>Copy</button></div><p id="printed-text" class="printed-text"></p></div>
+</div>
 <section id="decoded-card" class="decoded-card" hidden aria-labelledby="decoded-heading"></section>
 </section>
 </div>

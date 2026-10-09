@@ -11,7 +11,7 @@
 (function (root) {
   'use strict';
   var KEY = 'dexm:points', SALT = 'dexm-points:v1:', CAP = 200, MAX_AMOUNT = 10000;
-  var EARN = {skywave: 100, lorenz: 100, lorenzHard: 250, lorenzReply: 100, practice: 20};
+  var EARN = {skywave: 100, lorenz: 100, lorenzHard: 250, lorenzReal: 400, lorenzReply: 100, practice: 20};
   var COSTS = {
     skywave: {muf: 10, absorption: 10, scope: 20},
     lorenz: {check: 20, reveal: 50, smudge: 50, qep: 40, char: 10}
@@ -117,7 +117,7 @@
     return '<div class="dexm-pop-head"><h2 id="dexm-pop-title">How points work</h2><button type="button" class="dexm-pop-close" aria-label="Close">&#215;</button></div>' +
       '<p class="dexm-pop-bal">You have <b data-points-balance>' + fmt(Points.balance()) + '</b> points.</p>' +
       (note ? '<p class="dexm-pop-note">' + note + '</p>' : '') +
-      '<ul><li>Finish today\'s Skywave: <b>' + EARN.skywave + '</b></li><li>Decode today\'s Lorenz: <b>' + EARN.lorenz + '</b>, or <b>' + EARN.lorenzHard + '</b> in hard mode, plus <b>' + EARN.lorenzReply + '</b> for the reply</li><li>Practice rounds: <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a day in each game</li></ul>' +
+      '<ul><li>Finish today\'s Skywave: <b>' + EARN.skywave + '</b></li><li>Decode today\'s Lorenz: <b>' + EARN.lorenz + '</b>, or <b>' + EARN.lorenzHard + '</b> in hard mode or <b>' + EARN.lorenzReal + '</b> in realistic mode, plus <b>' + EARN.lorenzReply + '</b> for the reply</li><li>Practice rounds: <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a day in each game</li></ul>' +
       '<p>Hints in both games are paid for with points, and each button shows its price. Your game score is just how you played.</p>' +
       '<p class="dexm-pop-small">Points live in this browser. There\'s no account and nothing to buy. <a href="' + page + '">More about points</a></p>';
   }
@@ -151,6 +151,7 @@
     var r = e.ref;
     if (e.source === 'welcome') return 'Welcome';
     if (/^lorenz:hard:\d/.test(r)) return 'Lorenz hard mode, ' + r.slice(12);
+    if (/^lorenz:real:\d/.test(r)) return 'Lorenz realistic mode, ' + r.slice(12);
     if (/^lorenz:daily:/.test(r)) return 'Lorenz, ' + r.slice(13);
     if (/^skywave:daily:/.test(r)) return 'Skywave, ' + r.slice(14);
     if (/:practice:/.test(r)) return (e.source === 'skywave' ? 'Skywave' : 'Lorenz') + ' practice';

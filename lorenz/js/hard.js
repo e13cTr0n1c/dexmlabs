@@ -7,7 +7,10 @@ import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.j
 export const HARD_RULES = Object.freeze({base:1000, wrong:150, qepBonus:200, floor:100, pages:5,
   hint:Object.freeze({qep:40, char:10, check:20, smudge:50}),  // hints cost shared points, not score
   reply:Object.freeze({base:300, wrong:100, floor:50}),  // the reply you send back is scored on its own
-  pins:250});  // bonus for setting the day's wheel patterns by hand as well
+  pins:250});  // the old optional pin bonus in hard mode: only kept so rounds read with it keep their score
+/** Realistic mode: hard mode, plus every wheel's pins set by hand from the pattern sheet. Scored on its own, higher. */
+export const REAL_RULES = Object.freeze({base:1500, wrong:150, qepBonus:250, floor:150});
+const rulesOf = st => st.round?.realistic ? REAL_RULES : HARD_RULES;
 export const HARD_PREFIX = 'hard:';
 const DAY = 86400000;
 
@@ -45,7 +48,7 @@ export function readPreamble(codes) { const m = decodeText(codes).match(/QEP\s*(
  *  model), dated today, with its own book pages, preamble and message. */
 export function makeHardRound(opts = {}) {
   const round = makeRound({...opts, mode: opts.mode === 'practice' ? 'practice' : 'daily'}), book = makePages(round);
-  return {...round, hard:true, ...book, preamble: preambleCodes(round.qep)};
+  return {...round, hard:true, realistic: Boolean(opts.realistic), ...book, preamble: preambleCodes(round.qep)};
 }
 
 /** The cheat sheet, straight from lorenz.js: holes, letter shift and figure shift for all 32 codes. */
@@ -110,7 +113,7 @@ export function matchAnswer(input, targets) {
 }
 
 /* ---------- State, scoring, hints ---------- */
-export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:newPins()});
+export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:{...newPins(), on: Boolean(round.realistic)}});
 
 /* ---------- Setting the wheel patterns too (optional) ---------- */
 /** Every pin starts down: you copy the day's patterns from the sheet yourself. */
@@ -118,17 +121,16 @@ export const blankPins = () => Object.fromEntries(Object.values(WHEEL).map(w => 
 export const newPins = () => ({on:false, grid:blankPins(), ranRight:false, earned:false});
 /** True only when every pin on all twelve wheels matches the day's patterns. */
 export const pinsMatch = (round, grid) => Object.values(WHEEL).every(w => Array.isArray(grid?.[w.id]) && grid[w.id].length === w.size && grid[w.id].every((b, i) => (b ? 1 : 0) === round.patterns[w.id][i]));
-/** The patterns the machine runs on: yours when you've chosen to set them, the day's otherwise. */
-export const runPatterns = st => st.pins?.on ? st.pins.grid : st.round.patterns;
-export function setPinsOn(st, on) { if (st.solved) return st; return {...st, pins:{...st.pins, on:Boolean(on), ranRight:false}}; }
+/** The patterns the machine runs on: your own pins in realistic mode, the day's otherwise. */
+export const runPatterns = st => st.round.realistic ? st.pins.grid : st.round.patterns;
 export function togglePin(st, id, i) {
-  if (st.solved || !st.pins?.on || !WHEEL[id] || !(i >= 0 && i < WHEEL[id].size)) return st;
+  if (st.solved || !st.round.realistic || !WHEEL[id] || !(i >= 0 && i < WHEEL[id].size)) return st;
   const grid = {...st.pins.grid, [id]: st.pins.grid[id].slice()}; grid[id][i] = grid[id][i] ? 0 : 1;
   return {...st, pins:{...st.pins, grid, ranRight:false}};
 }
-export const clearPins = (st, id) => st.solved || !WHEEL[id] ? st : {...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}};
+export const clearPins = (st, id) => st.solved || !st.round.realistic || !WHEEL[id] ? st : {...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}};
 /** Note a run of the tape: the bonus needs the last run before the answer to be on your own, correct patterns. */
-export const notePinRun = st => ({...st, pins:{...st.pins, ranRight: Boolean(st.pins?.on && pinsMatch(st.round, st.pins.grid))}});
+export const notePinRun = st => ({...st, pins:{...st.pins, ranRight: Boolean(st.round.realistic && pinsMatch(st.round, st.pins.grid))}});
 const packPins = grid => Object.fromEntries(Object.entries(grid).map(([k, v]) => [k, v.join('')]));
 export const savePins = p => ({on:p.on, grid:packPins(p.grid), ranRight:p.ranRight, earned:p.earned});
 function readPins(saved) {
@@ -170,15 +172,16 @@ export const hardComplete = st => Boolean(st.solved && st.reply?.done);
 const firstGuessRight = st => st.qepGuesses.length > 0 && st.qepGuesses[0] === st.round.qep && !st.hints.some(h => h.type === 'qep');
 export const qepKnown = st => st.hints.some(h => h.type === 'qep') || st.qepGuesses.includes(st.round.qep);
 export function hardPenalty(st) {
-  return st.answers.filter(a => !a.ok).length * HARD_RULES.wrong;
+  return st.answers.filter(a => !a.ok).length * rulesOf(st).wrong;
 }
-export const hardScoreFor = st => Math.max(HARD_RULES.floor, HARD_RULES.base + (firstGuessRight(st) ? HARD_RULES.qepBonus : 0) - hardPenalty(st)) + (st.pins?.earned ? HARD_RULES.pins : 0);
+const legacyPins = st => !st.round?.realistic && st.pins?.earned ? HARD_RULES.pins : 0;
+export const hardScoreFor = st => { const R = rulesOf(st); return Math.max(R.floor, R.base + (firstGuessRight(st) ? R.qepBonus : 0) - hardPenalty(st)) + legacyPins(st); };
 export function hardBreakdown(st) {
-  const f = n => Math.round(n).toLocaleString('en-GB'), lines = [['Decoded', f(HARD_RULES.base)]];
-  if (firstGuessRight(st)) lines.push(['Read the preamble first time', `+${f(HARD_RULES.qepBonus)}`]);
-  const wrong = st.answers.filter(a => !a.ok).length; if (wrong) lines.push([`${wrong} wrong ${wrong > 1 ? 'readings' : 'reading'}`, `\u2212${f(wrong * HARD_RULES.wrong)}`]);
-  if (st.pins?.earned) lines.push(['Set the wheel patterns too', `+${f(HARD_RULES.pins)}`]);
-  const total = hardScoreFor(st); if (total - (st.pins?.earned ? HARD_RULES.pins : 0) === HARD_RULES.floor) lines.push(['Never less than', f(HARD_RULES.floor)]);
+  const R = rulesOf(st), f = n => Math.round(n).toLocaleString('en-GB'), lines = [[st.round.realistic ? 'Decoded on your own pins' : 'Decoded', f(R.base)]];
+  if (firstGuessRight(st)) lines.push(['Read the preamble first time', `+${f(R.qepBonus)}`]);
+  const wrong = st.answers.filter(a => !a.ok).length; if (wrong) lines.push([`${wrong} wrong ${wrong > 1 ? 'readings' : 'reading'}`, `\u2212${f(wrong * R.wrong)}`]);
+  if (legacyPins(st)) lines.push(['Set the wheel patterns too', `+${f(HARD_RULES.pins)}`]);
+  const total = hardScoreFor(st); if (total - legacyPins(st) === R.floor) lines.push(['Never less than', f(R.floor)]);
   const reply = [['Reply sent', f(st.reply?.score || 0)]], rw = (st.reply?.tries || []).filter(t => !t.ok).length;
   if (rw) reply.push([`${rw} wrong ${rw > 1 ? 'tapes' : 'tape'} before it`, `\u2212${f(rw * HARD_RULES.reply.wrong)}`]);
   return {lines, total, reply, replyTotal: st.reply?.score || 0};
@@ -194,10 +197,12 @@ export function submitAnswer(st, input) {
   if (st.solved) return {state:st, result:{ok:true, repeat:true}};
   const m = matchAnswer(input, acceptedTexts(st.round)), key = canon(input);
   if (!key) return {state:st, result:{ok:false, empty:true, right:0, of:m.of}};
+  // Realistic: the reading has to come off a run on your own, correct pins. Not counted as a wrong reading.
+  if (m.ok && st.round.realistic && !st.pins?.ranRight) return {state:st, result:{ok:false, needPins:true, right:m.right, of:m.of}};
   const repeat = !m.ok && st.answers.some(a => a.key === key);
   const answers = repeat ? st.answers : [...st.answers, {key, ok:m.ok}];
   const next = {...st, answers, solved:m.ok};
-  if (m.ok && st.pins) next.pins = {...st.pins, earned: Boolean(st.pins.on && st.pins.ranRight)};
+  if (m.ok && st.round.realistic) next.pins = {...st.pins, earned: true};
   next.score = m.ok ? hardScoreFor(next) : 0;
   return {state:next, result:{...m, repeat}};
 }
@@ -244,6 +249,8 @@ export function restoreHard(round, saved) {
     const legacy = s.solved === true && (!r || r.legacy === true);
     const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || s.v !== HARD_SAVE_VERSION), refunded, solvedNow, pins:readPins(s.pins)};
     if (!st.solved) st.pins.earned = false;
+    // Hard mode no longer sets pins: an unfinished hard round with them switched on goes back to the day's patterns.
+    if (!round.realistic) { st.pins.on = false; st.pins.ranRight = false; } else st.pins.on = true;
     st.score = st.solved ? hardScoreFor(st) : 0;
     st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0};
     if (st.reply.done && !legacy) st.reply.score = replyScoreFor(st);
@@ -262,6 +269,6 @@ export function updateHardStats(previous, st) {
 }
 export function hardShareText(st, url) {
   const r = st.round, squares = st.answers.map(a => a.ok ? '\u{1F7E8}' : '\u{1F7E5}').join(''), n = st.hints.length;
-  return `Lorenz ${r.mode === 'practice' ? 'practice' : `#${r.number}`} HARD\n${st.solved ? `Read on try ${st.answers.length}${n ? `, ${n} hint${n > 1 ? 's' : ''}` : ''}` : 'Not read yet'}\n${squares} ${st.score.toLocaleString('en-GB')} pts${st.reply?.done && !st.reply.legacy ? `\nReply sent: ${st.reply.score.toLocaleString('en-GB')} pts` : ''}\n${url}`;
+  return `Lorenz ${r.mode === 'practice' ? 'practice' : `#${r.number}`} ${r.realistic ? "REALISTIC" : "HARD"}\n${st.solved ? `Read on try ${st.answers.length}${n ? `, ${n} hint${n > 1 ? 's' : ''}` : ''}` : 'Not read yet'}\n${squares} ${st.score.toLocaleString('en-GB')} pts${st.reply?.done && !st.reply.legacy ? `\nReply sent: ${st.reply.score.toLocaleString('en-GB')} pts` : ''}\n${url}`;
 }
 export {RULES};

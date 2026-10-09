@@ -140,7 +140,7 @@ for (const seed of [42, 7, 31337, 4000000000, (Math.random() * 2 ** 32) >>> 0]) 
       assert.match(d.getElementById('feedback').textContent, /Message read!!/); assert.equal(d.getElementById('decoded-card').hidden, true);
       assert.equal(d.getElementById('reply-plain').textContent, HD.replyFor(h));
       d.getElementById('reply-input').value = HD.replyFor(h); d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
-      assert.match(d.getElementById('feedback').textContent, /Reply sent!!/);
+      assert.match(d.getElementById('feedback').textContent, /Reply sent\./);
       const card = d.getElementById('decoded-card'); assert.equal(card.hidden, false); assert.match(card.textContent, /Read by hand and answered, hard mode/); assert.ok(card.textContent.includes(h.text));
       assert.ok(card.querySelector('[data-card=next]')); assert.equal(card.querySelector('[data-card=normal]'), null); assert.doesNotMatch(card.textContent, /streak|Next intercept/i);
       assert.match(card.textContent, new RegExp(`${(1000 + 200 - 150).toLocaleString('en-GB')} pts`));

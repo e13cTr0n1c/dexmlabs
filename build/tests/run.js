@@ -74,9 +74,9 @@ t("Cloudflare beacon once on every generated page, never on redirects", function
   GENERATED.forEach(function (f) { assert.strictEqual((read(f).match(cf) || []).length, 1, f); assert.ok(/d2c23a1c7dbd41168e2a3d54c4a4dc40/.test(read(f)), f + " token"); });
   MOVED.forEach(function (u) { assert.strictEqual((read(u + "index.html").match(cf) || []).length, 0, u); });
 });
-t("cookies table lists every storage key, hard mode rows after lorenz:stats", function () {
+t("cookies table lists every storage key, hard and realistic rows after lorenz:stats", function () {
   var keys = [].map.call(dom("cookies/index.html").querySelectorAll("tbody tr td:first-child"), function (td) { return td.textContent; });
-  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
+  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
 });
 t("old tool and template URLs are bare redirects to the new site", function () {
   MOVED.forEach(function (u) {

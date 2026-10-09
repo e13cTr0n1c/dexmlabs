@@ -174,9 +174,12 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>lorenz:settings</code></td><td>Lorenz motion and 3D view settings</td><td>Until you clear it</td></tr>
 <tr><td><code>lorenz:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz round</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:stats</code></td><td>Lorenz best score and streak</td><td>Until you clear it</td></tr>
-<tr><td><code>lorenz:difficulty</code></td><td>Whether you play Lorenz in normal or hard mode</td><td>Until you clear it</td></tr>
+<tr><td><code>lorenz:difficulty</code></td><td>Whether you play Lorenz in normal, hard or realistic mode</td><td>Until you clear it</td></tr>
 <tr><td><code>lorenz:hard:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz hard mode round</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:hard:stats</code></td><td>Lorenz hard mode best score and streak</td><td>Until you clear it</td></tr>
+<tr><td><code>lorenz:real:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz realistic mode round, with your pins</td><td>The last 7 days are kept</td></tr>
+<tr><td><code>lorenz:real:stats</code></td><td>Lorenz realistic mode best score and streak</td><td>Until you clear it</td></tr>
+<tr><td><code>lorenz:panels</code></td><td>Which Lorenz panels you've hidden</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by both games</td><td>Until you clear it, last 200 lines</td></tr>
 <tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>
@@ -223,7 +226,7 @@ doc('contact','Contact','CONTACT','How to contact DEXM Labs.',f'''
 ''')
 
 # ---------- points ----------
-PTS={'skywave':100,'lorenz':100,'hard':250,'reply':100,'practice':20,'per_day':3,'welcome':150}
+PTS={'skywave':100,'lorenz':100,'hard':250,'real':400,'reply':100,'practice':20,'per_day':3,'welcome':150}
 doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them by finishing the daily games and spend them on hints. They stay in your browser.',f'''
 <p>Points are shared by every game on the site. You earn them by playing and spend them on hints. They live in this browser, so there's no account and nothing to buy.</p>
 <div class="points-now" data-points-ledger><p>Your points show here when JavaScript is on.</p></div>
@@ -232,7 +235,8 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Finish today's Skywave round with at least one contact</td><td>{PTS['skywave']}</td></tr>
 <tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
 <tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>
-<tr><td>Send the hard mode reply back</td><td>{PTS['reply']}</td></tr>
+<tr><td>Read today's Lorenz in realistic mode</td><td>{PTS['real']}</td></tr>
+<tr><td>Send the hard or realistic mode reply back</td><td>{PTS['reply']}</td></tr>
 <tr><td>Finish a practice round in either game</td><td>{PTS['practice']}, up to {PTS['per_day']} a day in each game</td></tr>
 <tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
 </tbody></table>
