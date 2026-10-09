@@ -436,6 +436,11 @@ await t('Book: exactly one highlighted line, the round\'s QEP, with aria-current
 let bootCount = 0;
 /* The shared points script lives at the site root (../assets/points.js). In this mirror, read it from the site clone. */
 const POINTS_JS = [path.join(ROOT, '../assets/points.js'), path.join(process.env.DEXM_SITE || '/workspace/dexmlabs/site', 'assets/points.js')].find(f => fs.existsSync(f));
+/** Set the dials to `start`, type the reply and punch it, finishing the tape at once with Skip. */
+function sendReplyDOM(d, w, round, {text = HD.replyFor(round), start = round.start} = {}) {
+  for (const [id, v] of Object.entries(start)) { const el = d.getElementById(`dial-${id}`); el.value = String(v); el.dispatchEvent(new w.Event('change', {bubbles: true})); }
+  d.getElementById('reply-input').value = text; d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
+}
 async function bootPage(storage, fn, {points = false} = {}) {
   const w = new JSDOM(html['index.html'], {url: 'https://dexmlabs.app/lorenz/', pretendToBeVisual: true}).window;
   for (const [k, v] of Object.entries(storage)) w.localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
@@ -574,7 +579,7 @@ await t('Hard: scoring, QEP bonus, hints and wrong readings', () => {
   assert.throws(() => HD.useHardHint(HD.newHardState(h), 'check', {settings: h.start, wheel: 'nope'}));
 });
 await t('Hard: own stats and streak, apart from normal, and the share text says HARD', () => {
-  const solve = key => { const h = {...HD.makeHardRound({date: new Date(key + 'T09:00:00Z')})}; return HD.submitAnswer(HD.newHardState(h), h.text).state; };
+  const solve = key => { const h = {...HD.makeHardRound({date: new Date(key + 'T09:00:00Z')})}, read = HD.submitAnswer(HD.newHardState(h), h.text).state; return HD.submitReply(read, HD.replyTape(h, HD.replyFor(h), h.start)).state; };
   let s = HD.updateHardStats(null, solve('2026-10-09')); s = HD.updateHardStats(s, solve('2026-10-10')); assert.equal(s.streak, 2); assert.equal(s.best, 1000);
   s = HD.updateHardStats(s, solve('2026-10-12')); assert.equal(s.streak, 1); assert.equal(s.bestStreak, 2);
   const st = solve('2026-10-09'), txt = HD.hardShareText(st, 'https://dexmlabs.app/lorenz/');
@@ -609,6 +614,9 @@ await t('DOM: hard mode end to end: preamble, wrong page first, turn to today, t
     assert.equal(d.getElementById('printed-box').hidden, true); assert.equal(d.getElementById('hard-out').hidden, false);
     d.getElementById('hard-answer').value = h.text.toLowerCase(); d.getElementById('hard-answer-go').click();
     assert.match(d.getElementById('feedback').textContent, /Message read!!/);
+    assert.equal(d.getElementById('decoded-card').hidden, true, 'no card until the reply goes'); assert.equal(w.localStorage.getItem('lorenz:hard:stats'), null);
+    assert.equal(d.getElementById('hard-reply').hidden, false); assert.equal(d.getElementById('reply-plain').textContent, HD.replyFor(h));
+    sendReplyDOM(d, w, h);
     const stl = d.querySelector('#decoded-card.hard-card [data-stl=card]'); assert.ok(stl, 'STL button on the hard card'); assert.equal(stl.hidden, false);
     assert.equal(stl.querySelector('.stl-button').getAttribute('href'), CULTS); assert.equal(stl.querySelector('.stl-alt').getAttribute('href'), PRINTABLES);
     assert.match(d.querySelector('#decoded-card').textContent, /HARD|hard mode/);
@@ -743,7 +751,8 @@ await t('DOM: Arthur\'s pre fix save is refunded and solved on load, saved with 
     const stored = JSON.parse(w.localStorage.getItem(`lorenz:hard:round:${h.key}`));
     assert.equal(stored.v, HD.HARD_SAVE_VERSION); assert.equal(stored.solved, true); assert.equal(stored.text, h.text); assert.equal(stored.score, 1000);
     assert.match(d.getElementById('feedback').textContent, /given back the 150 points/);
-    assert.ok(JSON.parse(w.localStorage.getItem('lorenz:hard:stats')).history[h.key]);
+    assert.equal(d.getElementById('hard-reply').hidden, false, 'still owes the reply');
+    sendReplyDOM(d, w, h); assert.ok(JSON.parse(w.localStorage.getItem('lorenz:hard:stats')).history[h.key]);
   });
   await bootPage({'lorenz:difficulty': '"hard"', [`lorenz:hard:round:${h.key}`]: '{not json'}, async d => { d.getElementById('play-daily').click(); assert.equal(d.getElementById('qep-number').textContent, '??'); });
 });
@@ -848,6 +857,107 @@ await t('Demo: the speed menu offers it, and a run shows the panel, then Skip fi
     assert.match(panel.querySelector('.demo-head').textContent, /Character 1 of \d+Step [1-5] of 5/);
     d.getElementById('skip-button').click(); assert.ok(panel.classList.contains('demo-done')); assert.ok(d.getElementById('printed-text').textContent.length > 10);
   });
+});
+
+/* ---------- Hard mode reply ---------- */
+const readRound = h => HD.submitAnswer(HD.newHardState(h), h.text).state;
+const tapeOf = (h, text = HD.replyFor(h), start = h.start) => HD.replyTape(h, text, start);
+await t('Reply: fixed for the day like the message, named after it, and fixed per practice seed', () => {
+  const a = HD.makeHardRound({date: new Date('2026-10-12T00:05:00Z')}), b = HD.makeHardRound({date: new Date('2026-10-12T23:55:00Z')});
+  assert.equal(HD.replyFor(a), HD.replyFor(b));
+  for (const key of ['2026-10-10', '2026-10-11', '2026-10-12', '2026-10-13']) {
+    const h = HD.makeHardRound({date: new Date(key + 'T10:00:00Z')}), r = HD.replyFor(h), first = HD.canon(h.text).split('.')[0].split(' ').slice(0, 4).join(' ');
+    assert.ok(r.startsWith(`YOUR ${first} RECEIVED. `), r); assert.ok(r.length < 80); assert.equal(L.encodeText(r).dropped.length, 0, 'the teleprinter can send it');
+  }
+  const p1 = HD.makeHardRound({mode: 'practice', seed: 99}), p2 = HD.makeHardRound({mode: 'practice', seed: 99});
+  assert.equal(HD.replyFor(p1), HD.replyFor(p2));
+});
+await t('Reply: the right tape passes, with the same answer check as the message; wrong wheels or words fail', () => {
+  for (const h of [HD.makeHardRound({}), HD.makeHardRound({mode: 'practice', seed: 7, model: L.MODELS.SZ42A})]) {
+    const r = HD.replyFor(h);
+    assert.ok(HD.replyReads(h, tapeOf(h))); assert.ok(HD.replyReads(h, tapeOf(h, r.toLowerCase().replace(/\./g, ' ') + '  ')), 'case, spacing and punctuation');
+    assert.ok(HD.replyReads(h, tapeOf(h, r.replace('RECEIVED', 'RECEIVEX'))), 'one wrong letter in one word still counts, as with the message');
+    assert.equal(HD.replyReads(h, tapeOf(h, r, {...h.start, chi1: h.start.chi1 % 41 + 1})), false, 'wrong wheel');
+    assert.equal(HD.replyReads(h, tapeOf(h, h.text)), false, 'the message is not the reply');
+    assert.equal(HD.replyReads(h, tapeOf(h, 'YOUR SIGNAL RECEIVED. ACKNOWLEDGED.')), false);
+  }
+});
+await t('Reply: a hard round only finishes with the reply, scored on its own; stats wait for it', () => {
+  const h = HD.makeHardRound({}), fresh = HD.newHardState(h);
+  assert.equal(HD.submitReply(fresh, tapeOf(h)).result.notReady, true, 'no reply before the message is read');
+  const read = readRound(h); assert.equal(read.solved, true); assert.equal(HD.hardComplete(read), false);
+  assert.equal(HD.updateHardStats(null, read).rounds, 0, 'not counted yet');
+  const bad = tapeOf(h, h.text); let st = HD.submitReply(read, bad).state; assert.equal(st.reply.done, false); assert.equal(st.reply.tries.length, 1);
+  st = HD.submitReply(st, bad).state; assert.equal(st.reply.tries.length, 1, 'the same wrong tape twice is free');
+  const {state, result} = HD.submitReply(st, tapeOf(h)); assert.equal(result.ok, true); assert.equal(HD.hardComplete(state), true);
+  assert.equal(state.reply.score, HD.HARD_RULES.reply.base - HD.HARD_RULES.reply.wrong); assert.equal(state.score, read.score, 'the message score is untouched');
+  const stats = HD.updateHardStats(null, state); assert.equal(stats.history[h.key].reply, 200); assert.equal(stats.replies, 1); assert.equal(stats.bestReply, 200);
+  let low = read; for (let i = 0; i < 6; i++) low = HD.submitReply(low, tapeOf(h, `WRONG ${i}`)).state; assert.equal(HD.submitReply(low, tapeOf(h)).state.reply.score, HD.HARD_RULES.reply.floor);
+  const b = HD.hardBreakdown(state); assert.equal(b.replyTotal, 200); assert.match(HD.hardShareText(state, 'u'), /Reply sent: 200 pts/);
+  const back = HD.restoreHard(h, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: state.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: state.reply.tries}})));
+  assert.equal(HD.hardComplete(back), true); assert.equal(back.reply.score, 200);
+  const old = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [{key: h.text, ok: true}], hints: [], qepGuesses: [], solved: true});
+  assert.equal(HD.hardComplete(old), true, 'rounds read before replies existed stay finished'); assert.equal(old.reply.legacy, true);
+  const half = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [{key: h.text, ok: true}], hints: [], qepGuesses: [], solved: true, reply: {tries: [{key: '1,2', ok: false}]}});
+  assert.equal(HD.hardComplete(half), false);
+});
+await t('Reply: in the page it finishes the round, pays 100 points once, and normal mode never shows it', async () => {
+  const h = HD.makeHardRound({});
+  const save = {v: HD.HARD_SAVE_VERSION, text: h.text, answers: [{key: h.text, ok: true}], hints: [], qepGuesses: [], ran: {...h.start}, solved: true, score: 1000, reply: {tries: []}, wheels: {...h.start}};
+  let ledger;
+  await bootPage({'lorenz:difficulty': '"hard"', [`lorenz:hard:round:${h.key}`]: save}, async (d, w) => {
+    const P = w.DexmPoints; d.getElementById('play-daily').click();
+    assert.equal(d.getElementById('decoded-card').hidden, true); assert.equal(d.getElementById('hard-reply').hidden, false); assert.equal(d.getElementById('reply-state').textContent, 'Not sent yet');
+    const before = P.balance();
+    sendReplyDOM(d, w, h, {start: {...h.start, psi1: h.start.psi1 % 43 + 1}}); assert.match(d.getElementById('feedback').textContent, /doesn't read as the reply/); assert.equal(d.getElementById('decoded-card').hidden, true);
+    assert.equal(d.getElementById('reply-tape').hidden, false);
+    sendReplyDOM(d, w, h); await new Promise(r => setTimeout(r, 0));
+    assert.match(d.getElementById('feedback').textContent, /Reply sent!!/); assert.equal(d.getElementById('hard-reply').classList.contains('sent'), true);
+    const card = d.getElementById('decoded-card'); assert.equal(card.hidden, false); assert.match(card.textContent, /Read by hand and answered/); assert.ok(card.textContent.includes(HD.replyFor(h)));
+    assert.equal(d.getElementById('card-reply-total').textContent, '200 pts');
+    assert.equal(P.balance(), before + 100); assert.ok(P.has(`lorenz:hard:reply:${h.key}`));
+    assert.equal(JSON.parse(w.localStorage.getItem('lorenz:hard:stats')).history[h.key].reply, 200);
+    ledger = w.localStorage.getItem('dexm:points');
+  }, {points: true});
+  await bootPage({'lorenz:difficulty': '"hard"', [`lorenz:hard:round:${h.key}`]: save, 'dexm:points': ledger}, async (d, w) => { const n = w.DexmPoints.balance(); d.getElementById('play-daily').click(); await new Promise(r => setTimeout(r, 0)); assert.equal(w.DexmPoints.balance(), n, 'not paid twice'); }, {points: true});
+  await bootPage({}, async d => { d.getElementById('play-daily').click(); assert.equal(d.getElementById('hard-reply').hidden, true); assert.equal(d.getElementById('read-aid').hidden, true); assert.equal(d.getElementById('hard-out').hidden, true); });
+});
+
+/* ---------- Reading aid ---------- */
+await t('Reading aid: copy a row with the holes, the cheat sheet lights up its line, shift is yours, nothing is typed for you', async () => {
+  const h = HD.makeHardRound({}), out = L.crypt(h.cipherCodes, {patterns: h.patterns, start: h.start, model: h.model});
+  const save = {v: HD.HARD_SAVE_VERSION, text: h.text, answers: [], hints: [], qepGuesses: [], ran: {...h.start}, solved: false, score: 0, reply: {tries: []}, wheels: {...h.start}};
+  await bootPage({'lorenz:difficulty': '"hard"', [`lorenz:hard:round:${h.key}`]: save}, async d => {
+    d.getElementById('play-daily').click();
+    const aid = d.getElementById('read-aid'), rows = d.querySelectorAll('#cheat-body tr'); assert.equal(aid.hidden, false);
+    assert.equal(d.getElementById('aid-pos').textContent, `Row 1 of ${out.length}`);
+    assert.equal(d.querySelector('#out-tape .aid-current').dataset.frame, '0'); assert.equal(d.getElementById('aid-prev').disabled, true);
+    const holes = [...aid.querySelectorAll('.aid-hole')]; assert.equal(holes.length, 5); assert.deepEqual(holes.map(b => b.getAttribute('aria-label')), ['Hole 1', 'Hole 2', 'Hole 3', 'Hole 4', 'Hole 5']);
+    for (const i of [0, 1]) {
+      const code = out[i]; L.bitsOf(code).forEach((b, k) => { if (b) holes[k].click(); });
+      assert.deepEqual(holes.map(b => b.getAttribute('aria-pressed') === 'true' ? 1 : 0), L.bitsOf(code));
+      assert.equal(d.querySelectorAll('#cheat-body tr.aid-match').length, 1); assert.equal(rows[code].classList.contains('aid-match'), true);
+      assert.equal(rows[code].cells[1].classList.contains('aid-col'), true, 'letter column first');
+      d.getElementById('aid-shift').click(); assert.equal(d.getElementById('aid-shift').getAttribute('aria-pressed'), 'true'); assert.equal(d.getElementById('aid-shift').textContent, 'Figure shift');
+      assert.equal(rows[code].cells[2].classList.contains('aid-col'), true); assert.equal(rows[code].cells[1].classList.contains('aid-col'), false);
+      d.getElementById('aid-shift').click(); assert.equal(rows[code].cells[1].classList.contains('aid-col'), true, 'and back, only when asked');
+      assert.equal(d.getElementById('hard-answer').value, '', 'nothing typed for the player');
+      d.getElementById('aid-next').click();
+      assert.equal(d.querySelector('#out-tape .aid-current').dataset.frame, String(i + 1)); assert.ok(holes.every(b => b.getAttribute('aria-pressed') === 'false'), 'a fresh blank row');
+      assert.ok(d.querySelector(`#out-tape [data-frame="${i}"]`).classList.contains('read'), 'the row you leave is marked read');
+    }
+    d.getElementById('aid-prev').click(); assert.equal(d.getElementById('aid-pos').textContent, `Row 2 of ${out.length}`);
+    holes[0].click(); d.getElementById('aid-clear').click(); assert.ok(holes.every(b => b.getAttribute('aria-pressed') === 'false'));
+    // the shift never moves by itself, even across a figure shift row
+    const figs = out.indexOf(L.SHIFT.FIGS); if (figs > 0) { for (let i = 1; i < figs + 1; i++) d.getElementById('aid-next').click(); assert.equal(d.getElementById('aid-shift').getAttribute('aria-pressed'), 'false'); }
+  });
+});
+await t('Reading aid and reply: 44px tap targets, paper and holes stay paper and black in light mode, nothing moves', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'), base = css.split('/* light theme')[0];
+  assert.match(base, /\.aid-hole\{width:44px;height:44px;min-height:44px/); assert.match(base, /\.aid-nav\{min-height:44px/); assert.match(base, /\.aid-tools button\{min-height:44px\}/);
+  assert.match(css, /:root\[data-theme=light\] \.aid-hole\.on\{background:#050705/); assert.match(css, /:root\[data-theme=light\] \.aid-sprocket\{background:#050705\}/);
+  const aidRules = base.match(/[^}]*\.(aid-|read-aid|hard-reply|reply-)[^{]*\{[^}]*\}/g).join('');
+  assert.ok(!/animation|transition/.test(aidRules), 'no motion in the aid or the reply, so reduced motion has nothing to stop');
 });
 
 for (const r of results) console.log(`${r.pass ? 'PASS' : 'FAIL'} ${r.name}${r.error ? '\n  ' + r.error : ''}`);

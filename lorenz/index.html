@@ -107,9 +107,24 @@
 <div id="hard-out" class="hard-out" hidden><div class="section-top"><span class="eyebrow">Tape out, punched</span><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
 <div id="out-tape" class="punch-tape out-tape" aria-label="The tape the machine punched"><p class="tiny">Run the tape and the machine punches its output here.</p></div>
 <p class="tiny">No printer in hard mode. Read each row with the cheat sheet. Tap a row to mark it as read.</p>
+<div id="read-aid" class="read-aid" hidden><div class="section-top"><span class="eyebrow">Reading aid</span><span class="tiny" id="aid-pos" aria-live="polite">Row 1</span></div>
+<p class="tiny">Punch the holes you see on the highlighted row of the tape. The matching line lights up on the cheat sheet. Pick the shift yourself, then type what you read in the box below.</p>
+<div class="aid-row"><button type="button" id="aid-prev" class="secondary aid-nav">Previous</button>
+<div class="aid-holes" role="group" aria-label="Your copy of the row: tap a position to punch it">
+<button type="button" class="aid-hole" data-bit="0" aria-pressed="false" aria-label="Hole 1"><span aria-hidden="true">1</span></button><button type="button" class="aid-hole" data-bit="1" aria-pressed="false" aria-label="Hole 2"><span aria-hidden="true">2</span></button><span class="aid-sprocket" aria-hidden="true"></span><button type="button" class="aid-hole" data-bit="2" aria-pressed="false" aria-label="Hole 3"><span aria-hidden="true">3</span></button><button type="button" class="aid-hole" data-bit="3" aria-pressed="false" aria-label="Hole 4"><span aria-hidden="true">4</span></button><button type="button" class="aid-hole" data-bit="4" aria-pressed="false" aria-label="Hole 5"><span aria-hidden="true">5</span></button></div>
+<button type="button" id="aid-next" class="secondary aid-nav">Next</button></div>
+<div class="aid-tools"><button type="button" id="aid-shift" class="secondary" aria-pressed="false">Letter shift</button><button type="button" id="aid-clear" class="secondary">Clear holes</button><button type="button" class="secondary" data-cheat>Open the cheat sheet</button></div>
+</div>
 <label for="hard-answer" class="field-label">What the tape says</label><textarea id="hard-answer" rows="3" maxlength="400" spellcheck="false" autocomplete="off"></textarea>
 <p class="tiny" id="revealed-chars" hidden></p>
 <button type="button" id="hard-answer-go" class="primary wide">Check my reading</button>
+<div id="hard-reply" class="hard-reply" hidden><div class="section-top"><span class="eyebrow">Your reply</span><span class="tiny" id="reply-state">Not sent yet</span></div>
+<p class="tiny">Now send a reply back. Leave the wheels on the settings you read the message with, type the reply, and the machine enciphers it and punches the tape.</p>
+<p class="reply-plain"><code id="reply-plain"></code></p>
+<label for="reply-input" class="field-label">Reply to send</label><textarea id="reply-input" rows="2" maxlength="200" spellcheck="false" autocomplete="off"></textarea>
+<button type="button" id="reply-go" class="primary wide">Encipher and punch the reply</button>
+<div id="reply-tape" class="punch-tape out-tape" aria-label="The reply tape you punched" hidden></div>
+</div>
 </div>
 <div class="printed" id="printed-box"><div class="section-top"><span class="eyebrow" id="printed-label">Printed</span><button id="printed-copy" class="text-button" hidden>Copy</button></div><p id="printed-text" class="printed-text"></p></div>
 <section id="decoded-card" class="decoded-card" hidden aria-labelledby="decoded-heading"></section>

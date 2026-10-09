@@ -80,7 +80,7 @@ home=head('DEXM Labs / Games and makes','Small free browser games and makes from
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>
 <h1><span>DEXM</span><span>Labs</span></h1>
-<p class="tagline">Games and makes.</p>
+<p class="tagline">Deus ex machina</p>
 <p class="lead">Small free games that run in your browser, and things I design for the radio bench and the 3D printer. I build them in my home lab, one at a time, and put them here when they work.</p>
 <div class="meta"><div><strong>2</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
 </div>
@@ -223,7 +223,7 @@ doc('contact','Contact','CONTACT','How to contact DEXM Labs.',f'''
 ''')
 
 # ---------- points ----------
-PTS={'skywave':100,'lorenz':100,'hard':250,'practice':20,'per_day':3,'welcome':150}
+PTS={'skywave':100,'lorenz':100,'hard':250,'reply':100,'practice':20,'per_day':3,'welcome':150}
 doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them by finishing the daily games and spend them on hints. They stay in your browser.',f'''
 <p>Points are shared by every game on the site. You earn them by playing and spend them on hints. They live in this browser, so there's no account and nothing to buy.</p>
 <div class="points-now" data-points-ledger><p>Your points show here when JavaScript is on.</p></div>
@@ -232,6 +232,7 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Finish today's Skywave round with at least one contact</td><td>{PTS['skywave']}</td></tr>
 <tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
 <tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>
+<tr><td>Send the hard mode reply back</td><td>{PTS['reply']}</td></tr>
 <tr><td>Finish a practice round in either game</td><td>{PTS['practice']}, up to {PTS['per_day']} a day in each game</td></tr>
 <tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
 </tbody></table>

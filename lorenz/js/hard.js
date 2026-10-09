@@ -1,11 +1,12 @@
 /** Hard mode: the same daily round as normal, plus a dated five page book, the QEP sent in clear on the tape
  *  (the preamble), the answer read off punched tape, and its own score and streak. No DOM. */
-import {BP, FIGURES, FIGURE_CONTROLS, SHIFT, WHEEL, encodeText, decodeText, dotsCrosses, fromBP} from './lorenz.js';
+import {BP, FIGURES, FIGURE_CONTROLS, SHIFT, WHEEL, encodeText, decodeText, dotsCrosses, fromBP, crypt} from './lorenz.js';
 import {makeRound, acceptedTexts, randomPositions, makeSmudge, pad2, answerLine, RULES, statsFrom} from './game.js';
 import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
 
 export const HARD_RULES = Object.freeze({base:1000, wrong:150, qepBonus:200, floor:100, pages:5,
-  hint:Object.freeze({qep:40, char:10, check:20, smudge:50})});  // hints cost shared points, not score
+  hint:Object.freeze({qep:40, char:10, check:20, smudge:50}),  // hints cost shared points, not score
+  reply:Object.freeze({base:300, wrong:100, floor:50})});  // the reply you send back is scored on its own
 export const HARD_PREFIX = 'hard:';
 const DAY = 86400000;
 
@@ -108,7 +109,38 @@ export function matchAnswer(input, targets) {
 }
 
 /* ---------- State, scoring, hints ---------- */
-export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0});
+export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}});
+
+/* ---------- The reply ---------- */
+const ACKS = ['ACKNOWLEDGED.', 'RECEIVED AND UNDERSTOOD.', 'PASSED TO HIGHER COMMAND.', 'NOTED. NO FURTHER ORDERS.', 'UNDERSTOOD. WILL COMPLY.'];
+/** The short reply you send back once you've read the message. It names the message you read (its first few words)
+ *  and adds an acknowledgement picked from the day (or the practice seed), so it's fixed for the round. */
+export function replyFor(round) {
+  const first = canon(round.text).split('.')[0].split(' ').filter(Boolean).slice(0, 4).join(' ');
+  const pick = mulberry32(hashString(`reply:${SEED_VERSION}:${round.mode === 'practice' ? 'p' + round.seed : round.key}:${round.text}`))();
+  return `YOUR ${first} RECEIVED. ${ACKS[Math.floor(pick * ACKS.length)]}`;
+}
+/** What the machine punches when you encipher `text` with your wheel `settings`. Throws on characters the
+ *  teleprinter can't send. */
+export const replyTape = (round, text, settings) => crypt(encodeText(canon(text)), {patterns: round.patterns, start: settings, model: round.model});
+/** A punched reply passes if it reads as the reply on the round's real start positions, using the same answer
+ *  check as the message (case, spacing, punctuation and one wrong letter in one word don't matter). */
+export function replyReads(round, codes) {
+  const back = decodeText(crypt(codes, {patterns: round.patterns, start: round.start, model: round.model}));
+  return matchAnswer(back, [replyFor(round)]).ok;
+}
+export const replyScoreFor = st => Math.max(HARD_RULES.reply.floor, HARD_RULES.reply.base - st.reply.tries.filter(t => !t.ok).length * HARD_RULES.reply.wrong);
+/** Send a punched reply. Only once the message is read; the same wrong tape twice is free. */
+export function submitReply(st, codes) {
+  if (!st.solved) return {state:st, result:{ok:false, notReady:true}};
+  if (st.reply.done) return {state:st, result:{ok:true, repeat:true}};
+  const key = codes.join(','), ok = replyReads(st.round, codes), repeat = !ok && st.reply.tries.some(t => t.key === key);
+  const tries = repeat ? st.reply.tries : [...st.reply.tries, {key, ok}];
+  const reply = {tries, done: ok, score: 0}; const next = {...st, reply}; reply.score = ok ? replyScoreFor(next) : 0;
+  return {state:next, result:{ok, repeat}};
+}
+/** A hard round is finished when the message is read and the reply has gone back. */
+export const hardComplete = st => Boolean(st.solved && st.reply?.done);
 const firstGuessRight = st => st.qepGuesses.length > 0 && st.qepGuesses[0] === st.round.qep && !st.hints.some(h => h.type === 'qep');
 export const qepKnown = st => st.hints.some(h => h.type === 'qep') || st.qepGuesses.includes(st.round.qep);
 export function hardPenalty(st) {
@@ -120,7 +152,9 @@ export function hardBreakdown(st) {
   if (firstGuessRight(st)) lines.push(['Read the preamble first time', `+${f(HARD_RULES.qepBonus)}`]);
   const wrong = st.answers.filter(a => !a.ok).length; if (wrong) lines.push([`${wrong} wrong ${wrong > 1 ? 'readings' : 'reading'}`, `\u2212${f(wrong * HARD_RULES.wrong)}`]);
   const total = hardScoreFor(st); if (total === HARD_RULES.floor) lines.push(['Never less than', f(HARD_RULES.floor)]);
-  return {lines, total};
+  const reply = [['Reply sent', f(st.reply?.score || 0)]], rw = (st.reply?.tries || []).filter(t => !t.ok).length;
+  if (rw) reply.push([`${rw} wrong ${rw > 1 ? 'tapes' : 'tape'} before it`, `\u2212${f(rw * HARD_RULES.reply.wrong)}`]);
+  return {lines, total, reply, replyTotal: st.reply?.score || 0};
 }
 /** Type the QEP you read off the preamble. Free; the bonus is only for getting it on the first go. */
 export function guessQep(st, value) {
@@ -176,8 +210,13 @@ export function restoreHard(round, saved) {
       solvedNow = passing.length > 0 && s.solved !== true;
       answers = passing.length ? [{key: passing[0].key, ok: true}] : [];
     }
+    // Rounds read before replies existed count as finished, so nobody loses a streak.
+    const r = s.reply && typeof s.reply === 'object' ? s.reply : null, tries = Array.isArray(r?.tries) ? r.tries.filter(t => t && typeof t.key === 'string').map(t => ({key:t.key, ok:Boolean(t.ok)})) : [];
+    const legacy = s.solved === true && (!r || r.legacy === true);
     const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || s.v !== HARD_SAVE_VERSION), refunded, solvedNow};
     st.score = st.solved ? hardScoreFor(st) : 0;
+    st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0};
+    if (st.reply.done && !legacy) st.reply.score = replyScoreFor(st);
     return st;
   } catch {
     return newHardState(round);
@@ -185,13 +224,14 @@ export function restoreHard(round, saved) {
 }
 /** Hard mode stats, kept apart from normal mode's. */
 export function updateHardStats(previous, st) {
-  if (!st.solved || st.round.mode === 'practice') return previous || statsFrom({});
+  if (!hardComplete(st) || st.round.mode === 'practice') return previous || statsFrom({});
   const history = {...(previous?.history || {})};
-  history[st.round.key] = {score: Math.max(history[st.round.key]?.score || 0, st.score), tries: st.answers.length};
-  return statsFrom(history);
+  history[st.round.key] = {score: Math.max(history[st.round.key]?.score || 0, st.score), tries: st.answers.length, reply: Math.max(history[st.round.key]?.reply || 0, st.reply?.score || 0)};
+  const stats = statsFrom(history), replies = Object.values(history).map(h => h.reply || 0);
+  return {...stats, replies: replies.filter(n => n > 0).length, bestReply: Math.max(0, ...replies)};
 }
 export function hardShareText(st, url) {
   const r = st.round, squares = st.answers.map(a => a.ok ? '\u{1F7E8}' : '\u{1F7E5}').join(''), n = st.hints.length;
-  return `Lorenz ${r.mode === 'practice' ? 'practice' : `#${r.number}`} HARD\n${st.solved ? `Read on try ${st.answers.length}${n ? `, ${n} hint${n > 1 ? 's' : ''}` : ''}` : 'Not read yet'}\n${squares} ${st.score.toLocaleString('en-GB')} pts\n${url}`;
+  return `Lorenz ${r.mode === 'practice' ? 'practice' : `#${r.number}`} HARD\n${st.solved ? `Read on try ${st.answers.length}${n ? `, ${n} hint${n > 1 ? 's' : ''}` : ''}` : 'Not read yet'}\n${squares} ${st.score.toLocaleString('en-GB')} pts${st.reply?.done && !st.reply.legacy ? `\nReply sent: ${st.reply.score.toLocaleString('en-GB')} pts` : ''}\n${url}`;
 }
 export {RULES};

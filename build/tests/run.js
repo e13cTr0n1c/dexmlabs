@@ -25,7 +25,7 @@ t("homepage: games first, then makes, then support", function () {
 });
 t("the old tagline and the long name are gone everywhere, only DEXM Labs is left", function () {
   // built from parts so this file doesn't match itself
-  var bad = [new RegExp(["god", "from", "the", "lab"].join("\\s+"), "i"), new RegExp(["deus", "ex", "machina"].join("\\s+"), "i")];
+  var bad = [new RegExp(["god", "from", "the", "lab"].join("\\s+"), "i"), new RegExp(["deus", "ex", "machina", "labs"].join("\\s+"), "i")];
   var seen = 0;
   (function walk(dir) {
     fs.readdirSync(path.join(ROOT, dir), {withFileTypes: true}).forEach(function (e) {
@@ -40,6 +40,8 @@ t("the old tagline and the long name are gone everywhere, only DEXM Labs is left
   var d = dom("index.html");
   assert.strictEqual(d.querySelector('meta[property="og:site_name"]').content, "DEXM Labs");
   assert.ok(/^DEXM Labs/.test(d.title));
+  assert.strictEqual(d.querySelector(".tagline").textContent, "Deus ex machina", "the hero line keeps the meaning of the name, nothing about god");
+  assert.ok(!/\bgod\b/i.test(d.querySelector(".tagline").textContent));
 });
 t("Lorenz card wording", function () {
   var x = visible(dom("index.html"));

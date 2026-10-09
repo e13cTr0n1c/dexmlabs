@@ -71,7 +71,8 @@ await t('Hard practice: a correct answer solves it, is scored like hard mode, an
     assert.equal(HD.updateHardStats(prev, state), prev, 'practice never counts in hard stats');
     assert.match(HD.hardShareText(state, 'u'), /^Lorenz practice HARD/);
   }
-  const d = HD.newHardState(HD.makeHardRound({})), solved = HD.submitAnswer(d, d.round.text).state;
+  const d = HD.newHardState(HD.makeHardRound({})), read = HD.submitAnswer(d, d.round.text).state, solved = HD.submitReply(read, HD.replyTape(d.round, HD.replyFor(d.round), d.round.start)).state;
+  assert.equal(HD.updateHardStats(prev, read), prev, 'read but not answered does not count yet');
   assert.ok(HD.updateHardStats(prev, solved).history[todayKey], 'the daily still counts'); assert.match(HD.hardShareText(solved, 'u'), /^Lorenz #\d+ HARD/);
 });
 
@@ -136,14 +137,18 @@ for (const seed of [42, 7, 31337, 4000000000, (Math.random() * 2 ** 32) >>> 0]) 
       assert.equal(d.querySelectorAll('#out-tape [data-frame]').length, h.cipherCodes.length); assert.equal(d.getElementById('printed-text').textContent, '', 'tape only, nothing printed');
       d.getElementById('hard-answer').value = 'XQZ VVK PLOM'; d.getElementById('hard-answer-go').click(); assert.match(d.getElementById('feedback').textContent, /Not right yet\. 0 of \d+ words/);
       d.getElementById('hard-answer').value = h.text.toLowerCase().replace(/\. /g, ' '); d.getElementById('hard-answer-go').click();
-      assert.match(d.getElementById('feedback').textContent, /Message read!!/);
-      const card = d.getElementById('decoded-card'); assert.equal(card.hidden, false); assert.match(card.textContent, /Read by hand, hard mode/); assert.ok(card.textContent.includes(h.text));
+      assert.match(d.getElementById('feedback').textContent, /Message read!!/); assert.equal(d.getElementById('decoded-card').hidden, true);
+      assert.equal(d.getElementById('reply-plain').textContent, HD.replyFor(h));
+      d.getElementById('reply-input').value = HD.replyFor(h); d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
+      assert.match(d.getElementById('feedback').textContent, /Reply sent!!/);
+      const card = d.getElementById('decoded-card'); assert.equal(card.hidden, false); assert.match(card.textContent, /Read by hand and answered, hard mode/); assert.ok(card.textContent.includes(h.text));
       assert.ok(card.querySelector('[data-card=next]')); assert.equal(card.querySelector('[data-card=normal]'), null); assert.doesNotMatch(card.textContent, /streak|Next intercept/i);
       assert.match(card.textContent, new RegExp(`${(1000 + 200 - 150).toLocaleString('en-GB')} pts`));
       assert.deepEqual(snapshot(w), before, 'daily saves and stats untouched');
       nextSeed(seed ^ 0x5555); card.querySelector('[data-card=next]').click(); const n = HD.makeHardRound({mode: 'practice', seed: (seed ^ 0x5555) >>> 0});
       assert.equal(card.hidden, true); assert.equal(d.getElementById('qep-number').textContent, '??'); assert.equal(d.getElementById('hard-answer').value, ''); assert.equal(d.getElementById('out-tape').innerHTML, '');
       assert.equal(d.getElementById('book-date').textContent, HD.pageDate(n.pages[n.openIndex].key)); assert.equal(d.getElementById('revealed-chars').hidden, true);
+      assert.equal(d.getElementById('hard-reply').hidden, true, 'a new round has no reply yet'); assert.equal(d.getElementById('reply-input').value, '');
       d.querySelector('[data-action=title]').click(); d.getElementById('play-daily').click();
       assert.match(d.getElementById('round-label').textContent, /^Lorenz #\d+, hard/); assert.equal(d.getElementById('qep-number').textContent, G.pad2(daily.qep), 'the daily keeps its own hints');
       assert.deepEqual(snapshot(w), before);

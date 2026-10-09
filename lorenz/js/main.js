@@ -1,8 +1,9 @@
 /** Lorenz: page controller. Wires the pure cipher and game modules to the DOM, the tape and the 3D view. */
-import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
+import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, codeFromBits, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
 import {demoSchedule, demoAt, demoModel, demoHTML} from './demo.js';
 import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
+import {replyFor, submitReply, hardComplete, canon} from './hard.js';
 import {makeHardRound, newHardState, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
 import {tapeHTML, holesHTML, holesText} from './punch.js';
 import {utcDateKey, mulberry32} from './seed.js';
@@ -21,7 +22,7 @@ const fmt = n => Math.round(n).toLocaleString('en-GB');
 const Points = () => globalThis.DexmPoints || null;
 const hintCost = type => app.mode === 'hard' ? HARD_RULES.hint[type === 'reveal' ? 'smudge' : type] : RULES.hint[type];
 const roundRef = r => r.mode === 'daily' ? r.key : `p${r.seed}`;
-const EARN = {daily: 100, hard: 250};
+const EARN = {daily: 100, hard: 250, reply: 100};
 /** Pay for a hint. Returns false (and says why) if there aren't enough points. */
 function pay(type, ref) {
   const P = Points(), cost = hintCost(type); if (!P) return true;
@@ -35,6 +36,7 @@ function awardDaily(key = utcDateKey()) {
   const n = read(`round:${key}`, null), h = read(`hard:round:${key}`, null);
   if (n && n.solved === true) earned(P.earn('lorenz', P.EARN?.lorenz ?? EARN.daily, `lorenz:daily:${key}`), `+${P.EARN?.lorenz ?? EARN.daily} points for today's Lorenz`);
   if (h && h.solved === true) earned(P.earn('lorenz', P.EARN?.lorenzHard ?? EARN.hard, `lorenz:hard:${key}`), `+${P.EARN?.lorenzHard ?? EARN.hard} points for today's hard mode`);
+  if (h && h.solved === true && !h.reply?.legacy && h.reply?.tries?.some(t => t.ok)) earned(P.earn('lorenz', P.EARN?.lorenzReply ?? EARN.reply, `lorenz:hard:reply:${key}`), `+${P.EARN?.lorenzReply ?? EARN.reply} points for your reply`);
 }
 const niceDate = key => new Date(key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'});
 
@@ -173,7 +175,7 @@ function newHardPractice(model, render = true) {
   if (!render) return;
   app.state = app.hardPractice; app.page = app.state.round.openIndex; app.marked = new Set(); app.wheels = sanitiseWheels({});
   $('decoded-card').hidden = true; $('hard-answer').value = ''; $('qep-guess').value = ''; $('out-tape').innerHTML = '';
-  showDials(); renderRound(); syncView(false); clearOutput();
+  showDials(); renderRound(); syncView(false); clearOutput(); resetHardExtras(); renderReply();
 }
 function newPractice(model, render = true) {
   if (app.mode === 'hard') return newHardPractice(model, render);
@@ -198,8 +200,8 @@ function restoreState(round, saved) {
 const sanitiseWheels = w => Object.fromEntries(WHEELS.map(x => [x.id, checkPosition(w?.[x.id], x.size).ok ? Number(w[x.id]) : POSITION_BASE]));
 function enterGame() {
   show('game'); renderTabs(); renderRound(); showDials(); clearOutput();
-  const st = app.state;
-  if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; showCard(false); } }
+  const st = app.state; resetHardExtras();
+  if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; if (hardComplete(st)) showCard(false); } renderReply(); }
   else if (app.tab === 'random' && st.solved) { replaySolved(); showCard(false); }
   syncView(false);
   const h = {random:'game-heading', encipher:'encipher-heading', chi:'chi-heading'}[app.tab]; $(h)?.focus({preventScroll: true});
@@ -270,7 +272,7 @@ function saveRound() {
   const st = app.state;
   if (app.mode === 'hard') {
     if (st.round.mode === 'practice') { app.hardPractice = st; app.hardPracticeWheels = {...app.wheels}; return; }
-    write(`hard:round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, wheels: app.wheels});
+    write(`hard:round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, wheels: app.wheels});
     try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'hard:round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     return;
   }
@@ -523,6 +525,58 @@ function showHardTape() {
   const st = app.state, settings = sanitiseWheels(st.ran || st.round.start), codes = hardOutput(settings);
   tape.setRows(codes.map(code => ({code, print: '', control: null})));
   $('out-tape').innerHTML = tapeHTML(codes, {buttons: true, marked: app.marked});
+  app.outCodes = codes; if (!app.aid || app.aid.length !== codes.length) app.aid = {index: 0, bits: [0, 0, 0, 0, 0], figs: false, length: codes.length};
+  renderAid();
+}
+function resetHardExtras() { app.aid = null; app.outCodes = null; $('read-aid').hidden = true; $('reply-input').value = ''; $('reply-tape').hidden = true; $('reply-tape').innerHTML = ''; document.querySelectorAll('#cheat-body tr').forEach(tr => { tr.classList.remove('aid-match'); tr.removeAttribute('aria-current'); [...tr.cells].forEach(c => c.classList.remove('aid-col')); }); }
+/* ---------- Reading aid: you punch a copy of one row, the cheat sheet lights up the line, you read it ---------- */
+function renderAid() {
+  const box = $('read-aid'), n = app.outCodes?.length || 0; box.hidden = app.mode !== 'hard' || !n; if (box.hidden) return;
+  const a = app.aid; a.index = Math.min(n - 1, Math.max(0, a.index));
+  $('aid-pos').textContent = `Row ${a.index + 1} of ${n}`;
+  box.querySelectorAll('.aid-hole').forEach(b => { const on = a.bits[Number(b.dataset.bit)] === 1; b.setAttribute('aria-pressed', String(on)); b.classList.toggle('on', on); });
+  $('aid-shift').textContent = a.figs ? 'Figure shift' : 'Letter shift'; $('aid-shift').setAttribute('aria-pressed', String(a.figs));
+  $('aid-prev').disabled = a.index === 0; $('aid-next').disabled = a.index >= n - 1;
+  const tapeEl = $('out-tape');
+  tapeEl.querySelectorAll('.aid-current').forEach(f => { f.classList.remove('aid-current'); f.removeAttribute('aria-current'); });
+  const f = tapeEl.querySelector(`[data-frame="${a.index}"]`);
+  if (f) { f.classList.add('aid-current'); f.setAttribute('aria-current', 'true'); const sc = f.closest('.out-tape') || tapeEl; if (sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, f.offsetLeft - sc.clientWidth / 2); }
+  const code = codeFromBits(a.bits);
+  document.querySelectorAll('#cheat-body tr').forEach((tr, i) => {
+    const on = i === code; tr.classList.toggle('aid-match', on); if (on) tr.setAttribute('aria-current', 'true'); else tr.removeAttribute('aria-current');
+    tr.cells[1]?.classList.toggle('aid-col', on && !a.figs); tr.cells[2]?.classList.toggle('aid-col', on && a.figs);
+  });
+}
+function aidMove(dir) { const a = app.aid; if (!a) return; if (dir > 0) { app.marked.add(a.index); $('out-tape').querySelector(`[data-frame="${a.index}"]`)?.classList.add('read'); } a.index += dir; a.bits = [0, 0, 0, 0, 0]; renderAid(); }
+function bindAid() {
+  document.querySelectorAll('.aid-hole').forEach(b => b.addEventListener('click', () => { const a = app.aid; if (!a) return; const i = Number(b.dataset.bit); a.bits[i] = a.bits[i] ? 0 : 1; renderAid(); }));
+  $('aid-prev').addEventListener('click', () => aidMove(-1)); $('aid-next').addEventListener('click', () => aidMove(1));
+  $('aid-shift').addEventListener('click', () => { if (!app.aid) return; app.aid.figs = !app.aid.figs; renderAid(); });
+  $('aid-clear').addEventListener('click', () => { if (!app.aid) return; app.aid.bits = [0, 0, 0, 0, 0]; renderAid(); });
+}
+/* ---------- The reply: once the message is read, encipher a short answer and punch it ---------- */
+function renderReply() {
+  const st = app.state, box = $('hard-reply'), on = app.mode === 'hard' && Boolean(st?.solved); box.hidden = !on; if (!on) return;
+  $('reply-plain').textContent = replyFor(st.round);
+  const done = st.reply.done, wrong = st.reply.tries.filter(t => !t.ok).length;
+  $('reply-state').textContent = done ? (st.reply.legacy ? 'Read before replies existed' : `Sent, ${fmt(st.reply.score)} pts`) : wrong ? `Not through yet, ${wrong} wrong ${wrong > 1 ? 'tapes' : 'tape'}` : 'Not sent yet';
+  box.classList.toggle('sent', done); $('reply-go').textContent = done ? 'Reply sent' : 'Encipher and punch the reply'; $('reply-go').disabled = done; $('reply-input').disabled = done;
+  if (done && !$('reply-input').value) $('reply-input').value = replyFor(st.round);
+}
+function sendReply() {
+  if (app.mode !== 'hard' || app.run) return;
+  const st = app.state, r = st.round; if (!st.solved) { setFeedback('bad', 'Read the message first, then send the reply.'); return; }
+  if (st.reply.done) { showCard(false); return; }
+  const text = canon($('reply-input').value); if (!text) { setFeedback('bad', 'Type the reply first.'); return; }
+  const codes = encodeText(text); if (codes.dropped.length) { setFeedback('bad', `The teleprinter can't send ${[...new Set(codes.dropped)].join(' ')}. Stick to letters, figures and the punctuation in the reply.`); return; }
+  const settings = {...app.wheels}; setFeedback('', 'Punching the reply...');
+  runTape({codes, machine: createMachine({patterns: r.patterns, start: settings, model: r.model}), outputAs: 'tape', label: 'Reply', onDone: out => {
+    const rt = $('reply-tape'); rt.hidden = false; rt.innerHTML = tapeHTML(out);
+    const {state, result} = submitReply(app.state, out); app.state = state; saveRound(); renderReply();
+    if (result.ok) return replySuccess();
+    setFeedback('bad', result.repeat ? "That's the same tape as before, so it's free. It still doesn't read as the reply at the other end."
+      : `That tape doesn't read as the reply at the other end. Check the wheels are still on the settings you read the message with, and the words match. That cost ${HARD_RULES.reply.wrong} reply points.`);
+  }});
 }
 function renderRevealed() {
   const st = app.state, chars = revealedChars(st), el = $('revealed-chars');
@@ -539,11 +593,11 @@ function runHard() {
 }
 function checkReading() {
   if (app.mode !== 'hard' || app.run) return;
-  const st = app.state; if (st.solved) { showCard(false); return; }
+  const st = app.state; if (st.solved) { if (hardComplete(st)) showCard(false); else { renderReply(); $('reply-input').focus(); } return; }
   const {state, result} = submitAnswer(st, $('hard-answer').value);
   if (result.empty) { setFeedback('bad', 'Type what the tape says first.'); return; }
   app.state = state; saveRound(); updateScore(); updateHintButtons();
-  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Wheels, book and tape, all by hand.'); return; }
+  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Now send the reply below to finish the round.'); return; }
   setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : `Not right yet. ${result.right} of ${result.of} words are right. That cost ${HARD_RULES.wrong} points.`);
 }
 function checkQep() {
@@ -563,11 +617,16 @@ function hardHint(type) {
   if (kind === 'smudge') { renderBookPage(0); setFeedback('', hardSmudgeText(st.round)); }
 }
 function hardSuccess() {
+  const st = app.state; $('qep-number').textContent = pad2(st.round.qep);
+  counter.animateTo(st.score, {from: 0, reducedMotion: reducedMotion()});
+  setFeedback('good', 'Message read!! Now send the reply below to finish the round.');
+  renderReply(); const box = $('hard-reply'); box.scrollIntoView?.({block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth'}); $('reply-input').focus({preventScroll: true});
+}
+function replySuccess() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
   if (st.round.mode !== 'practice') { app.hardStats = updateHardStats(app.hardStats, st); write('hard:stats', app.hardStats); }
   else { const P = Points(), r = P?.earnPractice('lorenz', utcDateKey()); earned(r, `+${P?.EARN?.practice ?? 20} points for a practice round`); }
-  $('qep-number').textContent = pad2(st.round.qep);
-  setFeedback('good', 'Message read!! Wheels, book and tape, all by hand.');
+  setFeedback('good', 'Reply sent!! Read by hand and answered on the machine.');
   if (plan.fly) {
     const tp = $('screen-game').querySelector('.teleprinter'); tape.fly(); tp.classList.add('tape-fly', 'hard-win'); setTimeout(() => tp.classList.remove('tape-fly', 'hard-win'), 1700);
     const burst = document.createElement('div'); burst.className = 'hard-burst'; burst.setAttribute('aria-hidden', 'true'); document.body.append(burst); setTimeout(() => burst.remove(), 1700);
@@ -580,7 +639,7 @@ function showHardCard(animate) {
   const st = app.state, r = st.round, b = hardBreakdown(st), s = app.hardStats, card = $('decoded-card'), practice = r.mode === 'practice';
   const streak = s && !practice ? `<p class="tiny">Hard mode streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best: ${fmt(s.best)} pts.</p>` : '';
   card.className = 'decoded-card hard-card';
-  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button>${practice ? '<button type="button" data-card="next">Next round</button>' : '<button type="button" data-card="normal">Normal mode</button>'}</div>${practice ? '' : `<p class="countdown">Next intercept in ${countdown()}.</p>`}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
+  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand and answered, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Message</span><span id="card-total">${fmt(st.score)} pts</span></p>${st.reply?.legacy ? '' : `<p class="card-reply-label tiny">Your reply</p><blockquote class="card-reply">${escapeHTML(replyFor(r))}</blockquote><dl>${b.reply.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total reply-total"><span>Reply</span><span id="card-reply-total">${fmt(b.replyTotal)} pts</span></p>`}${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button>${practice ? '<button type="button" data-card="next">Next round</button>' : '<button type="button" data-card="normal">Normal mode</button>'}</div>${practice ? '' : `<p class="countdown">Next intercept in ${countdown()}.</p>`}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
   applyPrintLink(card);
   card.hidden = false; fitCard();
   card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
@@ -604,11 +663,11 @@ function trapFocus(dialog) {
   });
 }
 function openCheat(opener) {
-  const d = $('cheat-dialog'); d.showModal(); d.querySelector('[data-close]').focus();
+  const d = $('cheat-dialog'); d.showModal(); d.querySelector('[data-close]').focus(); if (app.mode === 'hard') renderAid(); d.querySelector('.aid-match')?.scrollIntoView?.({block: 'nearest'});
   d.addEventListener('close', () => opener?.focus?.(), {once: true});
 }
 function bindHard() {
-  buildCheatSheet(); trapFocus($('cheat-dialog'));
+  buildCheatSheet(); trapFocus($('cheat-dialog')); bindAid(); $('reply-go').addEventListener('click', sendReply);
   document.querySelectorAll('[data-cheat]').forEach(b => b.addEventListener('click', () => openCheat(b)));
   $('page-prev').addEventListener('click', () => turnPage(-1)); $('page-next').addEventListener('click', () => turnPage(1));
   $('qep-guess-go').addEventListener('click', checkQep);

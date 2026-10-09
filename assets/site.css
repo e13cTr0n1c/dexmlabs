@@ -31,7 +31,7 @@ a:hover{text-decoration-thickness:2px}
 .hero h1{font:900 clamp(44px,11vw,118px)/.88 var(--head);letter-spacing:-.02em;text-transform:uppercase;margin:22px 14px 18px}
 .hero h1 span{display:block}
 .hero h1 .sm{font-size:.42em;letter-spacing:.02em;color:var(--muted);margin-top:.35em}
-.tagline{display:inline-block;margin:0 14px 18px;padding:6px 10px;background:var(--acid);color:#0a0b09;font:900 clamp(18px,3.4vw,28px)/1.1 var(--head);text-transform:uppercase}
+.tagline{display:inline-block;margin:0 14px 18px;padding:6px 10px;background:var(--acid);color:#0a0b09;font:900 clamp(18px,3.4vw,28px)/1.1 var(--head)}
 .hero p.lead{margin:0 14px 22px;max-width:46ch;font-size:16px}
 .hero .meta{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--edge)}
 .hero .meta div{padding:12px 14px;border-right:1px solid var(--edge)}.hero .meta div:last-child{border-right:0}
