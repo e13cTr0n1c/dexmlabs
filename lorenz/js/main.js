@@ -6,7 +6,7 @@ import {utcDateKey, mulberry32} from './seed.js';
 import {Tape} from './tape.js';
 import {ScoreCounter, rewardPlan, scoreBreakdown} from './reward.js';
 import {CHI_EXAMPLE} from './chi-example.js';
-import {applyPrintLink} from './print-link.js';
+import {applyPrintLink, stlSlotHTML} from './print-link.js';
 
 const $ = id => document.getElementById(id);
 const PREFIX = 'lorenz:';
@@ -264,7 +264,8 @@ function showCard(animate) {
   const st = app.state, r = st.round, b = scoreBreakdown(st), s = app.stats, card = $('decoded-card');
   const streak = r.mode === 'daily' && s ? `<p class="tiny">Streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best: ${fmt(s.best)} pts.</p>` : '';
   const next = r.mode === 'daily' ? `<p class="countdown">Next intercept in ${countdown()}.</p>` : '';
-  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Message decoded</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button><button type="button" data-card="practice">${r.mode === 'daily' ? 'Practice' : 'Next round'}</button></div>${next}<p class="tiny">These messages are made up for the game.</p>`;
+  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Message decoded</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button><button type="button" data-card="practice">${r.mode === 'daily' ? 'Practice' : 'Next round'}</button></div>${next}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
+  applyPrintLink(card);
   card.hidden = false;
   card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
   card.querySelector('[data-card=share]').addEventListener('click', () => share(true));
