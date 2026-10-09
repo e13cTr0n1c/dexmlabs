@@ -1139,6 +1139,11 @@ await t('Pin strip: a window on the rim under a fixed pointer, the top pin in th
   assert.match(css, /:root\[data-theme=light\] \.strip-pin\.up \.strip-line\{background:#5f7800\}/);
   assert.match(fs.readFileSync(path.join(ROOT, 'js/pinface.js'), 'utf8'), /\|\| reducedMotion\(\)\) return;/, 'the slide is skipped under reduced motion');
 });
+await t('Layout: the run bar sits in the column, so it can never be drawn over a panel heading', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'), bar = css.match(/^\.action-bar\{[^}]*\}/m)[0];
+  assert.ok(!/sticky|fixed/.test(bar), bar); assert.match(bar, /background:#080a08;/, 'solid, nothing shows through');
+  assert.match(css, /:root\[data-theme=light\] \.action-bar\{background:#eef1ee;/);
+});
 await t('Panels: every info panel can be hidden with a button that says so, and the page remembers', async () => {
   let stored;
   await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {
