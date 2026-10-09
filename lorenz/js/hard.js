@@ -1,5 +1,8 @@
-/** Hard mode: the same daily round as normal, plus a dated five page book, the QEP sent in clear on the tape
- *  (the preamble), the answer read off punched tape, and its own score and streak. No DOM. */
+/** Hard and realistic modes: the whole job as the operators did it. The QEP sent in clear on the tape (the
+ *  preamble), a dated five page book, the wheel pins set from the day's pattern sheet, the start positions, the
+ *  answer read off punched tape and a reply sent back. Hard asks you to prove each step once and fills in the
+ *  rest; realistic leaves every pin and every character to you and only tells you when the whole reading is in.
+ *  Both have their own score and streak. No DOM. */
 import {BP, FIGURES, FIGURE_CONTROLS, SHIFT, WHEEL, encodeText, decodeText, dotsCrosses, fromBP, crypt} from './lorenz.js';
 import {makeRound, acceptedTexts, randomPositions, makeSmudge, pad2, answerLine, RULES, statsFrom} from './game.js';
 import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
@@ -8,7 +11,7 @@ export const HARD_RULES = Object.freeze({base:1000, wrong:150, qepBonus:200, flo
   hint:Object.freeze({qep:40, char:10, check:20, smudge:50}),  // hints cost shared points, not score
   reply:Object.freeze({base:300, wrong:100, floor:50}),  // the reply you send back is scored on its own
   pins:250});  // the old optional pin bonus in hard mode: only kept so rounds read with it keep their score
-/** Realistic mode: hard mode, plus every wheel's pins set by hand from the pattern sheet. Scored on its own, higher. */
+/** Realistic mode: every pin and character by hand, no help on the way. Scored on its own, higher. */
 export const REAL_RULES = Object.freeze({base:1500, wrong:150, qepBonus:250, floor:150});
 const rulesOf = st => st.round?.realistic ? REAL_RULES : HARD_RULES;
 export const HARD_PREFIX = 'hard:';
@@ -48,7 +51,8 @@ export function readPreamble(codes) { const m = decodeText(codes).match(/QEP\s*(
  *  model), dated today, with its own book pages, preamble and message. */
 export function makeHardRound(opts = {}) {
   const round = makeRound({...opts, mode: opts.mode === 'practice' ? 'practice' : 'daily'}), book = makePages(round);
-  return {...round, hard:true, realistic: Boolean(opts.realistic), ...book, preamble: preambleCodes(round.qep)};
+  // every round sets its own pins now; `realistic` is the mode that does it all by hand
+  return {...round, hard:true, pins:true, realistic: Boolean(opts.realistic), ...book, preamble: preambleCodes(round.qep)};
 }
 
 /** The cheat sheet, straight from lorenz.js: holes, letter shift and figure shift for all 32 codes. */
@@ -113,7 +117,7 @@ export function matchAnswer(input, targets) {
 }
 
 /* ---------- State, scoring, hints ---------- */
-export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:{...newPins(), on: Boolean(round.realistic)}, step: round.realistic ? 'qep' : null});
+export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:{...newPins(), on: Boolean(round.pins)}, step: round.pins ? 'qep' : null});
 
 /* ---------- Realistic mode's guided steps ---------- */
 /** Read the QEP, set the pins, set the start positions, run the tape and read it. You can go back to any step you've
@@ -121,7 +125,7 @@ export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[
 export const GUIDE_STEPS = Object.freeze(['qep', 'pins', 'start', 'run']);
 /** The step to show: the one asked for, as long as the QEP has been read for anything past the first. */
 export function guideStep(st, want) {
-  if (!st?.round?.realistic) return null;
+  if (!st?.round?.pins) return null;
   const known = st.solved || st.hints.some(h => h.type === 'qep') || st.qepGuesses.includes(st.round.qep);
   if (!known) return 'qep';
   return GUIDE_STEPS.includes(want) && want !== 'qep' ? want : want === 'qep' ? 'qep' : st.ran ? 'run' : 'pins';
@@ -131,25 +135,50 @@ export const setStep = (st, want) => ({...st, step: guideStep(st, want)});
 /* ---------- Setting the wheel patterns too (optional) ---------- */
 /** Every pin starts down: you copy the day's patterns from the sheet yourself. */
 export const blankPins = () => Object.fromEntries(Object.values(WHEEL).map(w => [w.id, new Array(w.size).fill(0)]));
-export const newPins = () => ({on:false, grid:blankPins(), ranRight:false, earned:false});
+export const newPins = () => ({on:false, grid:blankPins(), ranRight:false, earned:false, scope:'one', auto:false, legacyBonus:false});
+
+/* ---------- Hard mode's help: prove a step once and the rest fills in ---------- */
+/** The wheels you set yourself in hard mode before the others fill in. */
+export const PIN_SCOPES = Object.freeze({one: Object.freeze(['chi1']), chimu: Object.freeze(['chi1', 'chi2', 'chi3', 'chi4', 'chi5', 'mu37', 'mu61'])});
+export const PROVE = 5;
+const assisted = st => Boolean(st?.round?.pins && !st.round.realistic);
+export const isAssisted = assisted;
+/** Your chosen wheels all match the sheet. */
+export const scopeDone = st => PIN_SCOPES[st.pins.scope || 'one'].every(id => st.pins.grid[id].every((b, i) => (b ? 1 : 0) === st.round.patterns[id][i]));
+/** Choose which wheels you set yourself. Only before the rest have filled in. */
+export const setPinScope = (st, scope) => !assisted(st) || st.solved || st.pins.auto || !PIN_SCOPES[scope] ? st : autoPins({...st, pins:{...st.pins, scope}});
+/** Hard mode: once your chosen wheels are right, the rest are set from the sheet. `filled` lists them in order. */
+export function autoPins(st) {
+  if (!assisted(st) || st.pins.auto || !scopeDone(st)) return st;
+  const mine = PIN_SCOPES[st.pins.scope || 'one'], filled = Object.values(WHEEL).map(w => w.id).filter(id => !mine.includes(id));
+  const grid = {...st.pins.grid}; for (const id of filled) grid[id] = st.round.patterns[id].slice();
+  return {...st, pins:{...st.pins, grid, auto:true, filled}};
+}
+/** Hard mode: once the first five characters you type match `target`, the whole of it; otherwise null. Case,
+ *  spacing and line ends don't matter, as in the answer check. */
+export function proveFill(typed, target) {
+  const t = canon(target), mine = String(typed ?? '').toUpperCase().replace(/\s+/g, ' ').trimStart();
+  if (mine.length < PROVE || t.length <= PROVE) return null;
+  return mine.slice(0, PROVE) === t.slice(0, PROVE) ? t : null;
+}
 /** True only when every pin on all twelve wheels matches the day's patterns. */
 export const pinsMatch = (round, grid) => Object.values(WHEEL).every(w => Array.isArray(grid?.[w.id]) && grid[w.id].length === w.size && grid[w.id].every((b, i) => (b ? 1 : 0) === round.patterns[w.id][i]));
-/** The patterns the machine runs on: your own pins in realistic mode, the day's otherwise. */
-export const runPatterns = st => st.round.realistic ? st.pins.grid : st.round.patterns;
+/** The patterns the machine runs on: your own pins, or the day's for a hard round read before pins were part of it. */
+export const runPatterns = st => st.round.pins && !st.pins.legacy ? st.pins.grid : st.round.patterns;
 export function togglePin(st, id, i) {
-  if (st.solved || !st.round.realistic || !WHEEL[id] || !(i >= 0 && i < WHEEL[id].size)) return st;
+  if (st.solved || !st.round.pins || !WHEEL[id] || !(i >= 0 && i < WHEEL[id].size)) return st;
   const grid = {...st.pins.grid, [id]: st.pins.grid[id].slice()}; grid[id][i] = grid[id][i] ? 0 : 1;
-  return {...st, pins:{...st.pins, grid, ranRight:false}};
+  return autoPins({...st, pins:{...st.pins, grid, ranRight:false}});
 }
-export const clearPins = (st, id) => st.solved || !st.round.realistic || !WHEEL[id] ? st : {...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}};
+export const clearPins = (st, id) => st.solved || !st.round.pins || !WHEEL[id] ? st : {...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}};
 /** Note a run of the tape: the bonus needs the last run before the answer to be on your own, correct patterns. */
-export const notePinRun = st => ({...st, pins:{...st.pins, ranRight: Boolean(st.round.realistic && pinsMatch(st.round, st.pins.grid))}});
+export const notePinRun = st => ({...st, pins:{...st.pins, ranRight: Boolean(st.round.pins && pinsMatch(st.round, st.pins.grid))}});
 const packPins = grid => Object.fromEntries(Object.entries(grid).map(([k, v]) => [k, v.join('')]));
-export const savePins = p => ({on:p.on, grid:packPins(p.grid), ranRight:p.ranRight, earned:p.earned});
+export const savePins = p => ({on:p.on, grid:packPins(p.grid), ranRight:p.ranRight, earned:p.earned, scope:p.scope, auto:p.auto, legacyBonus:p.legacyBonus, legacy:Boolean(p.legacy)});
 function readPins(saved) {
   const p = newPins(); if (!saved || typeof saved !== 'object') return p;
   for (const w of Object.values(WHEEL)) { const g = saved.grid?.[w.id]; if (typeof g === 'string' && g.length === w.size && /^[01]+$/.test(g)) p.grid[w.id] = [...g].map(Number); }
-  return {...p, on:saved.on === true, ranRight:saved.ranRight === true, earned:saved.earned === true};
+  return {...p, on:saved.on === true, ranRight:saved.ranRight === true, earned:saved.earned === true, scope: PIN_SCOPES[saved.scope] ? saved.scope : 'one', auto:saved.auto === true, legacyBonus:saved.legacyBonus === true, legacy:saved.legacy === true};
 }
 
 /* ---------- The reply ---------- */
@@ -187,7 +216,7 @@ export const qepKnown = st => st.hints.some(h => h.type === 'qep') || st.qepGues
 export function hardPenalty(st) {
   return st.answers.filter(a => !a.ok).length * rulesOf(st).wrong;
 }
-const legacyPins = st => !st.round?.realistic && st.pins?.earned ? HARD_RULES.pins : 0;
+const legacyPins = st => !st.round?.realistic && st.pins?.legacyBonus ? HARD_RULES.pins : 0;
 export const hardScoreFor = st => { const R = rulesOf(st); return Math.max(R.floor, R.base + (firstGuessRight(st) ? R.qepBonus : 0) - hardPenalty(st)) + legacyPins(st); };
 export function hardBreakdown(st) {
   const R = rulesOf(st), f = n => Math.round(n).toLocaleString('en-GB'), lines = [[st.round.realistic ? 'Decoded on your own pins' : 'Decoded', f(R.base)]];
@@ -210,19 +239,23 @@ export function submitAnswer(st, input) {
   if (st.solved) return {state:st, result:{ok:true, repeat:true}};
   const m = matchAnswer(input, acceptedTexts(st.round)), key = canon(input);
   if (!key) return {state:st, result:{ok:false, empty:true, right:0, of:m.of}};
-  // Realistic: the reading has to come off a run on your own, correct pins. Not counted as a wrong reading.
-  if (m.ok && st.round.realistic && !st.pins?.ranRight) return {state:st, result:{ok:false, needPins:true, right:m.right, of:m.of}};
+  // The reading has to come off a run on your own, correct pins. Not counted as a wrong reading. Realistic doesn't
+  // say why, or how close you were: you only learn it's right when it is.
+  if (m.ok && st.round.pins && !st.pins?.ranRight) return {state:st, result: st.round.realistic ? {ok:false, quiet:true, free:true} : {ok:false, needPins:true, right:m.right, of:m.of}};
   const repeat = !m.ok && st.answers.some(a => a.key === key);
   const answers = repeat ? st.answers : [...st.answers, {key, ok:m.ok}];
   const next = {...st, answers, solved:m.ok};
-  if (m.ok && st.round.realistic) next.pins = {...st.pins, earned: true};
+  if (m.ok && st.round.pins) next.pins = {...st.pins, earned: true};
   next.score = m.ok ? hardScoreFor(next) : 0;
+  if (st.round.realistic && !m.ok) return {state:next, result:{ok:false, quiet:true, repeat}};
   return {state:next, result:{...m, repeat}};
 }
 /** Characters of the message as printed, for the reveal a character hint. */
 export const messageChars = round => [...canon(round.text)];
+/** Hints that tell you whether a single character or wheel is right. Realistic has none of them. */
+export const REAL_NO_HINTS = Object.freeze(['char', 'check']);
 export function useHardHint(st, type, {settings, wheel} = {}) {
-  if (st.solved || !HARD_RULES.hint[type]) return {state:st, answer:null};
+  if (st.solved || !HARD_RULES.hint[type] || (st.round.realistic && REAL_NO_HINTS.includes(type))) return {state:st, answer:null};
   if (type === 'qep') { if (st.hints.some(h => h.type === 'qep')) return {state:st, answer:{qep:st.round.qep}}; return {state:{...st, hints:[...st.hints, {type}]}, answer:{qep:st.round.qep}}; }
   if (type === 'char') { const chars = messageChars(st.round), i = st.hints.filter(h => h.type === 'char').length; if (i >= chars.length) return {state:st, answer:null};
     return {state:{...st, hints:[...st.hints, {type}]}, answer:{index:i, char:chars[i]}}; }
@@ -240,7 +273,7 @@ export function hardSmudgeText(round) {
 
 /** Saves made with this answer check carry this version. Anything older was checked against the wrong message or
  *  with the old character by character check, so its wrong readings are refunded on load. */
-export const HARD_SAVE_VERSION = 2;
+export const HARD_SAVE_VERSION = 3;  // 3: hard sets pins too, with help
 /** Saved hard progress, checked field by field. Never throws: a damaged save just gives a fresh round. */
 export function restoreHard(round, saved) {
   try {
@@ -250,7 +283,7 @@ export function restoreHard(round, saved) {
     const qepGuesses = Array.isArray(s.qepGuesses) ? s.qepGuesses.filter(n => Number.isInteger(n) && n >= 1 && n <= 99) : [];
     const ran = s.ran && typeof s.ran === 'object' ? s.ran : null;
     let refunded = 0, solvedNow = false;
-    if (s.v !== HARD_SAVE_VERSION && answers.length) {
+    if (s.v !== HARD_SAVE_VERSION && s.v !== 2 && answers.length) {
       // Old save: check every stored reading again with the fixed check, keep only the ones that pass, refund the rest.
       const texts = acceptedTexts(round), passing = answers.filter(a => (a.ok && s.solved === true) || matchAnswer(a.key, texts).ok);
       refunded = answers.filter(a => !a.ok).length;
@@ -260,10 +293,14 @@ export function restoreHard(round, saved) {
     // Rounds read before replies existed count as finished, so nobody loses a streak.
     const r = s.reply && typeof s.reply === 'object' ? s.reply : null, tries = Array.isArray(r?.tries) ? r.tries.filter(t => t && typeof t.key === 'string').map(t => ({key:t.key, ok:Boolean(t.ok)})) : [];
     const legacy = s.solved === true && (!r || r.legacy === true);
-    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || s.v !== HARD_SAVE_VERSION), refunded, solvedNow, pins:readPins(s.pins)};
+    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || (s.v !== HARD_SAVE_VERSION && s.v !== 2)), refunded, solvedNow, pins:readPins(s.pins)};
     if (!st.solved) st.pins.earned = false;
-    // Hard mode no longer sets pins: an unfinished hard round with them switched on goes back to the day's patterns.
-    if (!round.realistic) { st.pins.on = false; st.pins.ranRight = false; } else st.pins.on = true;
+    // Hard rounds from before version 3 ran on the day's patterns. Read ones keep their score (and the old optional
+    // pin bonus, if they earned it); unfinished ones carry on in the new hard mode with their QEP, hints and readings,
+    // from blank pins.
+    const oldHard = !round.realistic && Number(s.v || 0) < 3;
+    if (oldHard) { st.pins.legacyBonus = st.solved && s.pins?.earned === true; if (!st.solved) { st.pins = {...newPins()}; st.ran = null; } else st.pins.legacy = true; }
+    st.pins.on = true;
     st.score = st.solved ? hardScoreFor(st) : 0;
     st.step = guideStep(st, s.step);
     st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0};

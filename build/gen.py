@@ -175,7 +175,7 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>lorenz:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz round</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:stats</code></td><td>Lorenz best score and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>lorenz:difficulty</code></td><td>Whether you play Lorenz in normal, hard or realistic mode</td><td>Until you clear it</td></tr>
-<tr><td><code>lorenz:hard:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz hard mode round</td><td>The last 7 days are kept</td></tr>
+<tr><td><code>lorenz:hard:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz hard mode round, with your pins</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:hard:stats</code></td><td>Lorenz hard mode best score and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>lorenz:real:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz realistic mode round, with your pins</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:real:stats</code></td><td>Lorenz realistic mode best score and streak</td><td>Until you clear it</td></tr>

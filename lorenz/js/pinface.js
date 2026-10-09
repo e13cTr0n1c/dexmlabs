@@ -42,13 +42,13 @@ export function createPinFace(root, {get, toggle, back, onWheel = () => {}, redu
   /** The rim unrolled into a straight window: the pin at the top sits in the middle under the pointer, with a few
    *  pins either side that wrap past the last pin back to pin 1. One extra pin each side, out of sight, lets it slide. */
   let shownPos = null, shownWheel = null;
-  function drawStrip(bits, locked, sheet) {
+  function drawStrip(bits, locked, sheet, marks) {
     const size = bits.length, k = stripReach(root.clientWidth - 20), slots = [];
     for (let o = -k - 1; o <= k + 1; o++) slots.push(wrap(pos + o, size));
     strip.style.setProperty('--reach', String(k));
     track.innerHTML = slots.map((i, n) => {
       // the strip shows the sheet's pin; the button's pressed state is yours, and only the pin at the top says if they differ
-      const edge = n === 0 || n === slots.length - 1, up = sheet[i] === 1, mine = bits[i] === 1, cur = n === k + 1, differs = cur && up !== mine;
+      const edge = n === 0 || n === slots.length - 1, up = sheet[i] === 1, mine = bits[i] === 1, cur = n === k + 1, differs = marks && cur && up !== mine;
       return `<button type="button" class="strip-pin${up ? ' up' : ''}${cur ? ' cur' : ''}${differs ? ' differs' : ''}" data-strip="${i}" aria-pressed="${mine}" aria-label="Pin ${i + 1}, sheet ${up ? 'raised' : 'lowered'}${differs ? ', yours differs' : ''}"${cur ? ' aria-current="true"' : ''}${edge ? ' tabindex="-1" aria-hidden="true"' : ''}${locked ? ' disabled' : ''}><span class="strip-n" aria-hidden="true">${i + 1}</span><span class="strip-line" aria-hidden="true"></span></button>`;
     }).join('');
     // slide from where it was: a step or a few, the short way round; instant under reduced motion
@@ -61,8 +61,8 @@ export function createPinFace(root, {get, toggle, back, onWheel = () => {}, redu
     track.style.transition = 'transform .18s ease-out'; track.style.transform = '';
   }
   function draw() {
-    const {grid, locked, sheet} = get(), bits = grid[id], w = WHEEL[id], up = bits[pos] === 1;
-    drawStrip(bits, locked, sheet?.[id] || bits);
+    const {grid, locked, sheet, marks} = get(), bits = grid[id], w = WHEEL[id], up = bits[pos] === 1;
+    drawStrip(bits, locked, sheet?.[id] || bits, marks !== false);
     wheel.innerHTML = faceSVG(bits, pos); wheel.dataset.wheel = id; wheel.dataset.pos = String(pos);
     wheel.setAttribute('aria-label', `${w.label}, pin ${pos + 1} of ${w.size} at the top, ${up ? 'raised' : 'lowered'}`);
     root.querySelector('#face-name').textContent = `${w.label}: pin ${pos + 1} of ${w.size}, ${bits.filter(Boolean).length} raised`;
