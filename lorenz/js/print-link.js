@@ -5,7 +5,7 @@ export const CULTS_URL = 'https://cults3d.com/en/3d-model/gadget/lorenz-cipher-c
 export const PRINTABLES_URL = 'https://www.printables.com/model/1870782-lorenz-cipher-chi-wheel-demonstrator-simplified-sz';
 
 const isUrl = u => typeof u === 'string' && /^https:\/\/\S+$/.test(u.trim());
-export const STL_LABEL = 'Support me by downloading the Lorenz machine STL';
+export const STL_LABEL = 'Support me: download the free chi wheel model (STL)';
 export const STL_SUB = 'Free to download, tip if you like.';
 
 /** The slot's markup. `size` is 'large' (title screen, card) or 'small' (about page). */

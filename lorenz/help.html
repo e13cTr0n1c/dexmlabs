@@ -8,6 +8,17 @@
   <title>How to play Lorenz</title>
   <meta name="description" content="How to play Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
   <link rel="canonical" href="https://dexmlabs.app/lorenz/help.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Deus Ex Machina Labs">
+  <meta property="og:title" content="How to play Lorenz">
+  <meta property="og:description" content="How to play Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
+  <meta property="og:url" content="https://dexmlabs.app/lorenz/help.html">
+  <meta property="og:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lorenz: the twelve wheels of the cipher machine and the teleprinter tape, from the game">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./css/style.css">
   <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
@@ -27,8 +38,8 @@
 
   <main id="main" class="document-page">
     <h1>How to play, and the history</h1>
-    <p class="lede">How to read today's intercept, how the machine works under the bonnet, and the true story of how Bletchley Park broke it.</p>
-    <p class="disclaimer">This is a game. The cam patterns, the QEP book and the messages are made up for it, and nothing here is a real intercept.</p>
+    <p class="lede">How to read today's intercept, how the machine works under the bonnet, and a short history, with sources, of how Bletchley Park broke it.</p>
+    <p class="disclaimer">This is a game. The cam patterns, the QEP book and the messages are made up for it, and nothing here is a real intercept. Not affiliated with or endorsed by Bletchley Park, The National Museum of Computing or the Crypto Museum.</p>
 
     <h2>How to play</h2>
     <ol>
@@ -59,7 +70,7 @@
     <p>Practice has three tabs. Random settings gives you a fresh intercept as often as you like, on the SZ40 or the SZ42A. Encipher lets you type your own message and get a tape out, using today's cam patterns and whatever wheel settings you choose. Run that tape back in with the same settings and you get your message back. Chi only is below.</p>
 
     <h2>Chi only mode, which matches the printable model</h2>
-    <p>Chi only uses just the five chi wheels (41, 31, 29, 26 and 23 cams), with no psi or motor wheels, so the key for each character is the chi on its own. It's there because a simplified printable model is on the way, and this mode works the same way as that model. You can type your own cam pattern for each chi wheel and set the start positions, then encipher or decipher.</p>
+    <p>Chi only uses just the five chi wheels (41, 31, 29, 26 and 23 cams), with no psi or motor wheels, so the key for each character is the chi on its own. It's there because I've made a simplified printable model of the chi wheels, and this mode works the same way as that model. You can type your own cam pattern for each chi wheel and set the start positions, then encipher or decipher.</p>
     <p>The conventions are the same as the model's, so your paper workings, the model and the screen all agree:</p>
     <ul>
       <li>Each character is five impulses, written 1 to 5 from left to right. Impulse 1 is the top hole on the tape, so E is 10000 and T is 00001.</li>
@@ -94,15 +105,15 @@
 <tr><td>15</td><td>.xxxx</td><td>V</td><td>V</td><td>=</td></tr>
 <tr><td>16</td><td>x....</td><td>E</td><td>E</td><td>3</td></tr>
 <tr><td>17</td><td>x...x</td><td>Z</td><td>Z</td><td>+</td></tr>
-<tr><td>18</td><td>x..x.</td><td>D</td><td>D</td><td>(none)</td></tr>
+<tr><td>18</td><td>x..x.</td><td>D</td><td>D</td><td>Who are you? (WRU)</td></tr>
 <tr><td>19</td><td>x..xx</td><td>B</td><td>B</td><td>?</td></tr>
 <tr><td>20</td><td>x.x..</td><td>S</td><td>S</td><td>&#39;</td></tr>
 <tr><td>21</td><td>x.x.x</td><td>Y</td><td>Y</td><td>6</td></tr>
 <tr><td>22</td><td>x.xx.</td><td>F</td><td>F</td><td>%</td></tr>
 <tr><td>23</td><td>x.xxx</td><td>X</td><td>X</td><td>/</td></tr>
-<tr><td>24</td><td>xx...</td><td>A</td><td>A</td><td>minus &#8722;</td></tr>
+<tr><td>24</td><td>xx...</td><td>A</td><td>A</td><td>dash (-)</td></tr>
 <tr><td>25</td><td>xx..x</td><td>W</td><td>W</td><td>2</td></tr>
-<tr><td>26</td><td>xx.x.</td><td>J</td><td>J</td><td>(none)</td></tr>
+<tr><td>26</td><td>xx.x.</td><td>J</td><td>J</td><td>Bell</td></tr>
 <tr><td>27</td><td>xx.xx</td><td>5</td><td>figure shift</td><td>same</td></tr>
 <tr><td>28</td><td>xxx..</td><td>U</td><td>U</td><td>7</td></tr>
 <tr><td>29</td><td>xxx.x</td><td>Q</td><td>Q</td><td>1</td></tr>
@@ -128,10 +139,11 @@
 
     <h2>What's real and what's made up</h2>
     <ul>
-      <li>Real: the twelve wheels and their cam counts, the order they stand in, the motor logic, the chi 2 one back limitation, the teleprinter alphabet, the tape layout and the way the QEP number pointed to a set of start positions.</li>
+      <li>From the sources: the twelve wheels and their cam counts, the order they stand in, the motor logic and the chi 2 one back limitation as the General Report on Tunny describes them for the SZ40 and SZ42A, the teleprinter alphabet, the tape layout and the way the QEP number pointed to a set of start positions.</li>
       <li>Made up: the cam patterns. The real ones changed regularly and were never published, so the game makes a new set every day from the date. My rules are: chi and psi wheels about half raised with no more than four the same in a row, and the motor wheels a bit over half raised. Those are my rules, not the German ones.</li>
       <li>Made up: every message. I wrote them in the clipped style of wartime signals in English. Real Tunny traffic was in German, and none of these is a real intercept.</li>
-      <li>Simplified: the receiving teleprinter here prints figures in a UK style, and messages only use letters, figures, spaces and a little punctuation.</li>
+      <li>Simplified: the hard mode preamble (letter shift, QEP, a space, figure shift, two figures, letter shift) is a layout I made for the game, not a copy of a real one.</li>
+      <li>Simplified: the receiving teleprinter here prints figures in a UK style, figure shift D (Who are you?) and J (bell) print nothing, and messages only use letters, figures, spaces and a little punctuation.</li>
     </ul>
 
     <h2>The history, briefly</h2>

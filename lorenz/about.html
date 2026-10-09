@@ -8,6 +8,17 @@
   <title>Why I built Lorenz</title>
   <meta name="description" content="Why I built Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
   <link rel="canonical" href="https://dexmlabs.app/lorenz/about.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Deus Ex Machina Labs">
+  <meta property="og:title" content="Why I built Lorenz">
+  <meta property="og:description" content="Why I built Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
+  <meta property="og:url" content="https://dexmlabs.app/lorenz/about.html">
+  <meta property="og:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lorenz: the twelve wheels of the cipher machine and the teleprinter tape, from the game">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./css/style.css">
   <script type="module" src="./js/about.js"></script><script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
@@ -27,8 +38,8 @@
 
   <main id="main" class="document-page">
     <h1>Why I built it</h1>
-    <p class="lede">Lorenz is a free daily puzzle about the German teleprinter cipher that Bletchley Park called Tunny. I'm Arthur, and I made it.</p>
-    <p class="disclaimer">This is a game. The cam patterns and messages are made up for it, and nothing here is a real intercept.</p>
+    <p class="lede">Lorenz is a free daily puzzle about the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny, a cipher attachment used with a teleprinter. I'm Arthur, and I made it.</p>
+    <p class="disclaimer">This is a game. The cam patterns and messages are made up for it, and nothing here is a real intercept. Not affiliated with or endorsed by Bletchley Park, The National Museum of Computing or the Crypto Museum.</p>
 
     <h2>Me and radio</h2>
     <div class="me-and-radio">
@@ -40,12 +51,12 @@
     </div>
 
     <h2>Why Tunny</h2>
-    <p class="prose">Before this I made <a href="../skywave/">Skywave</a>, a game about how HF radio signals get round the world. Tunny is the same world from another angle. The most important German messages of the war went out as enciphered teleprinter signals, by radio, and British stations sat and listened to them. Then a handful of people at Bletchley Park worked out the machine making them without ever seeing it... I wanted to understand how, so I built one I could play with.</p>
-    <p class="prose">The machine logic follows the wartime General Report on Tunny as closely as I could manage. The wheels, cam counts, motor logic, tape and alphabet are real. The cam patterns and messages are mine. The <a href="./help.html">guide</a> says exactly which is which, with sources.</p>
+    <p class="prose">Before this I made <a href="../skywave/">Skywave</a>, a game about how HF radio signals get round the world. Tunny is the same world from another angle. Messages between the German High Command and army commanders went out as enciphered teleprinter signals, by radio, and British stations sat and listened to them. Then a handful of people at Bletchley Park worked out the machine making them without ever seeing it... I wanted to understand how, so I built one I could play with.</p>
+    <p class="prose">I've followed the wartime sources as closely as I could manage. The wheels, cam counts, tape and alphabet match them, and the motor logic follows the SZ40 and SZ42A as described in the General Report on Tunny. The cam patterns and messages are mine. The <a href="./help.html">guide</a> says exactly which is which, with sources.</p>
 
     <h2>Print your own</h2>
     <p class="prose">I've made a simplified printable model: the five chi wheels, as a teaching model. The Chi only mode in practice works the same way as that model.</p>
-    <div class="stl-slot stl-small" data-stl="about" hidden><a class="stl-button"><span class="stl-label">Support me by downloading the Lorenz machine STL</span><span class="stl-sub">Free to download, tip if you like.</span></a><a class="stl-alt" hidden>Also on Printables</a></div>
+    <div class="stl-slot stl-small" data-stl="about" hidden><a class="stl-button"><span class="stl-label">Support me: download the free chi wheel model (STL)</span><span class="stl-sub">Free to download, tip if you like.</span></a><a class="stl-alt" hidden>Also on Printables</a></div>
 
     <h2>What's stored, and where</h2>
     <p class="prose">Everything stays in your browser. Each day's intercept is worked out from the UTC date. Your progress, settings, best score and streak are kept in this browser's localStorage. Practice rounds don't touch your streak. There's no backend, no accounts, no cookies and no advertising. I count visits with Cloudflare Web Analytics, which sets no cookies and only gives me totals. See <a href="../cookies/">cookies and storage</a> for how to clear it all.</p>
