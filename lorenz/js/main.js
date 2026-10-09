@@ -1,8 +1,8 @@
 /** Lorenz: page controller. Wires the pure cipher and game modules to the DOM, the tape and the 3D view. */
 import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
-import {makeRound, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
+import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
-import {makeHardRound, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
+import {makeHardRound, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
 import {tapeHTML, holesHTML, holesText} from './punch.js';
 import {utcDateKey, mulberry32} from './seed.js';
 import {Tape} from './tape.js';
@@ -110,17 +110,25 @@ function refreshTitle() {
   $('title-stats').textContent = st?.rounds ? `Your ${hard ? 'hard mode ' : ''}streak: ${st.streak} day${st.streak === 1 ? '' : 's'}. Best score ${fmt(st.best)}. A new intercept every day at 00:00 UTC.` : 'Twelve wheels, 501 cams, a new intercept every day at 00:00 UTC.';
 }
 function startDaily() {
-  app.mode = 'daily'; app.tab = 'random'; app.daily = {round: makeRound({mode:'daily'})};
-  const r = app.daily.round, saved = read(`round:${r.key}`, null);
+  app.mode = 'daily'; app.tab = 'random';
+  let r = makeRound({mode:'daily'}); const saved = read(`round:${r.key}`, null);
+  r = withSavedText(r, saved, t => makeRound({mode:'daily', text: t})); app.daily = {round: r};
   app.state = restoreState(r, saved);
   app.wheels = sanitiseWheels(saved?.wheels);
   enterGame();
 }
 function startHard() {
-  app.mode = 'hard'; app.tab = 'random'; const r = makeHardRound({});
+  app.mode = 'hard'; app.tab = 'random'; let r = makeHardRound({});
   const saved = read(`hard:round:${r.key}`, null);
+  r = withSavedText(r, saved, t => makeHardRound({text: t}));
   app.state = restoreHard(r, saved); app.wheels = sanitiseWheels(saved?.wheels); app.page = r.openIndex; app.marked = new Set();
+  const {refunded, solvedNow} = app.state;
+  if (refunded || solvedNow || saved?.v !== HARD_SAVE_VERSION) saveRound();
+  if (solvedNow) { app.hardStats = updateHardStats(app.hardStats, app.state); write('hard:stats', app.hardStats); }
   enterGame();
+  if (refunded || solvedNow) setFeedback('good', solvedNow
+    ? `Sorry, my answer check was wrong earlier. Your reading was right, so the round's solved and I've given back the ${fmt(refunded * HARD_RULES.wrong)} points it took.`
+    : `Sorry, my answer check was wrong earlier. I've given back the ${fmt(refunded * HARD_RULES.wrong)} points it took for your readings.`);
 }
 function startPractice(tab = 'random') {
   app.mode = 'practice'; app.tab = tab;
@@ -132,6 +140,12 @@ function newPractice(model, render = true) {
   const seed = (Math.random() * 2 ** 32) >>> 0;
   app.practice = newState(makeRound({mode:'practice', seed, model}));
   if (render) { app.state = app.practice; renderRound(); syncView(false); clearOutput(); }
+}
+/** If a save carries the message it was played with, and that message was live for the day, rebuild the round from
+ *  it so the tape and the answer can't drift apart. */
+function withSavedText(round, saved, rebuild) {
+  const t = saved && typeof saved === 'object' ? saved.text : null;
+  return typeof t === 'string' && t !== round.text && acceptedTexts(round).includes(t) ? rebuild(t) : round;
 }
 /** Saved progress from localStorage, checked field by field so an old or damaged save can't break the round. */
 function restoreState(round, saved) {
@@ -202,12 +216,12 @@ function updateScore() { if (!app.state) return; counter.show(app.state.solved ?
 function saveRound() {
   const st = app.state;
   if (app.mode === 'hard') {
-    write(`hard:round:${st.round.key}`, {answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, wheels: app.wheels});
+    write(`hard:round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, wheels: app.wheels});
     try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'hard:round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     return;
   }
   if (st.round.mode !== 'daily') { app.practiceWheels = {...app.wheels}; return; }
-  write(`round:${st.round.key}`, {attempts: st.attempts, hints: st.hints, solved: st.solved, score: st.score, wheels: app.wheels});
+  write(`round:${st.round.key}`, {v: 2, text: st.round.text, attempts: st.attempts, hints: st.hints, solved: st.solved, score: st.score, wheels: app.wheels});
   try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
 }
 function setFeedback(tone, text) { const f = $('feedback'); f.className = `feedback ${tone || ''}`; f.innerHTML = `<p>${escapeHTML(text)}</p>`; }
@@ -440,8 +454,8 @@ function checkReading() {
   const {state, result} = submitAnswer(st, $('hard-answer').value);
   if (result.empty) { setFeedback('bad', 'Type what the tape says first.'); return; }
   app.state = state; saveRound(); updateScore(); updateHintButtons();
-  if (result.ok) return hardSuccess();
-  setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : `Not right yet. ${result.right} of ${result.of} characters are right where they should be. That cost ${HARD_RULES.wrong} points.`);
+  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Wheels, book and tape, all by hand.'); return; }
+  setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : `Not right yet. ${result.right} of ${result.of} words are right. That cost ${HARD_RULES.wrong} points.`);
 }
 function checkQep() {
   const st = app.state, {state, result} = guessQep(st, $('qep-guess').value);

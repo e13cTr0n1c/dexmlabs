@@ -1,7 +1,7 @@
 /** Daily round: wheel patterns, QEP book page, the intercept, scoring, streak and share text. No DOM. */
 import {WHEELS, WHEEL, MODELS, MARK, SPACE, POSITION_BASE, encodeText, crypt, toBP} from './lorenz.js';
 import {mulberry32, dailySeed, dayNumber, utcDateKey, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
-import {MESSAGES} from './messages.js';
+import {MESSAGES, MESSAGE_SETS, ALSO_LIVE} from './messages.js';
 
 export const RULES = Object.freeze({base:1000, wrong:150, hint:{reveal:300, check:100}, floor:100, bookEntries:6});
 
@@ -43,14 +43,19 @@ export function makeSmudge(rng, start) {
   return {wheel:w.id, shown:`?${units}`, candidates};
 }
 
-/** The message for a day: a fixed shuffle of the list, walked one per day, so it won't repeat for 40 days. */
-export function messageFor(number) {
-  const order = shuffle(mulberry32(hashString(`${SEED_VERSION}:messages`)), MESSAGES.map((_, i) => i));
-  return MESSAGES[order[((number - 1) % order.length + order.length) % order.length]];
+/** The list a day uses: the latest set that had started by that UTC date. */
+export const messageListFor = key => (MESSAGE_SETS.filter(s => s.from <= key).pop() || MESSAGE_SETS[0]).list;
+/** The message for a day: a fixed shuffle of that day's list, walked one per day, so it won't repeat for 40 days. */
+export function messageFor(number, key = '9999-12-31') {
+  const list = messageListFor(key);
+  const order = shuffle(mulberry32(hashString(`${SEED_VERSION}:messages`)), list.map((_, i) => i));
+  return list[order[((number - 1) % order.length + order.length) % order.length]];
 }
+/** Every message a player could have been given for a daily round: the day's own, plus any that were also live. */
+export const acceptedTexts = round => [round.text, ...(round.mode === 'daily' ? (ALSO_LIVE[round.key] || []) : [])].filter((t, i, a) => a.indexOf(t) === i);
 
 /** Build a round. mode 'daily' uses the UTC date; 'practice' takes any seed. */
-export function makeRound({mode = 'daily', date = new Date(), seed, model} = {}) {
+export function makeRound({mode = 'daily', date = new Date(), seed, model, text: given} = {}) {
   const key = utcDateKey(date), number = dayNumber(date);
   const s = mode === 'daily' ? dailySeed(date) : (seed >>> 0);
   const rng = mulberry32(s);
@@ -63,7 +68,9 @@ export function makeRound({mode = 'daily', date = new Date(), seed, model} = {})
   while (book.length < RULES.bookEntries - 1) { const q = randomInt(rng, 1, 99); if (!others.has(q)) { others.add(q); const st = randomPositions(rng); book.push({qep:q, start:st, smudge: rng() < .5 ? makeSmudge(rng, st) : null}); } }
   // Today's line always carries today's smudge: the book, the hint and the decode all read this one entry.
   book.splice(randomInt(rng, 0, book.length), 0, {qep, start, smudge});
-  const text = mode === 'daily' ? messageFor(number) : MESSAGES[randomInt(rng, 0, MESSAGES.length - 1)];
+  const picked = mode === 'daily' ? messageFor(number, key) : MESSAGES[randomInt(rng, 0, MESSAGES.length - 1)];
+  // A saved round can carry the text it was played with, so the tape and the answer always come from the same message.
+  const text = typeof given === 'string' && given ? given : picked;
   const plainCodes = [...encodeText(text)];
   const cipherCodes = crypt(plainCodes, {patterns, start, model:chosenModel});
   return {mode, key, number, seed:s, model:chosenModel, patterns, start, qep, smudge, book: book.sort((a, b) => a.qep - b.qep), text, plainCodes, cipherCodes, cipher: toBP(cipherCodes)};

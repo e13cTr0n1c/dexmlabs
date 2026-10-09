@@ -1,7 +1,7 @@
 /** Hard mode: the same daily round as normal, plus a dated five page book, the QEP sent in clear on the tape
  *  (the preamble), the answer read off punched tape, and its own score and streak. No DOM. */
 import {BP, FIGURES, FIGURE_CONTROLS, SHIFT, WHEEL, encodeText, decodeText, dotsCrosses, fromBP} from './lorenz.js';
-import {makeRound, randomPositions, makeSmudge, pad2, answerLine, RULES, statsFrom} from './game.js';
+import {makeRound, acceptedTexts, randomPositions, makeSmudge, pad2, answerLine, RULES, statsFrom} from './game.js';
 import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
 
 export const HARD_RULES = Object.freeze({base:1000, wrong:150, qepBonus:200, floor:100, pages:5,
@@ -62,11 +62,45 @@ export function readings(input) {
   out.push(s.toUpperCase().replace(/(?<![0-8])9+(?![0-8])/g, ' '));
   return out;
 }
-export function matchAnswer(input, target) {
-  const c = canon(target), l = loose(target), all = readings(input);
-  const ok = all.some(r => canon(r) === c || loose(r) === l);
-  const best = Math.max(...all.map(r => { const a = canon(r); let n = 0; for (let i = 0; i < c.length; i++) if (a[i] === c[i]) n++; return n; }));
-  return {ok, right: ok ? c.length : best, of: c.length};
+/** What's compared: capitals, figures and single spaces. Punctuation, shifts and line ends don't count, because
+ *  figure shift punctuation is easy to misread and isn't what the puzzle is about. Figures must match exactly. */
+export const norm = s => String(s ?? '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+const words = s => { const n = norm(s); return n ? n.split(' ') : []; };
+/** Edit distance, for the one letter typo allowance. */
+function lev(a, b) {
+  const d = Array.from({length: a.length + 1}, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+/** Words of the target found in order in the reading (longest common subsequence), so one slip early on
+ *  doesn't make everything after it count as wrong. */
+function wordsRight(a, b) {
+  const d = Array.from({length: a.length + 1}, () => Array(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = a[i - 1] === b[j - 1] ? d[i - 1][j - 1] + 1 : Math.max(d[i - 1][j], d[i][j - 1]);
+  return d[a.length][b.length];
+}
+/** A single letter typo in one word made only of letters still counts. Figures never get that allowance. */
+function oneTypo(a, b) {
+  if (a.length !== b.length || b.length < 3) return false;
+  const diff = a.map((w, i) => i).filter(i => a[i] !== b[i]);
+  return diff.length === 1 && /^[A-Z]+$/.test(a[diff[0]]) && /^[A-Z]+$/.test(b[diff[0]]) && lev(a[diff[0]], b[diff[0]]) === 1;
+}
+/** Check a reading against the message (or messages) the player's tape could have said. */
+export function matchAnswer(input, targets) {
+  const list = (Array.isArray(targets) ? targets : [targets]).filter(t => typeof t === 'string' && t);
+  let best = {ok:false, near:false, right:0, of: words(list[0]).length, unit:'words'};
+  for (const target of list) {
+    const tw = words(target);
+    for (const r of readings(input)) {
+      const rw = words(r);
+      if (rw.join(' ') === tw.join(' ')) return {ok:true, near:false, right:tw.length, of:tw.length, unit:'words', target};
+      if (oneTypo(rw, tw)) return {ok:true, near:true, right:tw.length - 1, of:tw.length, unit:'words', target};
+      const right = wordsRight(rw, tw);
+      if (right / tw.length > best.right / best.of) best = {ok:false, near:false, right, of:tw.length, unit:'words'};
+    }
+  }
+  return best;
 }
 
 /* ---------- State, scoring, hints ---------- */
@@ -95,7 +129,7 @@ export function guessQep(st, value) {
 /** Check a reading of the output tape against the message. A repeat of the same wrong reading is free. */
 export function submitAnswer(st, input) {
   if (st.solved) return {state:st, result:{ok:true, repeat:true}};
-  const m = matchAnswer(input, st.round.text), key = canon(input);
+  const m = matchAnswer(input, acceptedTexts(st.round)), key = canon(input);
   if (!key) return {state:st, result:{ok:false, empty:true, right:0, of:m.of}};
   const repeat = !m.ok && st.answers.some(a => a.key === key);
   const answers = repeat ? st.answers : [...st.answers, {key, ok:m.ok}];
@@ -121,16 +155,31 @@ export function hardSmudgeText(round) {
   return `On today's page, the smudged figure on your line is ${WHEEL[sm.wheel].label} at ${pad2(line.start[sm.wheel])}.`;
 }
 
-/** Saved hard progress, checked field by field. */
+/** Saves made with this answer check carry this version. Anything older was checked against the wrong message or
+ *  with the old character by character check, so its wrong readings are refunded on load. */
+export const HARD_SAVE_VERSION = 2;
+/** Saved hard progress, checked field by field. Never throws: a damaged save just gives a fresh round. */
 export function restoreHard(round, saved) {
-  const s = saved && typeof saved === 'object' ? saved : {};
-  const answers = Array.isArray(s.answers) ? s.answers.filter(a => a && typeof a.key === 'string').map(a => ({key:a.key, ok:Boolean(a.ok)})) : [];
-  const hints = Array.isArray(s.hints) ? s.hints.filter(h => h && HARD_RULES.hint[h.type]).map(h => h.type === 'check' ? {type:'check', wheel:String(h.wheel)} : {type:h.type}) : [];
-  const qepGuesses = Array.isArray(s.qepGuesses) ? s.qepGuesses.filter(n => Number.isInteger(n) && n >= 1 && n <= 99) : [];
-  const ran = s.ran && typeof s.ran === 'object' ? s.ran : null;
-  const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: s.solved === true && answers.some(a => a.ok)};
-  st.score = st.solved ? hardScoreFor(st) : 0;
-  return st;
+  try {
+    const s = saved && typeof saved === 'object' ? saved : {};
+    let answers = Array.isArray(s.answers) ? s.answers.filter(a => a && typeof a.key === 'string').map(a => ({key:a.key, ok:Boolean(a.ok)})) : [];
+    const hints = Array.isArray(s.hints) ? s.hints.filter(h => h && HARD_RULES.hint[h.type]).map(h => h.type === 'check' ? {type:'check', wheel:String(h.wheel)} : {type:h.type}) : [];
+    const qepGuesses = Array.isArray(s.qepGuesses) ? s.qepGuesses.filter(n => Number.isInteger(n) && n >= 1 && n <= 99) : [];
+    const ran = s.ran && typeof s.ran === 'object' ? s.ran : null;
+    let refunded = 0, solvedNow = false;
+    if (s.v !== HARD_SAVE_VERSION && answers.length) {
+      // Old save: check every stored reading again with the fixed check, keep only the ones that pass, refund the rest.
+      const texts = acceptedTexts(round), passing = answers.filter(a => (a.ok && s.solved === true) || matchAnswer(a.key, texts).ok);
+      refunded = answers.filter(a => !a.ok).length;
+      solvedNow = passing.length > 0 && s.solved !== true;
+      answers = passing.length ? [{key: passing[0].key, ok: true}] : [];
+    }
+    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || s.v !== HARD_SAVE_VERSION), refunded, solvedNow};
+    st.score = st.solved ? hardScoreFor(st) : 0;
+    return st;
+  } catch {
+    return newHardState(round);
+  }
 }
 /** Hard mode stats, kept apart from normal mode's. */
 export function updateHardStats(previous, st) {
