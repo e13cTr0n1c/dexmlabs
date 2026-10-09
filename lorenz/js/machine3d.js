@@ -88,6 +88,9 @@ export function createMachine3D(stage, {reducedMotion = () => false, labels} = {
     if (moving && onScreen && !document.hidden) request();
   }
   function request() { if (frame === null && !disposed) frame = requestAnimationFrame(tick); }
+  // the reading pointers sit on the page, so they take a darker olive when the page is light
+  const retheme = () => { pointerMat.color.setHex(document.documentElement.getAttribute('data-theme') === 'light' ? 0x5f7800 : 0xd6ff00); request(); };
+  retheme(); window.addEventListener('dexm:theme', retheme);
   // Drag to look round the rack a little.
   let drag = null;
   const el = renderer.domElement;
@@ -116,7 +119,7 @@ export function createMachine3D(stage, {reducedMotion = () => false, labels} = {
     setIdle(on) { idle = on; targetYaw = on ? -0.55 : -0.35; request(); },
     celebrate() { if (reducedMotion()) return false; spin = {start: performance.now(), ms: 1300}; request(); return true; },
     dispose() {
-      disposed = true; ro.disconnect(); io?.disconnect(); if (frame !== null) cancelAnimationFrame(frame);
+      disposed = true; ro.disconnect(); window.removeEventListener('dexm:theme', retheme); io?.disconnect(); if (frame !== null) cancelAnimationFrame(frame);
       wheels.forEach(wh => { wh.disc.geometry.dispose(); wh.cams.dispose(); });
       shared.forEach(x => x.dispose()); renderer.dispose(); el.remove();
     }

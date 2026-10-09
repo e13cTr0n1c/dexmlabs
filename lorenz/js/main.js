@@ -1,5 +1,6 @@
 /** Lorenz: page controller. Wires the pure cipher and game modules to the DOM, the tape and the 3D view. */
 import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
+import {demoSchedule, demoAt, demoModel, demoHTML} from './demo.js';
 import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
 import {makeHardRound, newHardState, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
@@ -16,6 +17,25 @@ const read = (k, fallback) => { try { const v = localStorage.getItem(PREFIX + k)
 const write = (k, v) => { try { localStorage.setItem(PREFIX + k, JSON.stringify(v)); } catch { /* private mode: play on without saving */ } };
 const escapeHTML = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => Math.round(n).toLocaleString('en-GB');
+/* ---------- Points (shared with Skywave by /assets/points.js). If that script didn't load, hints are free. ---------- */
+const Points = () => globalThis.DexmPoints || null;
+const hintCost = type => app.mode === 'hard' ? HARD_RULES.hint[type === 'reveal' ? 'smudge' : type] : RULES.hint[type];
+const roundRef = r => r.mode === 'daily' ? r.key : `p${r.seed}`;
+const EARN = {daily: 100, hard: 250};
+/** Pay for a hint. Returns false (and says why) if there aren't enough points. */
+function pay(type, ref) {
+  const P = Points(), cost = hintCost(type); if (!P) return true;
+  const r = P.spend('lorenz', cost, ref); if (r.ok) return true;
+  setFeedback('bad', `That hint costs ${cost} points and you have ${fmt(P.balance())}. Finish a round to earn more.`); updateHintButtons(); return false;
+}
+function earned(r, what) { if (r?.ok) toast(`${what}. You now have ${fmt(r.balance)}.`); }
+/** Pay out today's daily rounds once each: normal and hard. Also catches rounds solved before points existed. */
+function awardDaily(key = utcDateKey()) {
+  const P = Points(); if (!P) return;
+  const n = read(`round:${key}`, null), h = read(`hard:round:${key}`, null);
+  if (n && n.solved === true) earned(P.earn('lorenz', P.EARN?.lorenz ?? EARN.daily, `lorenz:daily:${key}`), `+${P.EARN?.lorenz ?? EARN.daily} points for today's Lorenz`);
+  if (h && h.solved === true) earned(P.earn('lorenz', P.EARN?.lorenzHard ?? EARN.hard, `lorenz:hard:${key}`), `+${P.EARN?.lorenzHard ?? EARN.hard} points for today's hard mode`);
+}
 const niceDate = key => new Date(key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'});
 
 const app = {difficulty:'normal', page:0, marked:new Set(), screen:'title', mode:null, tab:'random', state:null, daily:null, practice:null, hardPractice:null, wheels:{}, settings:{reducedMotion:false, flat:false}, stats:null, view:null, run:null, io:'plain', chiIo:'plain', labels:[], lastOut:''};
@@ -228,12 +248,25 @@ function updateHintButtons() {
   if (app.mode === 'hard') {
     const off = {reveal: st.hints.some(h => h.type === 'smudge') || !answerLine(st.round)?.smudge, qep: qepKnown(st), char: revealedChars(st).length >= messageChars(st.round).length, check: false};
     document.querySelectorAll('[data-hint]').forEach(b => { b.disabled = Boolean(solved) || off[b.dataset.hint]; });
-    return;
+    priceHints(); return;
   }
   document.querySelectorAll('[data-hint]').forEach(b => { b.disabled = Boolean(solved) || (b.dataset.hint === 'reveal' && (st.hints.some(h => h.type === 'reveal') || !answerLine(st.round)?.smudge)); });
+  priceHints();
+}
+/** Each hint button shows its price in points, and says so when you can't afford it (still focusable, so the reason can be read). */
+function priceHints() {
+  const P = Points();
+  document.querySelectorAll('[data-hint]').forEach(b => {
+    const cost = hintCost(b.dataset.hint), short = P && !b.disabled && !P.canAfford(cost), small = b.querySelector('small');
+    if (small) { small.className = 'dexm-cost'; small.textContent = `${cost} pts`; }
+    b.toggleAttribute('aria-disabled', Boolean(short)); if (short) b.setAttribute('aria-disabled', 'true');
+    b.classList.toggle('no-points', Boolean(short));
+    if (short) b.title = `Not enough points. This hint costs ${cost}.`; else b.removeAttribute('title');
+  });
 }
 function updateScore() { if (!app.state) return; counter.show(app.state.solved ? app.state.score : app.mode === 'hard' ? hardScoreFor(app.state) : scoreFor(app.state)); $('score-display').title = app.state.solved ? 'Your score' : 'What a correct decode is worth now'; }
 function saveRound() {
+  if (app.state?.solved && app.state.round.mode === 'daily') queueMicrotask(() => awardDaily(app.state.round.key));
   const st = app.state;
   if (app.mode === 'hard') {
     if (st.round.mode === 'practice') { app.hardPractice = st; app.hardPracticeWheels = {...app.wheels}; return; }
@@ -254,35 +287,67 @@ function stopRun() { if (app.run) { cancelAnimationFrame(app.run.frame); app.run
 function runTape({codes, machine, label, onDone, outputAs = 'print'}) {
   stopRun(); tape.reset(); const printed = $('printed-text'); printed.textContent = ''; $('printed-copy').hidden = true; $('printed-label').textContent = label || 'Printed';
   const printer = createPrinter(), out = [], text = [];
-  const run = {i: 0, frame: null, start: performance.now(), done: false};
+  const run = {i: 0, frame: null, start: performance.now(), done: false, pending: null};
   app.run = run; $('run-button').disabled = true; $('skip-button').disabled = false;
-  const one = () => {
-    const c = codes[run.i++], s = machine.step(), o = c ^ s.key; out.push(o);
+  const step = () => { const c = codes[run.i++], s = machine.step(); return {c, s, o: c ^ s.key}; };
+  const commit = ({c, s, o}) => {
+    out.push(o);
     const p = printer(o), shown = outputAs === 'bp' ? {print: toBP([o]), control: null} : p;
     if (outputAs === 'tape') { tape.push({code: o, print: '', control: null}); text.push(''); return s; }
     tape.push({code: c, print: shown.print, control: shown.control});
     text.push(outputAs === 'bp' ? toBP([o]) : p.print);
     return s;
   };
+  const one = () => commit(step());
+  const showText = () => { printed.innerHTML = `${escapeHTML(outputAs === 'bp' ? groups(text.join('')) : text.join(''))}<span class="caret" aria-hidden="true">&nbsp;</span>`; printed.scrollTop = printed.scrollHeight; };
+  const turn = last => {
+    app.view?.setPositions(last.after); const moved = new Set(['chi1','chi2','chi3','chi4','chi5','mu61', ...(last.psiMoved ? PSI : []), ...(last.mu37Moved ? ['mu37'] : [])]);
+    showLabelPositions(last.after, moved);
+  };
+  const panel = $('demo-panel'), demo = $('speed-select').value === 'demo' && panel;
   const finish = () => {
     run.done = true; app.run = null; $('run-button').disabled = false; $('skip-button').disabled = true;
     printed.textContent = outputAs === 'bp' ? groups(text.join('')) : text.join('');
     app.lastOut = printed.textContent; $('printed-copy').hidden = !app.lastOut;
     app.view?.setPositions(machine.positions(), {animate: false}); showLabelPositions(machine.positions());
+    if (demo) panel.classList.add('demo-done');
     onDone?.(out);
   };
-  run.skip = () => { while (run.i < codes.length) one(); tape.setRows(tape.rows); cancelAnimationFrame(run.frame); finish(); };
+  run.skip = () => { if (run.pending) { commit(run.pending); run.pending = null; } while (run.i < codes.length) one(); tape.setRows(tape.rows); cancelAnimationFrame(run.frame); finish(); };
+  if (panel) { panel.hidden = !demo; panel.innerHTML = ''; panel.classList.remove('demo-done'); panel.classList.toggle('demo-still', reducedMotion()); }
   if (!codes.length) { finish(); return; }
+  if (demo) {
+    // Visual demonstration: the first few characters stage by stage, then the rest speeds up. About 13 seconds in all.
+    const plan = demoSchedule(codes.length), opts = {hideOut: outputAs === 'tape', chiOnly: machine.model === undefined};
+    let shown = '';
+    const draw = (p, stage, index, fast) => { const key = `${index}:${stage}:${fast}`; if (key === shown) return; shown = key; panel.innerHTML = demoHTML(demoModel(p.c, p.s, opts), stage, {index, total: codes.length, fast}); };
+    const frame = now => {
+      if (app.run !== run) return;
+      if (run.t0 === undefined) run.t0 = now; // time from the first frame, on the frame clock
+      const at = demoAt(plan, now - run.t0);
+      if (!at.fast) {
+        while (out.length < at.index) { if (run.pending) { turn(commit(run.pending)); run.pending = null; } else turn(one()); }
+        if (out.length === at.index) {
+          if (!run.pending) run.pending = step();
+          draw(run.pending, at.stage, at.index, false);
+          if (at.stage >= 5) { const p = run.pending; run.pending = null; turn(commit(p)); showText(); }
+        }
+      } else {
+        if (run.pending) { turn(commit(run.pending)); run.pending = null; }
+        let last = null, lastP = null; while (run.i <= at.index && run.i < codes.length) { lastP = step(); last = commit(lastP); }
+        if (last) { turn(last); showText(); draw(lastP, 5, out.length - 1, true); }
+      }
+      if (out.length >= codes.length) finish(); else run.frame = requestAnimationFrame(frame);
+    };
+    run.frame = requestAnimationFrame(frame);
+    return;
+  }
   const cps = Number($('speed-select').value) || 20;
   const frame = now => {
     if (app.run !== run) return;
     const due = Math.min(codes.length, Math.floor((now - run.start) / 1000 * cps) + 1);
     let last = null; while (run.i < due) last = one();
-    if (last) {
-      app.view?.setPositions(last.after); const moved = new Set(['chi1','chi2','chi3','chi4','chi5','mu61', ...(last.psiMoved ? PSI : []), ...(last.mu37Moved ? ['mu37'] : [])]);
-      showLabelPositions(last.after, moved);
-      printed.innerHTML = `${escapeHTML(outputAs === 'bp' ? groups(text.join('')) : text.join(''))}<span class="caret" aria-hidden="true">&nbsp;</span>`; printed.scrollTop = printed.scrollHeight;
-    }
+    if (last) { turn(last); showText(); }
     if (run.i >= codes.length) finish(); else run.frame = requestAnimationFrame(frame);
   };
   run.frame = requestAnimationFrame(frame);
@@ -323,6 +388,7 @@ function replaySolved(animate = false) {
 function success() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
   if (st.round.mode === 'daily') { app.stats = updateStats(app.stats, st); write('stats', app.stats); }
+  else { const P = Points(), r = P?.earnPractice('lorenz', utcDateKey()); earned(r, `+${P?.EARN?.practice ?? 20} points for a practice round`); }
   setFeedback('good', 'Message decoded!! The wheels were right.');
   if (plan.fly) { tape.fly(); $('screen-game').querySelector('.teleprinter').classList.add('tape-fly'); setTimeout(() => $('screen-game').querySelector('.teleprinter').classList.remove('tape-fly'), 1300); }
   if (plan.spin) app.view?.celebrate();
@@ -490,6 +556,7 @@ function checkQep() {
 function hardHint(type) {
   const kind = type === 'reveal' ? 'smudge' : type, st = app.state, {state, answer} = useHardHint(st, kind, {settings: app.wheels});
   if (!answer) { setFeedback('', kind === 'smudge' ? "Every figure on today's line is readable." : 'Nothing more to reveal.'); return; }
+  if (state !== st && !pay(kind, `lorenz:hard:${kind}:${roundRef(st.round)}${kind === 'char' ? ':' + answer.index : ''}`)) return;
   app.state = state; saveRound(); updateScore(); updateHintButtons();
   if (kind === 'qep') { $('qep-number').textContent = pad2(answer.qep); setFeedback('', `The preamble reads QEP ${pad2(answer.qep)}. That cost ${HARD_RULES.hint.qep} points.`); }
   if (kind === 'char') { renderRevealed(); setFeedback('', `Character ${answer.index + 1} of the message is ${answer.char === ' ' ? 'a space' : answer.char}. That cost ${HARD_RULES.hint.char} points.`); }
@@ -498,6 +565,7 @@ function hardHint(type) {
 function hardSuccess() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
   if (st.round.mode !== 'practice') { app.hardStats = updateHardStats(app.hardStats, st); write('hard:stats', app.hardStats); }
+  else { const P = Points(), r = P?.earnPractice('lorenz', utcDateKey()); earned(r, `+${P?.EARN?.practice ?? 20} points for a practice round`); }
   $('qep-number').textContent = pad2(st.round.qep);
   setFeedback('good', 'Message read!! Wheels, book and tape, all by hand.');
   if (plan.fly) {
@@ -562,19 +630,23 @@ function bindHard() {
 /* ---------- Hints, sharing, settings ---------- */
 function hint(type) {
   const st = app.state; if (!st || st.solved) return;
+  const P = Points(), cost = hintCost(type);
+  if (P && !P.canAfford(cost) && !(type === 'reveal' && st.hints.some(h => h.type === (app.mode === 'hard' ? 'smudge' : 'reveal')))) { setFeedback('bad', `Not enough points. That hint costs ${cost} and you have ${fmt(P.balance())}. Finish a round to earn more.`); return; }
   if (type === 'check') { $('check-dialog').showModal(); return; }
   if (app.mode === 'hard') return hardHint(type);
   const {state, answer} = useHint(st, 'reveal', app.wheels);
   if (!answer) { setFeedback('', `Every figure on QEP ${pad2(st.round.qep)} is readable.`); return; }
+  if (state !== st && !pay('reveal', `lorenz:reveal:${roundRef(st.round)}`)) return;
   app.state = state; if (st.round.mode === 'practice') app.practice = state;
   saveRound(); renderRound();
   setFeedback('', revealText(st.round));
 }
 function doCheck() {
   const wheel = $('check-select').value, {state, answer} = app.mode === 'hard' ? useHardHint(app.state, 'check', {settings: app.wheels, wheel}) : useHint(app.state, 'check', app.wheels, wheel);
+  if (!pay('check')) { $('check-dialog').close(); return; }
   app.state = state; if (app.mode !== 'hard' && state.round.mode === 'practice') app.practice = state; saveRound(); updateScore();
   $('check-dialog').close();
-  setFeedback(answer.right ? 'good' : 'bad', `${WHEEL[wheel].label} is ${answer.right ? 'set right' : 'not right yet'}. That check cost ${RULES.hint.check} points.`);
+  setFeedback(answer.right ? 'good' : 'bad', `${WHEEL[wheel].label} is ${answer.right ? 'set right' : 'not right yet'}. That check cost ${hintCost('check')} points.`);
   const d = document.querySelector(`.dial[data-wheel="${wheel}"]`); d?.classList.remove('flash'); void d?.offsetWidth; d?.classList.add('flash');
 }
 async function copyText(text) { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } }
@@ -642,6 +714,7 @@ function boot() {
   app.difficulty = read('difficulty', 'normal') === 'hard' ? 'hard' : 'normal';
   app.daily = {round: makeRound({mode: 'daily'})};
   buildDials(); buildChi(); bind(); applySettings(); refreshTitle(); applyPrintLink(document);
+  awardDaily(); Points()?.on('change', () => { if (app.state) updateHintButtons(); });
   if (location.hash) route(); else show('title');
   const later = () => loadView();
   if ('requestIdleCallback' in window) requestIdleCallback(later, {timeout: 1200}); else setTimeout(later, 200);

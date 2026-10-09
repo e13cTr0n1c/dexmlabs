@@ -5,7 +5,7 @@ import {makeRound, acceptedTexts, randomPositions, makeSmudge, pad2, answerLine,
 import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
 
 export const HARD_RULES = Object.freeze({base:1000, wrong:150, qepBonus:200, floor:100, pages:5,
-  hint:Object.freeze({qep:200, char:50, check:100, smudge:300})});
+  hint:Object.freeze({qep:40, char:10, check:20, smudge:50})});  // hints cost shared points, not score
 export const HARD_PREFIX = 'hard:';
 const DAY = 86400000;
 
@@ -112,15 +112,13 @@ export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[
 const firstGuessRight = st => st.qepGuesses.length > 0 && st.qepGuesses[0] === st.round.qep && !st.hints.some(h => h.type === 'qep');
 export const qepKnown = st => st.hints.some(h => h.type === 'qep') || st.qepGuesses.includes(st.round.qep);
 export function hardPenalty(st) {
-  return st.answers.filter(a => !a.ok).length * HARD_RULES.wrong + st.hints.reduce((s, h) => s + (HARD_RULES.hint[h.type] || 0), 0);
+  return st.answers.filter(a => !a.ok).length * HARD_RULES.wrong;
 }
 export const hardScoreFor = st => Math.max(HARD_RULES.floor, HARD_RULES.base + (firstGuessRight(st) ? HARD_RULES.qepBonus : 0) - hardPenalty(st));
 export function hardBreakdown(st) {
   const f = n => Math.round(n).toLocaleString('en-GB'), lines = [['Decoded', f(HARD_RULES.base)]];
   if (firstGuessRight(st)) lines.push(['Read the preamble first time', `+${f(HARD_RULES.qepBonus)}`]);
   const wrong = st.answers.filter(a => !a.ok).length; if (wrong) lines.push([`${wrong} wrong ${wrong > 1 ? 'readings' : 'reading'}`, `\u2212${f(wrong * HARD_RULES.wrong)}`]);
-  const names = {qep:'Revealed the QEP', char:'Revealed characters', check:'Wheel checks', smudge:'Read the smudge'};
-  for (const type of ['qep', 'char', 'check', 'smudge']) { const n = st.hints.filter(h => h.type === type).length; if (n) lines.push([n > 1 ? `${names[type]} (${n})` : names[type], `\u2212${f(n * HARD_RULES.hint[type])}`]); }
   const total = hardScoreFor(st); if (total === HARD_RULES.floor) lines.push(['Never less than', f(HARD_RULES.floor)]);
   return {lines, total};
 }

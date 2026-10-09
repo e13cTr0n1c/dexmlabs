@@ -10,6 +10,7 @@ export class Tape {
     this.rows = []; this.offset = 0; this.target = 0; this.frame = null; this.flying = false;
     this.resize = this.resize.bind(this); this.resize();
     if (typeof ResizeObserver === 'function') { this.ro = new ResizeObserver(this.resize); this.ro.observe(canvas); }
+    if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('dexm:theme', () => this.draw());
   }
   resize() {
     const dpr = Math.min(2, window.devicePixelRatio || 1), w = this.canvas.clientWidth || 600, h = this.canvas.clientHeight || 128;
@@ -41,7 +42,7 @@ export class Tape {
     requestAnimationFrame(step);
   }
   draw() {
-    const {ctx, w, h} = this; if (!ctx) return;
+    const {ctx, w, h} = this; if (!ctx) return; const c = ink();
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#ebe5cc'; ctx.fillRect(0, TOP, w, TAPE_H);
     ctx.fillStyle = '#d3cba9'; ctx.fillRect(0, TOP, w, 2); ctx.fillRect(0, TOP + TAPE_H - 2, w, 2);
@@ -53,18 +54,22 @@ export class Tape {
     for (let x = sx0; x < w + COL; x += COL) { ctx.beginPath(); ctx.arc(x, TOP + 4 + TRACK * 2 + TRACK / 2, 2.4, 0, Math.PI * 2); ctx.fill(); }
     for (let i = first; i < last; i++) {
       const r = this.rows[i], x = i * COL - this.offset + COL / 2, bits = bitsOf(r.code), newest = i === this.rows.length - 1 && !this.flying;
-      if (newest) { ctx.fillStyle = '#d6ff0055'; ctx.fillRect(x - COL / 2, TOP, COL, TAPE_H); }
+      if (newest) { ctx.fillStyle = c.newest; ctx.fillRect(x - COL / 2, TOP, COL, TAPE_H); }
       ctx.fillStyle = '#050705';
       bits.forEach((b, k) => { if (b) { ctx.beginPath(); ctx.arc(x, TOP + 4 + TRACK * TRACKS[k] + TRACK / 2, 4.6, 0, Math.PI * 2); ctx.fill(); } });
       const label = r.control ? ({FIGS:'\u2191', LTRS:'\u2193', CR:'\u21b5', LF:'\u2261', NULL:'\u00b7'}[r.control] || '') : (r.print === ' ' ? '\u2423' : r.print);
-      ctx.fillStyle = r.control ? '#a0aa9b' : (r.tone === 'bad' ? '#ffb4a6' : '#d6ff00');
+      ctx.fillStyle = r.control ? c.control : (r.tone === 'bad' ? c.bad : c.letter);
       ctx.fillText(label, x, TOP + TAPE_H + 14);
     }
     // impulse numbers at the left edge
-    ctx.fillStyle = '#080a08cc'; ctx.fillRect(0, TOP, 16, TAPE_H);
-    ctx.fillStyle = '#a0aa9b'; ctx.font = '10px ui-monospace,Menlo,Consolas,monospace';
+    ctx.fillStyle = c.gutter; ctx.fillRect(0, TOP, 16, TAPE_H);
+    ctx.fillStyle = c.gutterInk; ctx.font = '10px ui-monospace,Menlo,Consolas,monospace';
     [1, 2, 3, 4, 5].forEach((n, k) => ctx.fillText(String(n), 8, TOP + 4 + TRACK * TRACKS[k] + TRACK / 2));
   }
   dispose() { this.ro?.disconnect(); if (this.frame !== null) cancelAnimationFrame(this.frame); }
 }
+/** Colours off the paper follow the page theme; the tape itself is always paper with black holes. */
+const INK = {dark: {letter: '#d6ff00', bad: '#ffb4a6', control: '#a0aa9b', gutter: '#080a08cc', gutterInk: '#a0aa9b', newest: '#d6ff0055'},
+  light: {letter: '#4b5e00', bad: '#a3261c', control: '#4f5747', gutter: '#fbfaf6e6', gutterInk: '#4f5747', newest: '#d6ff0099'}};
+const ink = () => INK[typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'];
 export const TAPE_GEOMETRY = Object.freeze({COL, TRACK, TRACKS, sprocketTrack: 2});

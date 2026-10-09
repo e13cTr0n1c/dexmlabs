@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script>
   <meta name="theme-color" content="#080a08">
   <title>What's changed in Skywave</title>
   <link rel="canonical" href="https://dexmlabs.app/skywave/log.html">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/theme.js" defer></script>
   <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
 </head>
 <body>
@@ -17,7 +17,7 @@
     <nav aria-label="Main">
       <a href="./index.html">Play</a>
       <a href="./help.html">Guide</a>
-      <a href="./about.html">About</a>
+      <a href="./about.html">About</a><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div>
     </nav>
   </header>
 
@@ -26,6 +26,7 @@
     <p class="lede">Small fixes and bigger changes to Skywave, newest first. If you reported something and I've fixed it, it should be in here.</p>
 
     <ul class="log-list prose">
+      <li><time datetime="2026-10-09">9 October 2026</time>Hints now cost points instead of score. Points are shared with Lorenz, and you earn them by making at least one contact in the daily or in practice. There's also a light mode, which follows your device until you pick one with the sun and moon button.</li>
       <li><time datetime="2026-10-09">9 October 2026</time>Added a footer link to Lorenz, my new cipher machine game and Skywave's sister.</li>
       <li><time datetime="2026-10-08">8 October 2026</time>The footer now fits on phones, and station names on the globe no longer sit on top of the map panels.</li>
       <li><time datetime="2026-10-08">8 October 2026</time>The about, guide and log pages now use a plain sans for the reading text, which is much easier on the eyes than the monospace. The header has the proper yellow coffee button, and there's a spot for my photo.</li>

@@ -1,0 +1,50 @@
+PASS Daily seed and targets are deterministic
+PASS UTC seed ignores time of day
+PASS mulberry32 repeats a seeded sequence
+PASS 20m / 2000 km / SFI 70 / noon opens
+PASS 160m / 2000 km / noon is absorbed
+PASS 10m / 6000 km / SFI 70 / night is above MUF
+PASS 10m / 6000 km / SFI 200 / noon opens
+PASS 40m / 300 km / low dipole opens by NVIS
+PASS 15m / 300 km is in the skip zone
+PASS K 6 polar path has 18 dB additional loss
+PASS 30m forbids SSB
+PASS Derived maximum hop respects 3-degree takeoff
+PASS Antipodal interpolation stays finite
+PASS Date-line path uses the short great circle
+PASS Solar terminator has zero zenith cosine
+PASS Subsolar point has overhead sun
+PASS Flare multiplies sunlit D absorption by five
+PASS Flare does not absorb on the dark side
+PASS Ground wave has no D-layer or F2 constraint
+PASS Vertical cannot provide high-angle NVIS
+PASS Yagi and loop have explicit valid bands
+PASS Yagi has a 20 dB front-to-back difference
+PASS Es opens a 6m path only inside an active daytime patch
+PASS Es does not open 20m artificially
+PASS Storm depression doubles at high magnetic latitude
+PASS Maidenhead encodes Greenwich and date-line safely
+PASS Land mask distinguishes central Africa and Atlantic
+PASS Daily targets have unique fictional calls and locators
+PASS Northern winter does not spawn summer Es patches
+PASS Game clock never runs backwards
+PASS Call consumes exactly ten minutes, including closed stations
+PASS Hints charge once, and only for the selected target
+PASS Scoring applies rarity, mode, power, grey line and penalty
+PASS A worked target cannot be scored again
+PASS Last call can finish exactly at 24:00
+PASS Daily statistics are idempotent
+PASS QSB uses supplied roll without mutating inputs
+PASS Reason belongs to the specified vocabulary on every failed path
+PASS Every calculated SNR and margin is finite (all bands)
+PASS Two-kilometre ground path stays numerically finite
+PASS QSB succeeds below the seeded half-way cut and fails above it
+PASS Night-time Es does not create an opening
+PASS Grey line requires both ends and only low bands
+PASS All hints add to 20 percent but never retroactively change a worked QSO
+PASS Practice never updates daily statistics
+PASS Consecutive UTC days create a streak and a gap resets it
+PASS Share text has one status tile for each of ten targets
+PASS Ad stub completes synchronously without pausing or requesting an ad
+PASS One thousand varied paths never return NaN or an unnamed failure
+49/49 passed

@@ -1,0 +1,107 @@
+/* QSO reward tests: scoring breakdown, counter maths, the reward hook, reduced motion and the header links. */
+import {createRequire} from 'module';
+import {readFileSync} from 'fs';
+import {cases} from './cases.js';
+import {RULES,createGame,callTarget,scoreContact,revealHint} from '../js/game.js';
+import {generateDay} from '../js/stations.js';
+import {mulberry32} from '../js/seed.js';
+import {antennaAllowed} from '../js/propagation.js';
+import {placeLabel,LABEL_AVOID} from '../js/labels.js';
+import {REWARD,COMET_TRAVEL,cometFraction,easeOutCubic,countValue,kmToMiles,scoreBreakdown,shouldReward,rewardPlan,qsoCardModel,cardHTML,ScoreCounter,QsoReward} from '../js/reward.js';
+const require=createRequire(import.meta.url);const {JSDOM}=require('jsdom');
+const assert=(x,m='Assertion failed')=>{if(!x)throw Error(m);};
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const escapeHTML=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/** Fake frame clock: raf callbacks run when tick() moves time on. */
+function fakeClock(){let t=0,id=0;const q=new Map();return {now:()=>t,raf:f=>{q.set(++id,f);return id;},caf:i=>q.delete(i),pending:()=>q.size,tick(ms){t+=ms;const run=[...q.values()];q.clear();run.forEach(f=>f(t));}};}
+function fakeEl(){const set=new Set();return {textContent:'',offsetWidth:0,classList:{add:c=>set.add(c),remove:c=>set.delete(c),contains:c=>set.has(c)}};}
+/** Search a generated day for one successful and one failed call from the real game rules. */
+function findCalls(){const day=generateDay('2026-03-20T12:00:00Z');let ok=null,fail=null;
+  for(const t of day.targets)for(let minute=t.start;minute<t.end&&!(ok&&fail);minute+=30)for(const band of t.bands)for(const mode of t.modes){if(band==='30m'&&mode==='SSB')continue;const antenna=antennaAllowed('dipole',band)?'dipole':'vertical';
+    const g={...createGame(day),selected:t.id,minute,rig:{band,mode,power:100,antenna,bearing:0}},r=callTarget(g);if(!r.entry)continue;
+    if(r.entry.result.ok&&!ok)ok={before:g,...r};if(!r.entry.result.ok&&r.entry.result.reason==='above MUF'&&!fail)fail={before:g,...r};}
+  return {ok,fail};}
+const calls=findCalls();
+function hook(reduced=false){const clock=fakeClock(),dom=new JSDOM('<div id="card" hidden></div>'),card=dom.window.document.getElementById('card'),comets=[],counter={shown:[],animated:[],show(v){this.shown.push(v);},animateTo(v,o){this.animated.push([v,o.reducedMotion,o.delay]);}},timers=[];
+  const r=new QsoReward({card,counter,globe:()=>({celebrate:e=>{comets.push(e.callsign);return true;}}),reducedMotion:()=>reduced,escape:escapeHTML,setTimer:(f,ms)=>{timers.push({f,ms,live:true});return timers.length-1;},clearTimer:i=>{if(timers[i])timers[i].live=false;}});
+  return {r,card,comets,counter,timers,clock};}
+cases.push(
+ ['Reward: breakdown total always equals the game score',()=>{const rng=mulberry32(73);const hintSets=[[],['muf'],['absorption'],['scope'],['muf','absorption'],['muf','absorption','scope']];
+   for(let i=0;i<3000;i++){const d=rng()*20000,rarity=1+Math.floor(rng()*5),mode=['FT8','CW','SSB'][i%3],power=[5,50,100,400][Math.floor(rng()*4)],grey=rng()<.3,penalty=hintSets[i%6].reduce((s,h)=>s+({muf:.05,absorption:.05,scope:.1})[h],0);
+     const b=scoreBreakdown({distanceKm:d,rarity,mode,power,greyLine:grey,penalty});assert(b.total===scoreContact(d,rarity,mode,power,grey,penalty),`${d} ${rarity} ${mode} ${power} ${grey} ${penalty}: ${b.total} vs ${scoreContact(d,rarity,mode,power,grey,penalty)}`);}}],
+ ['Reward: worked example shows base, multipliers, hints and total',()=>{const b=scoreBreakdown({distanceKm:1000,rarity:2,mode:'CW',power:5,greyLine:true,penalty:.1});assert(b.base===10&&b.total===97);assert(b.formula==='10 × 2 × 1.5 × 3 × 1.2 − 10% hints = 97',b.formula);assert(b.factors.map(f=>f.label).join()==='Rarity,CW,5 W,Grey line');
+   const plain=scoreBreakdown({distanceKm:7412,rarity:3,mode:'FT8',power:100});assert(plain.formula==='74 × 3 × 1 × 1 = 222'&&!plain.factors.some(f=>f.label==='Grey line'),plain.formula);}],
+ ['Reward: count-up eases out from the old total to the new one',()=>{assert(countValue(100,1100,0)===100&&countValue(100,1100,1)===1100&&countValue(100,1100,2)===1100&&countValue(100,1100,-1)===100);assert(countValue(0,1000,.5)===875);let last=-1;for(let t=0;t<=1;t+=.01){const v=countValue(0,5000,t);assert(v>=last);last=v;}assert(easeOutCubic(.25)>.25,'should be ease-out');}],
+ ['Reward: score counter ticks up over about a second, lands exactly, then pulses',()=>{const c=fakeClock(),el=fakeEl(),timers=[];const s=new ScoreCounter(el,{now:c.now,raf:c.raf,caf:c.caf,setTimer:(f,ms)=>{timers.push(ms);return 1;},clearTimer:()=>{}});s.show(500);assert(el.textContent==='500 pts');
+   s.animateTo(2534);const seen=[];for(let i=0;i<70&&s.running;i++){c.tick(16);seen.push(s.value);}assert(REWARD.countMs>=800&&REWARD.countMs<=1200);assert(seen.length>=55&&seen.length<=70,`frames ${seen.length}`);assert(seen.some(v=>v>500&&v<2534),'no intermediate values');assert(el.textContent==='2,534 pts'&&!s.running);assert(el.classList.contains('score-pulse')&&timers.includes(REWARD.pulseMs));}],
+ ['Reward: a second QSO mid-count carries on from the shown value; re-renders do not interrupt',()=>{const c=fakeClock(),el=fakeEl();const s=new ScoreCounter(el,{now:c.now,raf:c.raf,caf:c.caf,setTimer:()=>0,clearTimer:()=>{}});s.show(0);s.animateTo(1000);c.tick(16);c.tick(300);const mid=s.value;assert(mid>0&&mid<1000);
+   s.show(1000);assert(s.running&&s.value===mid,'show() to the same total must not jump');s.animateTo(1600);assert(c.pending()===1,'only one frame loop');c.tick(16);assert(s.value>=mid,'never counts backwards');for(let i=0;i<80&&s.running;i++)c.tick(16);assert(s.value===1600);s.animateTo(1700);c.tick(16);s.show(42);assert(!s.running&&el.textContent==='42 pts','new day resets instantly');}],
+ ['Reward: a delayed count holds the old total, then counts up',()=>{const c=fakeClock(),el=fakeEl();const s=new ScoreCounter(el,{now:c.now,raf:c.raf,caf:c.caf,setTimer:()=>0,clearTimer:()=>{}});s.show(200);s.animateTo(700,{delay:1100});for(let i=0;i<60;i++)c.tick(16);assert(s.value===200&&s.running);s.show(700);assert(s.value===200,'re-render must not skip the count');for(let i=0;i<80&&s.running;i++)c.tick(16);assert(s.value===700);}],
+ ['Reward: reduced motion updates the score instantly with no frames or pulse',()=>{const c=fakeClock(),el=fakeEl();const s=new ScoreCounter(el,{now:c.now,raf:c.raf,caf:c.caf,setTimer:()=>0,clearTimer:()=>{}});s.show(10);s.animateTo(900,{reducedMotion:true});assert(el.textContent==='900 pts'&&!s.running&&c.pending()===0&&!el.classList.contains('score-pulse'));}],
+ ['Reward: plan fires on success only; reduced motion keeps just the card',()=>{const ok={result:{ok:true}},bad={result:{ok:false,reason:'above MUF'}};assert(shouldReward(ok)&&!shouldReward(bad)&&!shouldReward(null));
+   const a=rewardPlan(ok),b=rewardPlan(ok,{reducedMotion:true}),c=rewardPlan(bad);assert(a.card&&a.comet&&a.countUp);assert(b.card&&!b.comet&&!b.countUp);assert(!c.card&&!c.comet&&!c.countUp);}],
+ ['Reward: hook fires the comet, card and count-up on a real QSO',()=>{assert(calls.ok,'no QSO fixture');const h=hook();const {entry,state}=calls.ok;assert(h.r.handle(entry,state)===true);assert(h.comets.length===1&&h.comets[0]===entry.callsign);assert(h.card.hidden&&h.timers[0].ms===REWARD.cardDelayMs,'card waits for the comet to land');h.timers[0].f();assert(!h.card.hidden&&h.card.textContent.includes(entry.callsign)&&h.card.textContent.includes(`+${entry.points.toLocaleString('en-GB')} pts`));
+   assert(h.counter.animated.length===1&&h.counter.animated[0][0]===state.score&&h.counter.animated[0][1]===false&&h.counter.animated[0][2]===REWARD.cardDelayMs);assert(h.timers[1].ms===REWARD.cardMs&&REWARD.cardDelayMs<REWARD.cometMs);}],
+ ['Reward: a contact made after buying hints still shows its card, with no hint cut in the score',()=>{const h=hook(true);const {entry,state}=calls.ok;const hinted={...state,hints:{...state.hints,[entry.targetId]:['muf','absorption','scope']}};assert(h.r.handle(entry,hinted)===true);assert(!h.card.hidden&&!/hint/i.test(h.card.innerHTML.replace(/<[^>]+>/g,'')));}],
+ ['Reward: hook stays silent on a failed call and the failure reason is unchanged',()=>{assert(calls.fail,'no failure fixture');const h=hook();const {entry,state}=calls.fail;assert(h.r.handle(entry,state)===false);assert(h.comets.length===0&&h.card.hidden&&h.counter.animated.length===0&&h.counter.shown[0]===state.score);
+   assert(entry.points===0&&entry.result.reason==='above MUF'&&/^Hop \d+ above MUF: \d+\.\d MHz vs \d+\.\d MHz at the midpoint\./.test(entry.result.detail),entry.result.detail);}],
+ ['Reward: reduced motion shows a static card, no comet, instant score',()=>{const h=hook(true);const {entry,state}=calls.ok;h.r.handle(entry,state);assert(h.comets.length===0&&!h.card.hidden&&h.counter.animated[0][1]===true&&h.counter.animated[0][2]===0,'static card at once');}],
+ ['Reward: rapid QSOs replace the card and keep a single dismiss timer',()=>{const h=hook();const {entry,state}=calls.ok,second={...entry,callsign:'ZZ9ZZZ'};h.r.handle(entry,state);h.r.handle(second,state);const live=h.timers.filter(t=>t.live);assert(live.length===1,'stacked timers');assert(h.comets.length===2);live[0].f();assert(h.card.textContent.includes('ZZ9ZZZ')&&!h.card.textContent.includes(entry.callsign));assert(h.card.querySelectorAll('.qso-card-call').length===1);h.r.hide();assert(h.card.hidden);}],
+ ['Reward: hints bought with points leave the card sum alone, and it shows km, miles and MHz',()=>{const {entry,before}=calls.ok;let g=revealHint(revealHint(before,'muf'),'scope');const r=callTarget(g),t=g.day.targets.find(x=>x.id===r.entry.targetId);const m=qsoCardModel(r.entry,t,0);
+   assert(m.breakdown.total===r.entry.points,`${m.breakdown.total} vs ${r.entry.points}`);assert(r.entry.points===callTarget(before).entry.points,'same points with or without hints');assert(m.miles===Math.round(kmToMiles(r.entry.result.distanceKm))&&/^\d+\.\d{3}$/.test(m.mhz));const out=cardHTML(m,escapeHTML);assert(!out.includes('− Hints')&&out.includes(' mi)<')&&out.includes(' km ('));
+   assert(cardHTML({...m,callsign:'<b>x'},escapeHTML).includes('&lt;b&gt;x'),'callsign must be escaped');}],
+ ['Reward: comet timing is light and lands on the station',()=>{assert(REWARD.cometMs>=1500&&REWARD.cometMs<=2500);assert(cometFraction(0)===0&&cometFraction(-.3)===0&&cometFraction(COMET_TRAVEL)===1&&cometFraction(1)===1);let last=0;for(let t=0;t<=1;t+=.02){const f=cometFraction(t);assert(f>=last&&f<=1);last=f;}
+   const globe=readFileSync(new URL('../js/globe.js',import.meta.url),'utf8');assert(/clearArcs\(\)\{[^}]*this\.clearComets\(\)/.test(globe)&&/clearComets\(\)\{disposeGroup\(this\.effects\)/.test(globe),'comets must be disposed with the arcs');assert(/celebrate\(entry,[^)]*\)\{\s*if\(this\.settings\.reducedMotion/.test(globe),'globe must skip the comet under reduced motion');}],
+ ['Header: coffee and feedback links are present and safe',()=>{const d=new JSDOM(html).window.document,nav=d.querySelector('.site-header nav');const bmc=nav.querySelector('a[href="https://buymeacoffee.com/arthurdeusexmachina"]');assert(bmc&&bmc.target==='_blank'&&bmc.rel.split(' ').includes('noopener'));const bimg=bmc.querySelector('img');assert(bimg&&bimg.getAttribute('src')==='./img/bmc-button.png'&&bimg.getAttribute('alt')==='Buy me a coffee','official button image, local');assert(+bimg.getAttribute('height')>=28&&+bimg.getAttribute('height')<=32&&+bimg.getAttribute('width')>0,'button sized 28-32px with width set');assert(bmc.textContent.trim()==='','image only, no text');
+   const fb=nav.querySelector('a.header-feedback');assert(fb&&fb.getAttribute('href')==='mailto:hello@dexmlabs.app?subject=Skywave%20feedback');assert(fb.querySelector('.fb-long').textContent==='Hams & SWLs: tell me what I got wrong. 73!'&&fb.querySelector('.fb-short').textContent==='Feedback · 73');
+   const emails=[...html.matchAll(/[\w.+-]+@[\w-]+(?:\.[a-z]{2,})+/gi)].map(m=>m[0]);assert(emails.every(e=>e==='hello@dexmlabs.app'),emails.join());assert(!/buymeacoffee\.com\/[^"']*widget|cdnjs\.buymeacoffee|bmc-widget/i.test(html),'no BMC widget');
+   assert((html.match(/static\.cloudflareinsights\.com\/beacon\.min\.js/g)||[]).length===1,'analytics exactly once');const csp=d.querySelector('meta[http-equiv="Content-Security-Policy"]').content;assert(/script-src 'self'[^;]*static\.cloudflareinsights\.com/.test(csp)&&/form-action 'none'/.test(csp));assert(d.getElementById('qso-card')?.hidden,'card starts hidden');}],
+ ['Copy: hints panel is renamed, hint buttons and the reward card are kept, no sci-fi words',()=>{const d=new JSDOM(html).window.document;const hints=d.querySelector('.hint-section');assert(hints&&hints.querySelector('h3').textContent==='Hints (they cost points)',hints?.textContent);
+   assert(['muf','absorption','scope'].every(h=>hints.querySelector(`button[data-hint="${h}"]`)),'hint buttons');assert(d.getElementById('qso-card')&&d.getElementById('score-display')&&d.getElementById('call-button'));
+   assert(!/INTELLIGENCE|UPLINK|PLAYGROUND|01 \/ |&#8594;/i.test(html),'banned wording');assert(!d.querySelector('.title-metrics')&&!d.querySelector('.status-dot'),'stat row and status dot removed');
+   assert((html.match(/class="disclaimer"/g)||[]).length===1,'disclaimer once');assert(d.querySelector('#title-heading').textContent==='Skywave');}],
+ ['Copy: no unfilled [ARTHUR: ...] placeholders or claims of a licence or callsign on public pages',()=>{for(const f of ['index.html','about.html','help.html','log.html']){const t=readFileSync(new URL('../'+f,import.meta.url),'utf8');
+   assert(!/\[ARTHUR/i.test(t),f+': placeholder left');assert(!/\blicensed\b|my callsign|\b[GM][0-9][A-Z]{2,3}\b/i.test(t),f+': licence or callsign claim');}}],
+ ['Coffee: the BMC button image is self-hosted, crisp and linked correctly on index and about',()=>{const png=readFileSync(new URL('../img/bmc-button.png',import.meta.url));assert(png.slice(1,4).toString()==='PNG','real PNG');const w=png.readUInt32BE(16),h=png.readUInt32BE(20);
+   for(const f of ['index.html','about.html']){const d=new JSDOM(readFileSync(new URL('../'+f,import.meta.url),'utf8')).window.document;const imgs=[...d.querySelectorAll('img[src*="bmc-button"]')];assert(imgs.length===1,f+': one button');const im=imgs[0],a=im.closest('a');
+     assert(im.getAttribute('src')==='./img/bmc-button.png',f+': local src');assert(im.alt==='Buy me a coffee',f+': alt');assert(a&&a.getAttribute('href')==='https://buymeacoffee.com/arthurdeusexmachina'&&a.target==='_blank'&&a.rel.split(' ').includes('noopener'),f+': link');
+     const dh=+im.getAttribute('height'),dw=+im.getAttribute('width');assert(dh&&dw&&Math.abs(dw/dh-w/h)<0.05,f+': width/height keep the aspect');assert(h>=dh*2,f+': at least 2x for retina');}}],
+ ['Photos: local files, alt text, sizes, the cockpit figure and caption, and no pilot wording',()=>{
+   const idx=new JSDOM(html).window.document;const t=idx.querySelectorAll('.signed-note figure.arthur-photo img');assert(t.length===1,'title photo slot');const ti=t[0];
+   assert(ti.getAttribute('src')==='./img/arthur.jpg'&&ti.alt==='Arthur'&&ti.getAttribute('width')==='56'&&ti.getAttribute('height')==='56'&&ti.getAttribute('decoding')==='async','title photo');assert(!ti.hasAttribute('loading')&&!ti.hidden,'title photo is above the fold, not lazy or hidden');
+   assert(idx.querySelector('.signed-note figcaption').textContent==='Arthur','title caption');assert(!idx.querySelector('img[src*="arthur-cockpit"]'),'cockpit photo is on the about page only');
+   const about=readFileSync(new URL('../about.html',import.meta.url),'utf8'),d=new JSDOM(about).window.document;
+   const av=d.querySelector('.me-and-radio figure.arthur-photo img');assert(av&&av.getAttribute('src')==='./img/arthur.jpg'&&av.alt==='Arthur'&&av.getAttribute('loading')==='lazy'&&av.getAttribute('decoding')==='async'&&av.getAttribute('width')&&av.getAttribute('height'),'about avatar');
+   const fig=d.querySelector('figure.cockpit-photo');assert(fig,'cockpit figure');const ci=fig.querySelector('img');
+   assert(ci.getAttribute('src')==='./img/arthur-cockpit.jpg'&&ci.alt==='Arthur sitting in the cockpit of a light aircraft'&&ci.getAttribute('loading')==='lazy'&&ci.getAttribute('decoding')==='async','cockpit img');
+   assert(fig.querySelector('figcaption').textContent==='Me in the right seat. Planes came first, radio followed.','cockpit caption');
+   const h=[...d.querySelectorAll('h2')].find(x=>x.textContent==='Me and radio');let n=h.nextElementSibling;assert(n.classList.contains('me-and-radio')&&n.nextElementSibling===fig,'cockpit photo sits under the planes and SDR paragraph');
+   for(const f of [['arthur.jpg',512,512],['arthur-cockpit.jpg',+ci.getAttribute('width'),+ci.getAttribute('height')]]){const b=readFileSync(new URL('../img/'+f[0],import.meta.url));assert(b[0]===0xFF&&b[1]===0xD8,f[0]+': JPEG');
+     let i=2,w=0,hh=0;while(i<b.length&&b[i]===0xFF){const m=b[i+1];if(m===0xDA)break;const L=b.readUInt16BE(i+2);assert(!(m>=0xE1&&m<=0xEF)&&m!==0xFE,f[0]+': metadata segment 0x'+m.toString(16));if(m===0xC0||m===0xC2){hh=b.readUInt16BE(i+5);w=b.readUInt16BE(i+7);}i+=2+L;}
+     assert(w===f[1]&&hh===f[2],f[0]+': width/height attributes match the file ('+w+'x'+hh+')');assert(!b.includes('Exif')&&!b.includes('GPS')&&!b.includes('http://ns.adobe.com/xap'),f[0]+': no EXIF, GPS or XMP');}
+   for(const f of ['index.html','about.html','help.html','log.html','css/style.css'])assert(!/pilot/i.test(readFileSync(new URL('../'+f,import.meta.url),'utf8')),f+': no pilot wording');
+   assert(!/data-photo|photo-initial/.test(html+about),'no leftover photo swap markup');}],
+ ['Images: nothing is loaded from an external image host',()=>{for(const f of ['index.html','about.html','help.html','log.html']){const t=readFileSync(new URL('../'+f,import.meta.url),'utf8');const d=new JSDOM(t).window.document;
+   for(const im of d.querySelectorAll('img,source,link[rel~="icon"]')){const u=im.getAttribute('src')||im.getAttribute('srcset')||im.getAttribute('href')||'';assert(!/^(https?:)?\/\//i.test(u),f+': external image '+u);}
+   assert(!/cdn\.buymeacoffee|img\.buymeacoffee|buymeacoffee\.com\/assets|url\(\s*['"]?https?:/i.test(t),f+': external image host');}
+   const css=readFileSync(new URL('../css/style.css',import.meta.url),'utf8');assert(!/url\(\s*['"]?(https?:)?\/\//i.test(css),'no external images in CSS');}],
+ ['Footer: fits on two lines at 320 to 430px on every page, with the legal links kept',()=>{const css=readFileSync(new URL('../css/style.css',import.meta.url),'utf8');
+   assert(/@media\(max-width:760px\)\{\.site-footer\{overflow:visible;flex-wrap:wrap/.test(css)&&/\.footer-links\{display:contents\}/.test(css),'footer wraps on narrow screens instead of scrolling');
+   const m=css.match(/@media\(max-width:560px\)\{:root\{--footer:(\d+)px\}\.site-footer\{gap:4px (\d+)px;padding:6px (\d+)px;line-height:(\d+)px\}/);assert(m,'phone footer rule');const [,fh,gap,pad,lh]=m.map(Number);assert(fh>=2*lh+4+12,'two lines fit in --footer');
+   const CH=7.3; /* widest common 12px monospace advance, px per character */
+   for(const f of ['index.html','about.html','help.html','log.html']){const d=new JSDOM(readFileSync(new URL('../'+f,import.meta.url),'utf8')).window.document,foot=d.querySelector('.site-footer');
+     const labels=[...foot.querySelectorAll(':scope>a,.footer-links>a')].map(a=>(a.querySelector('.fl-short')||a).textContent.trim());
+     for(const t of ['Privacy','Cookies','Terms','Disclaimer','Contact'])assert(labels.includes(t),f+': '+t+' link');
+     for(const a of foot.querySelectorAll('.fl-long'))assert(a.nextElementSibling?.classList.contains('fl-short'),f+': long label has a short one');
+     for(const w of [320,360,375,390,414,430]){let lines=1,x=0;const room=w-2*pad;for(const t of labels){const lw=t.length*CH;if(x&&x+gap+lw>room){lines++;x=lw;}else x+=(x?gap:0)+lw;assert(lw<=room,f+': '+t+' too wide');}
+       assert(lines<=2,f+' at '+w+'px: '+lines+' lines');}}}],
+ ['Globe labels: placed clear of the overlays, kept on screen, hidden when nothing is clear',()=>{
+   for(const s of ['.map-hud','.target-rail','.map-tools','.map-legend','.radio-panel','.qso-card'])assert(LABEL_AVOID.split(',').includes(s),'avoids '+s);
+   const hit=(p,w,h,r)=>p.x<r.r&&p.x+w>r.l&&p.y<r.b&&p.y+h>r.t;
+   let p=placeLabel(100,100,60,20,800,600,[]);assert(p&&p.x===112&&p.y===90,'usual spot right of the pin');
+   const hud={l:105,t:80,r:300,b:120};p=placeLabel(100,100,60,20,800,600,[hud]);assert(p&&!hit(p,60,20,hud)&&p.x<100,'flips left when the right side is taken');
+   p=placeLabel(790,100,60,20,800,600,[]);assert(p&&p.x+60<=798,'flips left at the right edge');
+   p=placeLabel(100,100,60,20,800,600,[{l:0,t:0,r:800,b:600}]);assert(p===null,'hidden when everything is covered');
+   for(let i=0;i<500;i++){const r=[{l:Math.random()*700,t:Math.random()*500,r:0,b:0}];r[0].r=r[0].l+80;r[0].b=r[0].t+60;const x=Math.random()*800,y=Math.random()*600;const q=placeLabel(x,y,58,18,800,600,r);if(q)assert(!hit(q,58,18,r[0])&&q.x>=2&&q.y>=2&&q.x+58<=798&&q.y+18<=598,'random case '+i);}
+   const g=readFileSync(new URL('../js/globe.js',import.meta.url),'utf8'),fb=readFileSync(new URL('../js/fallback.js',import.meta.url),'utf8');assert(/placeLabel\(/.test(g)&&/placeLabel\(/.test(fb),'both renderers use it');}]
+);
