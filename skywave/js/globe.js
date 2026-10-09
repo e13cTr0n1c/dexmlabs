@@ -54,7 +54,9 @@ class SkyGlobe {
   setupDecoration(){
     const positions=[];let seed=13579;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
     for(let i=0;i<420;i++){const y=random()*2-1,a=random()*Math.PI*2,r=Math.sqrt(1-y*y);positions.push(Math.cos(a)*r*18,y*18,Math.sin(a)*r*18);}
-    const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));this.scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0x74919a,size:.025,sizeAttenuation:true,transparent:true,opacity:.52})));
+    const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));this.stars=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0x74919a,size:.025,sizeAttenuation:true,transparent:true,opacity:.52}));this.scene.add(this.stars);
+    // no stars on a light page: they read as dust
+    this.retheme=()=>{this.stars.visible=document.documentElement.getAttribute('data-theme')!=='light';};this.retheme();window.addEventListener('dexm:theme',this.retheme);
     const rim=new THREE.Mesh(new THREE.SphereGeometry(1.022,64,40),new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.BackSide,vertexShader:`varying vec3 n;varying vec3 v;void main(){vec4 p=modelViewMatrix*vec4(position,1.0);n=normalize(normalMatrix*normal);v=normalize(-p.xyz);gl_Position=projectionMatrix*p;}`,fragmentShader:`varying vec3 n;varying vec3 v;void main(){float f=pow(1.0-abs(dot(n,v)),3.0);gl_FragColor=vec4(0.20,0.60,0.70,f*0.40);}`}));this.world.add(rim);
     const grid=[];for(let lat=-60;lat<=60;lat+=30)for(let lon=-180;lon<180;lon+=3)grid.push(vector({lat,lon},1.003),vector({lat,lon:lon+3},1.003));
     for(let lon=-180;lon<180;lon+=30)for(let lat=-90;lat<90;lat+=3)grid.push(vector({lat,lon},1.003),vector({lat:lat+3,lon},1.003));
@@ -203,5 +205,5 @@ gl_FragColor=vec4(col,a*strength);}`});
     if(this.tier==='high'&&this.composer)this.composer.render(dt);else this.renderer.render(this.scene,this.camera);
     this.start();
   }
-  dispose(){this.pause(true);this.resizeObserver.disconnect();this.controls.dispose();this.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose?.();});Object.values(this.textureCache).flat().forEach(t=>t.dispose());this.composer?.dispose();this.renderer.dispose();this.labels.forEach(l=>l.node.remove());this.renderer.domElement.remove();}
+  dispose(){window.removeEventListener("dexm:theme",this.retheme);this.pause(true);this.resizeObserver.disconnect();this.controls.dispose();this.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose?.();});Object.values(this.textureCache).flat().forEach(t=>t.dispose());this.composer?.dispose();this.renderer.dispose();this.labels.forEach(l=>l.node.remove());this.renderer.domElement.remove();}
 }

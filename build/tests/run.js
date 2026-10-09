@@ -1,12 +1,12 @@
 // Site checks for the generated pages of dexmlabs.app. Run: node build/tests/run.js (needs jsdom).
 var assert = require("assert"), path = require("path"), fs = require("fs"), jsdom = require("jsdom");
 var ROOT = path.join(__dirname, "../..");
-var pass = 0, fail = 0;
-function t(name, fn) { try { fn(); pass++; console.log("ok   " + name); } catch (e) { fail++; console.log("FAIL " + name + "\n  " + e.message.split("\n")[0]); } }
+var pass = 0, fail = 0, queue = [];
+function t(name, fn) { queue.push([name, fn]); }
 function read(f) { return fs.readFileSync(path.join(ROOT, f), "utf8"); }
 function dom(f) { return new jsdom.JSDOM(read(f)).window.document; }
 function visible(d) { var b = d.body.cloneNode(true); [].forEach.call(b.querySelectorAll("script,style"), function (e) { e.remove(); }); return b.textContent; }
-var GENERATED = ["index.html", "privacy/index.html", "cookies/index.html", "terms/index.html", "disclaimer/index.html", "contact/index.html", "404.html"];
+var GENERATED = ["index.html", "points/index.html", "privacy/index.html", "cookies/index.html", "terms/index.html", "disclaimer/index.html", "contact/index.html", "404.html"];
 var NEW = "https://e13ctr0n1c.github.io/";
 var TOOLS = ["cis-refund-estimator", "cis-deduction-calculator", "probate-iht-calculator", "late-payment-interest-calculator", "gift-iht-taper-checker", "vat-threshold-checker"];
 var TEMPLATES = ["cis-subcontractor-tracker", "cis-contractor-tracker", "cis-mileage-lite", "cis-bundle", "probate-tracker", "gifts-iht-tracker", "freelancer-late-payment-tracker", "sales-dashboard-vat-watch"];
@@ -22,6 +22,24 @@ t("homepage: games first, then makes, then support", function () {
   assert.ok(makes.some(function (h) { return /cults3d\.com\/.*lorenz-cipher-chi-wheel/.test(h); }), "Lorenz STL on Cults3D");
   assert.strictEqual(makes.filter(function (h) { return /cults3d\.com/.test(h); }).length, 3, "three Cults3D links");
   assert.ok(d.querySelector('#support a[href="https://buymeacoffee.com/arthurdeusexmachina"]'), "BMC button");
+});
+t("the old tagline and the long name are gone everywhere, only DEXM Labs is left", function () {
+  // built from parts so this file doesn't match itself
+  var bad = [new RegExp(["god", "from", "the", "lab"].join("\\s+"), "i"), new RegExp(["deus", "ex", "machina"].join("\\s+"), "i")];
+  var seen = 0;
+  (function walk(dir) {
+    fs.readdirSync(path.join(ROOT, dir), {withFileTypes: true}).forEach(function (e) {
+      var rel = dir ? dir + "/" + e.name : e.name;
+      if (e.isDirectory()) { if (!/^(\.git|node_modules|__pycache__)$/.test(e.name)) walk(rel); return; }
+      if (!/\.(html|js|mjs|css|py|txt|xml|json|md|svg|webmanifest)$|^LICENSE$/.test(e.name)) return;
+      var text = read(rel); seen++;
+      bad.forEach(function (re) { assert.ok(!re.test(text), rel + " still has " + re); });
+    });
+  })("");
+  assert.ok(seen > 40, "walked the repo");
+  var d = dom("index.html");
+  assert.strictEqual(d.querySelector('meta[property="og:site_name"]').content, "DEXM Labs");
+  assert.ok(/^DEXM Labs/.test(d.title));
 });
 t("Lorenz card wording", function () {
   var x = visible(dom("index.html"));
@@ -56,7 +74,7 @@ t("Cloudflare beacon once on every generated page, never on redirects", function
 });
 t("cookies table lists every storage key, hard mode rows after lorenz:stats", function () {
   var keys = [].map.call(dom("cookies/index.html").querySelectorAll("tbody tr td:first-child"), function (td) { return td.textContent; });
-  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "dexm:storage-note-dismissed"]);
+  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
 });
 t("old tool and template URLs are bare redirects to the new site", function () {
   MOVED.forEach(function (u) {
@@ -75,8 +93,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 14);
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|(privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 15);
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");
@@ -99,5 +117,12 @@ t("game pages carry no links to the moved pages", function () {
     });
   });
 });
-console.log(pass + " passed, " + fail + " failed");
-process.exit(fail ? 1 : 0);
+require("./points-theme.js")(t, {ROOT: ROOT, read: read, dom: dom, GENERATED: GENERATED});
+(async function () {
+  for (var i = 0; i < queue.length; i++) {
+    var name = queue[i][0];
+    try { await queue[i][1](); pass++; console.log("ok   " + name); } catch (e) { fail++; console.log("FAIL " + name + "\n  " + String(e && e.message || e).split("\n").slice(0, 6).join(" ")); }
+  }
+  console.log(pass + " passed, " + fail + " failed");
+  process.exit(fail ? 1 : 0);
+})();

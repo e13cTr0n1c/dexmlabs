@@ -1,0 +1,29 @@
+/* Shared header bits on every page: the points chip, its popover and the theme toggle. */
+:root{--dx-bg:#0b0e0c;--dx-ink:#ecefe7;--dx-muted:#a0aa9b;--dx-line:#3a4235;--dx-accent:#d6ff00;--dx-accent-ink:#d6ff00;--dx-shadow:0 14px 40px #000c}
+:root[data-theme=light]{--dx-bg:#fbfaf6;--dx-ink:#15170f;--dx-muted:#4f5747;--dx-line:#828a78;--dx-accent:#d6ff00;--dx-accent-ink:#4b5e00;--dx-shadow:0 14px 40px #1e22164d}
+.dexm-tools{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.dexm-chip,.dexm-theme{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;min-height:34px;margin:0;padding:0 9px;border:1px solid var(--dx-line);background:transparent;color:var(--dx-ink);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em;cursor:pointer;border-radius:0;white-space:nowrap}
+.dexm-chip:hover,.dexm-theme:hover{border-color:var(--dx-accent-ink);color:var(--dx-accent-ink)}
+.dexm-chip:focus-visible,.dexm-theme:focus-visible{outline:3px solid var(--dx-accent-ink);outline-offset:2px}
+.dexm-chip svg,.dexm-theme svg{width:16px;height:16px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2}
+.dexm-chip svg .c{fill:var(--dx-accent);stroke:var(--dx-ink)}
+.dexm-chip [data-points-balance]{min-width:3ch;text-align:right;font-variant-numeric:tabular-nums}
+.dexm-chip-note{border-color:var(--dx-accent-ink)}
+.dexm-theme{width:34px;padding:0}
+.dexm-theme .sun{display:none}
+:root[data-theme=light] .dexm-theme .sun{display:block}:root[data-theme=light] .dexm-theme .moon{display:none}
+.dexm-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.dexm-pop{position:fixed;right:8px;top:72px;z-index:200;width:min(330px,calc(100vw - 16px));max-height:calc(100vh - 90px);overflow:auto;padding:14px 16px 12px;background:var(--dx-bg);color:var(--dx-ink);border:1px solid var(--dx-line);box-shadow:var(--dx-shadow);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:left}
+.dexm-pop[hidden]{display:none}
+.dexm-pop-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.dexm-pop h2{margin:0;font:900 16px/1.2 "Arial Black",Arial,Helvetica,sans-serif;text-transform:none;letter-spacing:0;color:var(--dx-ink)}
+.dexm-pop-close{min-height:34px;width:34px;padding:0;border:1px solid var(--dx-line);background:transparent;color:var(--dx-ink);font:20px/1 Arial,sans-serif;cursor:pointer}
+.dexm-pop-close:hover{color:var(--dx-accent-ink);border-color:var(--dx-accent-ink)}
+.dexm-pop p{margin:8px 0}.dexm-pop ul{margin:6px 0;padding-left:18px}.dexm-pop li{margin:3px 0}
+.dexm-pop b{color:var(--dx-ink)}
+.dexm-pop-bal b{color:var(--dx-accent-ink);font-size:15px}
+.dexm-pop-note{padding:6px 8px;border-left:3px solid var(--dx-accent-ink)}
+.dexm-pop-small{color:var(--dx-muted);font-size:12px}
+.dexm-pop a{color:var(--dx-accent-ink);text-decoration:underline;text-underline-offset:3px}
+.dexm-cost{white-space:nowrap}
+@media(max-width:420px){.dexm-chip{padding:0 7px;gap:4px}.dexm-tools{gap:4px}.dexm-chip,.dexm-theme{height:32px;min-height:32px}.dexm-theme{width:32px}}

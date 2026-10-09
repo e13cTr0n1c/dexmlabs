@@ -2,16 +2,16 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script>
   <meta name="theme-color" content="#080a08">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kE1co0z749oaTiQdaivkHEhVq9XX5NAlLv+Izxpx4G4=' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>How to play Lorenz</title>
-  <meta name="description" content="How to play Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
+  <meta name="description" content="How to play Lorenz. Lorenz, a daily cipher machine game from DEXM Labs.">
   <link rel="canonical" href="https://dexmlabs.app/lorenz/help.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Deus Ex Machina Labs">
+  <meta property="og:site_name" content="DEXM Labs">
   <meta property="og:title" content="How to play Lorenz">
-  <meta property="og:description" content="How to play Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
+  <meta property="og:description" content="How to play Lorenz. Lorenz, a daily cipher machine game from DEXM Labs.">
   <meta property="og:url" content="https://dexmlabs.app/lorenz/help.html">
   <meta property="og:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
   <meta property="og:image:width" content="1200">
@@ -20,7 +20,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/theme.js" defer></script>
   <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
 </head>
 <body>
@@ -32,7 +32,7 @@
       <a class="header-coffee" href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="107" height="30"></a>
       <a href="./index.html">Play</a>
       <a href="./help.html">Guide</a>
-      <a href="./about.html">About</a>
+      <a href="./about.html">About</a><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div>
     </nav>
   </header>
 
@@ -49,11 +49,12 @@
       <li>Set the twelve wheels to match. Click the arrows, drag a number up or down, or type it in. The arrow keys work too.</li>
       <li>Press Decode the tape (or the D key). The tape runs through, the wheels turn, and the teleprinter prints what comes out.</li>
     </ol>
+    <p>To see how it works, set the teleprinter speed to Visual demonstration. The first few characters go through one step at a time: the character's five bits, the chi bits added, the psi bits added (and whether the motor let the psi wheels step), then what comes out. Then the rest of the message speeds up. The whole run takes about 13 seconds. With reduced motion on, each step just appears with no movement.</p>
     <p>The book got damp. On some lines one tens figure is smudged, so all you can read is the last figure. If your line has a smudge, try the positions that end in that figure. A wrong guess prints garbage and costs points, so think before you run the tape.</p>
     <p>A tip: if the first few letters come out right and then it turns to garbage, the chi and psi wheels are probably fine and a motor wheel is out. That's because the motors only decide when the psi wheels move.</p>
 
     <h2>Scoring and hints</h2>
-    <p>A correct decode is worth 1,000 points. Each wrong try takes off 150, but running the exact same wrong settings again is free. Checking whether one wheel is right costs 100. Reading the smudge costs 300. You never get less than 100 for a decode. Your score is shown as you go, so you know what a decode is worth right now.</p>
+    <p>A correct decode is worth 1,000 points. Each wrong try takes off 150, but running the exact same wrong settings again is free. You never get less than 100 for a decode. Hints are paid for with <a href="../points/">points</a>, which are shared with Skywave, so they don't touch your score: checking whether one wheel is right costs 20 points and reading the smudge costs 50. Decoding today's round earns you 100 points, and a practice round earns 20. Your score is shown as you go, so you know what a decode is worth right now.</p>
     <p>Decode the daily round on consecutive UTC days to build a streak. It's kept in this browser only. Practice rounds never touch it. When you decode, a card shows the sum, the tape runs off at speed and the score counts up. With reduced motion on, in settings or on your device, the card and score just appear.</p>
 
     <h2 id="hard">Hard mode</h2>
@@ -64,7 +65,7 @@
       <li>The machine doesn't print. It punches tape, and you read that tape yourself with the cheat sheet, then type the message in. Capitals, spaces and punctuation don't matter, figures have to be exact, and I'll let one wrong letter in one word go. If you'd rather type Bletchley letters with 9 for a space, that works too. You can tap a row of the tape to mark it as read.</li>
       <li>Wrong wheels give you garbage tape, and you won't know until you start reading it. A wrong reading costs 150 points, and I'll tell you how many of the words are right, but not which.</li>
     </ul>
-    <p>The hints cost more here. Revealing the QEP costs 200, each character of the message you reveal costs 50, checking a wheel costs 100, and reading the smudge costs 300. You never get less than 100. Hard mode keeps its own score and streak, apart from normal mode's, and the result you share is marked HARD. The page dates are real calendar dates around today, but the pages themselves are made up, like the rest of the book.</p>
+    <p>Hard mode has two more hints, paid with points like the others: revealing the QEP costs 40 and each character of the message you reveal costs 10. Checking a wheel is 20 and reading the smudge is 50. Reading today's hard round earns you 250 points. You never get less than 100 for the score. Hard mode keeps its own score and streak, apart from normal mode's, and the result you share is marked HARD. The page dates are real calendar dates around today, but the pages themselves are made up, like the rest of the book.</p>
     <p>With Hard picked, Practice gives you hard rounds too, on random settings: a fresh book, preamble and message every time, the page to find is the one dated today, and the answer check is the same. Practice never touches your hard mode score or streak.</p>
 
     <h2>Practice</h2>

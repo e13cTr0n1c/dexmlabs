@@ -1,10 +1,10 @@
-# Deus Ex Machina Labs
+# DEXM Labs
 
 > Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, and 3D print designs for the radio bench.
 
 ## Home
 
-- [Deus Ex Machina Labs](https://dexmlabs.app/): Homepage with the games and the makes.
+- [DEXM Labs](https://dexmlabs.app/): Homepage with the games and the makes.
 
 ## Games
 
@@ -24,6 +24,10 @@
 - [RF panel drill guide](https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-239-n-4-hole-flange-and-bnc-d-hole-with): 3D print for SO-239, N and BNC holes. On Cults3D.
 - [Band plan desk mat](https://arthurdeusexmachina-shop.fourthwall.com/products/uk-ham-radio-band-plan-desk-mat-160m-to-70cm): UK ham bands, 160m to 70cm. On Fourthwall.
 - [Buy me a coffee](https://buymeacoffee.com/arthurdeusexmachina): Support the lab.
+
+## Points
+
+- [How points work](https://dexmlabs.app/points/): Points are earned in the daily games and spent on hints. They stay in your browser.
 
 ## Policies
 

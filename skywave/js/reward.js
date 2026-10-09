@@ -65,7 +65,7 @@ export class QsoReward {
     const plan=rewardPlan(entry,{reducedMotion:this.reducedMotion()});
     if(!plan.card){this.hide();this.counter?.show(state.score);return false;}
     this.fired++;
-    const target=state.day.targets.find(t=>t.id===entry.targetId),penalty=(state.hints[entry.targetId]||[]).reduce((s,h)=>s+RULES.hintCost[h],0);
+    const target=state.day.targets.find(t=>t.id===entry.targetId),penalty=0; // hints are paid in points now, so they never cut the score
     const model=qsoCardModel(entry,target,penalty),delay=plan.comet&&this.globe()?.celebrate?.(entry)?REWARD.cardDelayMs:0;
     this.hide();
     if(delay)this.delayTimer=this.setTimer(()=>{this.delayTimer=null;this.showCard(model);},delay);else this.showCard(model);

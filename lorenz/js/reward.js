@@ -8,10 +8,7 @@ const fmt = n => Math.round(n).toLocaleString('en-GB');
 export function scoreBreakdown(state) {
   const wrong = state.attempts.filter(a => !a.ok).length, lines = [['Decoded', fmt(RULES.base)]];
   if (wrong) lines.push([`${wrong} wrong ${wrong > 1 ? 'tries' : 'try'}`, `\u2212${fmt(wrong * RULES.wrong)}`]);
-  const checks = state.hints.filter(h => h.type === 'check').length, reveal = state.hints.some(h => h.type === 'reveal');
-  if (checks) lines.push([`${checks} wheel check${checks > 1 ? 's' : ''}`, `\u2212${fmt(checks * RULES.hint.check)}`]);
-  if (reveal) lines.push(['Read the smudge', `\u2212${fmt(RULES.hint.reveal)}`]);
-  const raw = RULES.base - wrong * RULES.wrong - checks * RULES.hint.check - (reveal ? RULES.hint.reveal : 0);
+  const raw = RULES.base - wrong * RULES.wrong;
   if (raw < RULES.floor) lines.push(['Never less than', fmt(RULES.floor)]);
   return {lines, total: Math.max(RULES.floor, raw)};
 }

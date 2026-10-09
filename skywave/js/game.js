@@ -1,7 +1,8 @@
 import {hashString,mulberry32} from './seed.js';
 import {evaluatePath,initialBearing} from './propagation.js';
 import {isListening} from './stations.js';
-export const RULES=Object.freeze({attemptMinutes:10,dayMinutes:1440,modeMult:{FT8:1,CW:1.5,SSB:2},powerMult:{5:3,50:1.5,100:1,400:0.7},hintCost:{muf:0.05,absorption:0.05,scope:0.10}});
+export const RULES=Object.freeze({attemptMinutes:10,dayMinutes:1440,modeMult:{FT8:1,CW:1.5,SSB:2},powerMult:{5:3,50:1.5,100:1,400:0.7},hintPoints:{muf:10,absorption:10,scope:20}});
+/** Hints are paid for with shared points (DexmPoints, see /assets/points.js), so they no longer take anything off a contact's score. */
 export function createGame(day,mode='daily') {return {version:1,day,mode,minute:0,selected:day.targets[0].id,rig:{band:'20m',mode:'FT8',power:100,antenna:'dipole',bearing:0},log:[],worked:[],hints:{},score:0,finished:false};}
 /** First-time friendly start: open the operating day at the earliest listening window (nothing is on air
  * before it, so no usable time is lost) and pre-select that station. The 24:00 end is unchanged. */
@@ -14,11 +15,11 @@ export const gameDate = (state,minute=state.minute) => new Date(Date.parse(state
 export const selectedTarget = state => state.day.targets.find(t=>t.id===state.selected);
 export function advanceTime(state,minute) {if(state.finished)return state;return {...state,minute:Math.min(RULES.dayMinutes,Math.max(state.minute,Math.ceil(minute/10)*10))};}
 export function revealHint(state,type) {
-  if(!Object.hasOwn(RULES.hintCost,type)||state.finished||state.worked.includes(state.selected))return state;
+  if(!Object.hasOwn(RULES.hintPoints,type)||state.finished||state.worked.includes(state.selected))return state;
   const existing=state.hints[state.selected]||[];
   return existing.includes(type)?state:{...state,hints:{...state.hints,[state.selected]:[...existing,type]}};
 }
-export const penaltyFor = (state,id) => (state.hints[id]||[]).reduce((s,h)=>s+RULES.hintCost[h],0);
+export const penaltyFor = () => 0;
 export function scoreContact(distance,rarity,mode,power,greyLine=false,penalty=0) {
   return Math.round(Math.round(distance/100)*rarity*RULES.modeMult[mode]*RULES.powerMult[power]*(greyLine?1.2:1)*(1-penalty));
 }

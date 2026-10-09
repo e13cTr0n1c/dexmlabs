@@ -1,6 +1,6 @@
 # dexmlabs.app
 
-Static site for Deus Ex Machina Labs (DEXM LABS): small free browser games and makes from a home lab in the UK.
+Static site for DEXM Labs: small free browser games and makes from a home lab in the UK.
 
 - `/` homepage: the games, the makes (3D print designs on Cults3D, the band plan desk mat on Fourthwall) and Buy Me a Coffee
 - `/skywave/` Skywave, a daily HF propagation puzzle (three.js from jsDelivr)
@@ -28,4 +28,4 @@ node build/tests/run.js
 
 Preview with any static server from the repo root, e.g. `python3 -m http.server`.
 
-Content and code (c) 2026 Deus Ex Machina Labs (Arthur Jones). All rights reserved, unless credited otherwise. Third-party credits: `skywave/CREDITS.md`, `skywave/THIRD_PARTY_LICENSES.txt`.
+Content and code (c) 2026 DEXM Labs (Arthur Jones). All rights reserved, unless credited otherwise. Third-party credits: `skywave/CREDITS.md`, `skywave/THIRD_PARTY_LICENSES.txt`.

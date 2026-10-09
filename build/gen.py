@@ -22,39 +22,44 @@ EMAIL='hello@dexmlabs.app'
 INDEXNOW_KEY='deec04819134d490fb0bce54af34ef6d'
 # Cloudflare Web Analytics beacon (cookieless), exactly as Cloudflare gave it. The token is public.
 CFWA="""<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics -->"""
-MARK='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><path d="M16 8a8 8 0 1 1 0 16a8 8 0 1 1 0-16z" fill="#d6ff00"/><rect x="6" y="15" width="20" height="2.4" fill="#0a0b09"/><rect x="14.8" y="5" width="2.4" height="5" fill="#0a0b09"/></svg>'
+MARK='<svg viewBox="0 0 32 32" aria-hidden="true"><rect class="frame" x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><path d="M16 8a8 8 0 1 1 0 16a8 8 0 1 1 0-16z" fill="#d6ff00"/><rect x="6" y="15" width="20" height="2.4" fill="#0a0b09"/><rect x="14.8" y="5" width="2.4" height="5" fill="#0a0b09"/></svg>'
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from shared import THEME_SCRIPT,THEME_HASH,tools,shared_head
 POL=[('privacy','Privacy'),('cookies','Cookies &amp; storage'),('terms','Terms'),('disclaimer','Disclaimer'),('contact','Contact')]
-def head(title,desc,path,r,og='https://dexmlabs.app/assets/og-image.png',ogalt='Deus Ex Machina Labs. God from the lab.'):
+def head(title,desc,path,r,og='https://dexmlabs.app/assets/og-image.png',ogalt='DEXM Labs. Games and makes.'):
   url='https://dexmlabs.app/'+path
   return f'''<!doctype html>
 <html lang="en-GB"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>{THEME_SCRIPT}</script>
 <title>{title}</title>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="{url}">
 <meta name="theme-color" content="#0a0b09">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Deus Ex Machina Labs">
+<meta property="og:type" content="website"><meta property="og:site_name" content="DEXM Labs">
 <meta property="og:title" content="{title}"><meta property="og:description" content="{desc}">
 <meta property="og:url" content="{url}"><meta property="og:image" content="{og}">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="{ogalt}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{title}"><meta name="twitter:description" content="{desc}"><meta name="twitter:image" content="{og}">
 <link rel="icon" href="{r}assets/favicon.svg" type="image/svg+xml"><link rel="icon" href="{r}assets/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="{r}assets/apple-touch-icon.png">
 <link rel="stylesheet" href="{r}assets/site.css">
+{shared_head(r)}
 <script src="{r}assets/storage-note.js" data-cookies="{r}cookies/" defer></script>
 </head><body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><a class="brand" href="{r or './'}">{MARK}<span>DEXM LABS</span></a><nav aria-label="Main"><a href="{r or './'}">HOME</a><a href="{r}#games">GAMES</a><a href="{r}#makes">MAKES</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="brand" href="{r or './'}">{MARK}<span>DEXM LABS</span></a><nav aria-label="Main"><a href="{r or './'}">HOME</a><a href="{r}#games">GAMES</a><a href="{r}#makes">MAKES</a></nav>{tools(r)}</div></header>
 <div class="stripe" aria-hidden="true"></div>
 '''
 def foot(r):
   links=''.join(f'<a href="{r}{p}/">{n}</a>' for p,n in POL)
-  return f'''<footer class="foot"><div class="wrap"><nav aria-label="Policies">{links}</nav><div><p><a href="mailto:{EMAIL}">{EMAIL}</a></p><p>&copy; 2026 Deus Ex Machina Labs</p></div></div></footer>
+  return f'''<footer class="foot"><div class="wrap"><nav aria-label="Policies">{links}</nav><div><p><a href="mailto:{EMAIL}">{EMAIL}</a></p><p>&copy; 2026 DEXM Labs</p></div></div></footer>
 {CFWA}
 </body></html>
 '''
 def doc(slug,title,label,desc,body,updated='7 October 2026'):
   r='../'
-  html=head(f'{title} / Deus Ex Machina Labs',desc,slug+'/',r)+f'''<main id="main" class="doc"><div class="wrap"><article>
+  html=head(f'{title} / DEXM Labs',desc,slug+'/',r)+f'''<main id="main" class="doc"><div class="wrap"><article>
 <p class="label acid">{label}</p>
 <h1>{title}</h1>
 <p class="updated">Last updated: {updated}</p>
@@ -70,18 +75,18 @@ MAKES=[(CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for sho
  (DRILL,'RF panel drill guide','3D print for SO-239, N and BNC holes.','Cults3D'),
  (MAT,'Band plan desk mat','UK ham bands, 160m to 70cm.','Fourthwall')]
 LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Find the settings in the key book, set twelve wheels and decode the tape.'
-home=head('Deus Ex Machina Labs / God from the lab','Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily puzzle on the cipher machine Bletchley Park called Tunny, and 3D print designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"Deus Ex Machina Labs","alternateName":"DEXM LABS","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
+home=head('DEXM Labs / Games and makes','Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily puzzle on the cipher machine Bletchley Park called Tunny, and 3D print designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>
-<h1><span>Deus Ex</span><span>Machina</span><span>Labs</span></h1>
-<p class="tagline">God from the lab.</p>
+<h1><span>DEXM</span><span>Labs</span></h1>
+<p class="tagline">Games and makes.</p>
 <p class="lead">Small free games that run in your browser, and things I design for the radio bench and the 3D printer. I build them in my home lab, one at a time, and put them here when they work.</p>
 <div class="meta"><div><strong>2</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
 </div>
 <div class="side">
 <div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">2</div></div>
-<div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="#d6ff00" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="#d6ff00"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="#d6ff00"/></svg><p><strong>Work in progress</strong>Things here change. If something breaks, <a href="contact/">tell me</a>.</p></div>
+<div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="currentColor"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="currentColor"/></svg><p><strong>Work in progress</strong>Things here change. If something breaks, <a href="contact/">tell me</a>.</p></div>
 </div>
 </div></section>
 
@@ -133,11 +138,11 @@ ICO='<a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>'
 ML=f'<a href="mailto:{EMAIL}">{EMAIL}</a>'
 doc('privacy','Privacy notice','PRIVACY','How dexmlabs.app handles personal data. Short version: no accounts, no ads, no cookies, and only cookieless visit counts from Cloudflare Web Analytics.',f'''
 <h2>Who I am</h2>
-<p>Deus Ex Machina Labs is the trading name of Arthur Jones, an individual based in the UK. I run dexmlabs.app and I am the controller of any personal data handled through it under the UK GDPR and the Data Protection Act 2018. You can reach me at {ML}.</p>
+<p>DEXM Labs is the trading name of Arthur Jones, an individual based in the UK. I run dexmlabs.app and I am the controller of any personal data handled through it under the UK GDPR and the Data Protection Act 2018. You can reach me at {ML}.</p>
 <h2>The short version</h2>
 <p>There are no accounts, no sign-up and no ads, and no cookies are set. I count visits with Cloudflare Web Analytics, which gives me totals, not a record of you. Nothing you do in the games is sent to me.</p>
 <h2>What stays in your browser</h2>
-<p>Skywave and Lorenz save your progress, settings, best scores and streak in your browser's localStorage, so you can pick up where you left off. The site also remembers that you closed the storage notice. This data stays on your device and is never sent to me. See <a href="../cookies/">cookies and storage</a> for the details and how to clear it.</p>
+<p>Skywave and Lorenz save your progress, settings, best scores and streak in your browser's localStorage, so you can pick up where you left off. Your <a href="../points/">points</a> are kept there too, and so is light or dark mode if you pick one. The site also remembers that you closed the storage notice. This data stays on your device and is never sent to me. See <a href="../cookies/">cookies and storage</a> for the details and how to clear it.</p>
 <h2>Hosting: GitHub Pages</h2>
 <p>The site is hosted on GitHub Pages, run by GitHub, Inc. When your browser asks for a page, GitHub receives your IP address and standard request details (such as browser type and the page requested), and may log them for security and to keep the service running. I don't get access to those logs. See {GH}.</p>
 <h2>Visit counts: Cloudflare Web Analytics</h2>
@@ -173,17 +178,19 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>lorenz:hard:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz hard mode round</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:hard:stats</code></td><td>Lorenz hard mode best score and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
+<tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by both games</td><td>Until you clear it, last 200 lines</td></tr>
+<tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>
 </tbody></table>
 <h2>Why there's no consent banner</h2>
 <p>Under the Privacy and Electronic Communications Regulations (PECR), storage that is strictly necessary to give you a service you've asked for doesn't need consent. Saving your game and settings is part of the game you chose to play, so I just tell you about it here instead of asking. Cloudflare Web Analytics sets no cookies and stores nothing on your device, so it doesn't need a banner either.</p>
 <h2>How to clear it</h2>
-<p>In your browser's settings, look for site data (often under Privacy, or "Cookies and site data"), find dexmlabs.app and delete it. This resets your Skywave and Lorenz progress, streaks and settings. Private or incognito windows clear it when you close them.</p>
+<p>In your browser's settings, look for site data (often under Privacy, or "Cookies and site data"), find dexmlabs.app and delete it. This resets your Skywave and Lorenz progress, streaks, settings and points. Private or incognito windows clear it when you close them.</p>
 <h2>Third parties</h2>
 <p>GitHub Pages (hosting), jsDelivr (which serves three.js) and Cloudflare (which counts visits) see your IP address when your browser fetches files from them or sends them data. See the <a href="../privacy/">privacy notice</a>. Sites you visit through the support and makes links set their own cookies under their own policies.</p>
 ''',updated='9 October 2026')
 doc('terms','Terms of use','TERMS','Terms for using dexmlabs.app and its games.',f'''
 <h2>The deal</h2>
-<p>dexmlabs.app is run by Arthur Jones, trading as Deus Ex Machina Labs. The games here are free for personal, non-commercial use. By using the site you agree to these terms.</p>
+<p>dexmlabs.app is run by Arthur Jones, trading as DEXM Labs. The games here are free for personal, non-commercial use. By using the site you agree to these terms.</p>
 <h2>As is</h2>
 <p>Everything is provided as it is, with no warranty of any kind. Games may change, break or be taken down at any time. See the <a href="../disclaimer/">disclaimer</a>.</p>
 <h2>Liability</h2>
@@ -191,7 +198,7 @@ doc('terms','Terms of use','TERMS','Terms for using dexmlabs.app and its games.'
 <h2>Fair use</h2>
 <p>Don't try to break, overload or misuse the site.</p>
 <h2>Ownership</h2>
-<p>The content and code on this site are &copy; 2026 Deus Ex Machina Labs (Arthur Jones). All rights reserved, unless credited otherwise. Third-party material keeps its own licence. Skywave and Lorenz use <a href="https://threejs.org/">three.js</a> under the MIT licence. Skywave uses NASA Blue Marble imagery under NASA's media guidelines; NASA does not endorse it. Full credits are on the <a href="../skywave/about.html">Skywave about page</a> and the <a href="../lorenz/help.html#sources">Lorenz guide</a>.</p>
+<p>The content and code on this site are &copy; 2026 DEXM Labs (Arthur Jones). All rights reserved, unless credited otherwise. Third-party material keeps its own licence. Skywave and Lorenz use <a href="https://threejs.org/">three.js</a> under the MIT licence. Skywave uses NASA Blue Marble imagery under NASA's media guidelines; NASA does not endorse it. Full credits are on the <a href="../skywave/about.html">Skywave about page</a> and the <a href="../lorenz/help.html#sources">Lorenz guide</a>.</p>
 <h2>Other sites</h2>
 <p>Links to Buy Me a Coffee, Fourthwall and Cults3D go to sites I don't control. Their terms apply there.</p>
 <h2>Law</h2>
@@ -209,14 +216,44 @@ doc('disclaimer','Disclaimer','DISCLAIMER','Skywave and Lorenz are games. Skywav
 <h2>Makes</h2>
 <p>The desk mat and 3D print designs are sold through Fourthwall and Cults3D. Check that any build suits your own equipment and power levels before you use it.</p>
 ''',updated='9 October 2026')
-doc('contact','Contact','CONTACT','How to contact Deus Ex Machina Labs.',f'''
+doc('contact','Contact','CONTACT','How to contact DEXM Labs.',f'''
 <p>Bug reports, ideas and questions are all welcome. Email is the only way in for now.</p>
 <p class="mail"><a href="mailto:{EMAIL}">{EMAIL}</a></p>
 <p>It's a one-person lab, so replies can take a few days. See the <a href="../privacy/">privacy notice</a> for how I handle your email.</p>
 ''')
 
+# ---------- points ----------
+PTS={'skywave':100,'lorenz':100,'hard':250,'practice':20,'per_day':3,'welcome':150}
+doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them by finishing the daily games and spend them on hints. They stay in your browser.',f'''
+<p>Points are shared by every game on the site. You earn them by playing and spend them on hints. They live in this browser, so there's no account and nothing to buy.</p>
+<div class="points-now" data-points-ledger><p>Your points show here when JavaScript is on.</p></div>
+<h2>Earning</h2>
+<table><thead><tr><th>What</th><th>Points</th></tr></thead><tbody>
+<tr><td>Finish today's Skywave round with at least one contact</td><td>{PTS['skywave']}</td></tr>
+<tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
+<tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>
+<tr><td>Finish a practice round in either game</td><td>{PTS['practice']}, up to {PTS['per_day']} a day in each game</td></tr>
+<tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
+</tbody></table>
+<p>Each daily round pays once. If you'd already finished today's round before points arrived, you get them the next time you open that game.</p>
+<h2>Spending</h2>
+<table><thead><tr><th>Hint</th><th>Points</th></tr></thead><tbody>
+<tr><td>Skywave: MUF or D loss, for one station</td><td>10</td></tr>
+<tr><td>Skywave: band scope, for one station</td><td>20</td></tr>
+<tr><td>Lorenz: check a wheel</td><td>20</td></tr>
+<tr><td>Lorenz: read the smudge</td><td>50</td></tr>
+<tr><td>Lorenz hard mode: reveal the QEP</td><td>40</td></tr>
+<tr><td>Lorenz hard mode: reveal a character</td><td>10</td></tr>
+</tbody></table>
+<p>Each hint button shows its price. If you don't have enough, the button says so and stays off until you've earned more. Hints don't take anything off your game score any more, so the score is just how you played. Wrong answers still cost score, as before.</p>
+<h2>Keeping it fair</h2>
+<p>Your points are a short list of what you earned and spent, with a check on each line. If the list gets edited, I keep the lines that still check out and drop the rest. If nothing checks out, you start again with {PTS['welcome']}. Only the last 200 lines are kept, and older ones are added up into a starting total.</p>
+<h2>Clearing them</h2>
+<p>Points are stored under <code>dexm:points</code> in your browser's localStorage. Clearing the site data for dexmlabs.app resets them. See <a href="../cookies/">cookies and storage</a>.</p>
+''',updated='9 October 2026')
+
 # ---------- 404 ----------
-(S/'404.html').write_text(head('Not found / Deus Ex Machina Labs','Page not found.','404.html','/').replace('<link rel="canonical" href="https://dexmlabs.app/404.html">','<meta name="robots" content="noindex">')+'''<main id="main" class="doc"><div class="wrap"><article>
+(S/'404.html').write_text(head('Not found / DEXM Labs','Page not found.','404.html','/').replace('<link rel="canonical" href="https://dexmlabs.app/404.html">','<meta name="robots" content="noindex">')+'''<main id="main" class="doc"><div class="wrap"><article>
 <p class="label acid">ERROR 404 / CHAMBER NOT FOUND</p>
 <h1>Nothing in this chamber.</h1>
 <p>The page you asked for isn't here. It may have moved, or it never existed.</p>
@@ -265,15 +302,16 @@ GAME_PAGES=[('skywave/','Skywave','A daily HF propagation puzzle on a 3D globe. 
  ('lorenz/about.html','Why I built Lorenz','Why I built Lorenz.'),
  ('lorenz/log.html',"What's changed in Lorenz",'The Lorenz change log.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
-urls=['']+[u for u,_,_ in GAME_PAGES]+[f'{p}/' for p,_ in POL]
+urls=['']+[u for u,_,_ in GAME_PAGES]+['points/']+[f'{p}/' for p,_ in POL]
 (S/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'  <url><loc>https://dexmlabs.app/{u}</loc><lastmod>2026-10-09</lastmod></url>\n' for u in urls)+'</urlset>\n')
 print('sitemap',len(urls))
 (S/'robots.txt').write_text('User-agent: *\nAllow: /\n\nSitemap: https://dexmlabs.app/sitemap.xml\n')
 A='https://dexmlabs.app/'
-L=['# Deus Ex Machina Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, and 3D print designs for the radio bench.','',
- '## Home','',f'- [Deus Ex Machina Labs]({A}): Homepage with the games and the makes.','',
+L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, and 3D print designs for the radio bench.','',
+ '## Home','',f'- [DEXM Labs]({A}): Homepage with the games and the makes.','',
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
  '## Makes','']+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',
+ '## Points','',f'- [How points work]({A}points/): Points are earned in the daily games and spent on hints. They stay in your browser.','',
  '## Policies','']+[f'- [{n.replace("&amp;","and")}]({A}{p}/): {POL_DESC[p]}' for p,n in POL]
 (S/'llms.txt').write_text('\n'.join(L)+'\n')
 (S/f'{INDEXNOW_KEY}.txt').write_text(INDEXNOW_KEY)

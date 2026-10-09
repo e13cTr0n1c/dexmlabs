@@ -3,7 +3,8 @@ import {WHEELS, WHEEL, MODELS, MARK, SPACE, POSITION_BASE, encodeText, crypt, to
 import {mulberry32, dailySeed, dayNumber, utcDateKey, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
 import {MESSAGES, MESSAGE_SETS, ALSO_LIVE} from './messages.js';
 
-export const RULES = Object.freeze({base:1000, wrong:150, hint:{reveal:300, check:100}, floor:100, bookEntries:6});
+/** hint: what each hint costs in shared points (DexmPoints). Hints don't touch the score, only wrong tries do. */
+export const RULES = Object.freeze({base:1000, wrong:150, hint:{reveal:50, check:20}, floor:100, bookEntries:6});
 
 /** Longest run of identical cams, going round the wheel (it's a loop). */
 export function longestRun(bits) {
@@ -96,8 +97,7 @@ export const newState = round => ({round, attempts:[], hints:[], solved:false, s
 export const settingsKey = settings => WHEELS.map(w => pad2(settings[w.id])).join(' ');
 export const wrongWheels = (round, settings) => WHEELS.filter(w => Number(settings[w.id]) !== round.start[w.id]).map(w => w.id);
 export function penalty(state) {
-  const wrong = state.attempts.filter(a => !a.ok).length;
-  return wrong * RULES.wrong + state.hints.reduce((s, h) => s + (RULES.hint[h.type] || 0), 0);
+  return state.attempts.filter(a => !a.ok).length * RULES.wrong;
 }
 export const scoreFor = state => Math.max(RULES.floor, RULES.base - penalty(state));
 

@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script>
   <meta name="theme-color" content="#080a08">
   <title>How to play Skywave</title>
   <link rel="canonical" href="https://dexmlabs.app/skywave/help.html">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/theme.js" defer></script>
   <script type="module" src="./js/main.js"></script>
   <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
 </head>
@@ -18,7 +18,7 @@
     <nav aria-label="Main">
       <a href="./index.html">Play</a>
       <a href="./help.html">Guide</a>
-      <a href="./about.html">About</a>
+      <a href="./about.html">About</a><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div>
     </nav>
   </header>
 
@@ -53,7 +53,7 @@
       </section>
       <section>
         <h2>Hints</h2>
-        <p>Show the MUF or the D-layer loss for 5% off that contact's points each, or a rough six-hour MUF scope for 10%. Each hint is charged once, only for that station, and they add up. Stations you've already worked can't be charged.</p>
+        <p>Hints are paid for with <a href="../points/">points</a>, which are shared with Lorenz, so they don't take anything off your score. The MUF or the D-layer loss costs 10 points each, and a rough six-hour MUF scope costs 20. Each hint is paid once, only for that station. Stations you've already worked can't be charged. Finishing today's round with at least one contact earns you 100 points, and a practice round earns 20.</p>
       </section>
       <section>
         <h2>Map, log and settings</h2>
@@ -69,8 +69,8 @@
     <p>Use <span class="kbd">1-9</span>, <span class="kbd">0</span> and <span class="kbd">-</span> for the bands in the order shown, and <span class="kbd">C</span> to call. The right arrow moves the clock on ten minutes and the up arrow one hour. Shortcuts don't fire inside form fields, open dialogs or with modifier keys held. On a phone, tap Radio desk to open the bottom sheet; it scrolls on its own.</p>
 
     <h2>Scoring</h2>
-    <p>Base points are the distance in kilometres divided by 100 and rounded, then multiplied by rarity, mode and power. The mode multipliers are FT8 1.0, CW 1.5 and SSB 2.0. The power multipliers are 5 W 3.0, 50 W 1.5, 100 W 1.0 and 400 W 0.7. A grey-line contact adds 20%, and then any hints you bought come off that contact only. The distance units in Settings change what's shown, not the score.</p>
-    <p>Each confirmed QSO shows the sum on a card, for example 113 &#215; 4 &#215; 1.5 &#215; 3 = 2,034 for an 11,347 km CW contact at 5 W with a rarity 4 station. Hints show as a minus percentage, such as &#8722; 10% hints. A comet runs along the path to the station and your score counts up. With reduced motion on, in Settings or on your device, you get the card and the new score straight away.</p>
+    <p>Base points are the distance in kilometres divided by 100 and rounded, then multiplied by rarity, mode and power. The mode multipliers are FT8 1.0, CW 1.5 and SSB 2.0. The power multipliers are 5 W 3.0, 50 W 1.5, 100 W 1.0 and 400 W 0.7. A grey-line contact adds 20%. Hints are paid in points, so they never come off the score. The distance units in Settings change what's shown, not the score.</p>
+    <p>Each confirmed QSO shows the sum on a card, for example 113 &#215; 4 &#215; 1.5 &#215; 3 = 2,034 for an 11,347 km CW contact at 5 W with a rarity 4 station. A comet runs along the path to the station and your score counts up. With reduced motion on, in Settings or on your device, you get the card and the new score straight away.</p>
 
     <h2>Five starter tips</h2>
     <ol>

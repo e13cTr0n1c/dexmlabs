@@ -1,6 +1,9 @@
 /** Flat fallback when WebGL or the three.js download isn't available. Same API as machine3d.js.
  *  Each wheel is drawn face on in its place in the row, cams round the rim, the reading point at the top. */
 import {LAYOUT, WIDTH} from './layout.js';
+const PALETTE = {dark: {mu: '#ffbf69', rim: '#606b58', pos: '#ffffff', up: '#d6ff00', down: '#3a4235', pointer: '#d6ff00'},
+  light: {mu: '#9a6a00', rim: '#828a78', pos: '#15170f', up: '#5f7800', down: '#c3c8ba', pointer: '#4b5e00'}};
+const colours = () => PALETTE[document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'];
 export function createMachine2D(stage, {reducedMotion = () => false, labels} = {}) {
   const canvas = document.createElement('canvas'); stage.prepend(canvas);
   const ctx = canvas.getContext('2d');
@@ -14,17 +17,17 @@ export function createMachine2D(stage, {reducedMotion = () => false, labels} = {
   }
   const cx = x => w / 2 + x * scale, cy = () => h / 2 + 14;
   function draw() {
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, w, h); const c = colours();
     for (const wh of wheels) {
       const x = cx(wh.x), y = cy(), r = scale * 0.29 * (0.55 + 0.45 * wh.size / 61);
       ctx.globalAlpha = wh.dim ? .3 : 1;
-      ctx.strokeStyle = wh.group === 'mu' ? '#ffbf69' : '#606b58'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = wh.group === 'mu' ? c.mu : c.rim; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
       for (let i = 0; i < wh.size; i++) {
         const a = -Math.PI / 2 + (i - wh.pos) * Math.PI * 2 / wh.size + (wh.angle - wh.target), up = wh.bits[i] === 1, rr = r + (up ? 3 : -2);
-        ctx.fillStyle = i === wh.pos ? '#ffffff' : up ? '#d6ff00' : '#3a4235';
+        ctx.fillStyle = i === wh.pos ? c.pos : up ? c.up : c.down;
         ctx.beginPath(); ctx.arc(x + Math.cos(a) * rr, y + Math.sin(a) * rr, up ? 2.2 : 1.5, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = '#d6ff00'; ctx.beginPath(); ctx.moveTo(x, y - r - 6); ctx.lineTo(x - 4, y - r - 12); ctx.lineTo(x + 4, y - r - 12); ctx.fill();
+      ctx.fillStyle = c.pointer; ctx.beginPath(); ctx.moveTo(x, y - r - 6); ctx.lineTo(x - 4, y - r - 12); ctx.lineTo(x + 4, y - r - 12); ctx.fill();
       ctx.globalAlpha = 1;
       const el = labels?.[LAYOUT.indexOf(LAYOUT.find(l => l.id === wh.id))];
       if (el) el.style.transform = `translate(${x.toFixed(1)}px,${(y - r - 14).toFixed(1)}px) translate(-50%,-100%)`;
@@ -37,6 +40,7 @@ export function createMachine2D(stage, {reducedMotion = () => false, labels} = {
   }
   const request = () => { if (frame === null && !disposed) frame = requestAnimationFrame(tick); };
   const ro = new ResizeObserver(resize); ro.observe(stage); resize();
+  const retheme = () => { if (!disposed) draw(); }; window.addEventListener('dexm:theme', retheme);
   return {
     kind: '2d',
     setPatterns(p) { wheels.forEach(wh => { if (p?.[wh.id]) wh.bits = p[wh.id].slice(); }); draw(); },
@@ -46,6 +50,6 @@ export function createMachine2D(stage, {reducedMotion = () => false, labels} = {
     },
     setDim(ids) { const s = new Set(ids || []); wheels.forEach(wh => { wh.dim = s.has(wh.id); }); draw(); },
     setIdle() {}, celebrate() { return false; },
-    dispose() { disposed = true; ro.disconnect(); if (frame !== null) cancelAnimationFrame(frame); canvas.remove(); }
+    dispose() { disposed = true; ro.disconnect(); window.removeEventListener('dexm:theme', retheme); if (frame !== null) cancelAnimationFrame(frame); canvas.remove(); }
   };
 }
