@@ -621,7 +621,7 @@ function goStep(want, {scroll = true} = {}) {
   if (step === 'pins') { openFace(); renderGuide(); return; }
   closeFace();
   if (step === 'qep') { show(['preamble']); go($('preamble-box')); }
-  if (step === 'start') { shut(['preamble', 'tape', 'pins']); show(['book', 'wheels']); go(document.querySelector('.qep-book')); }
+  if (step === 'start') { shut(['preamble', 'tape', 'pins']); show(['book', 'wheels']); go($('guide')); }
   if (step === 'run') { shut(['preamble', 'tape', 'pins', 'book']); show(['wheels', 'teleprinter']); go($('guide')); }
   renderGuide();
 }

@@ -444,7 +444,9 @@ body.reduced-motion *{scroll-behavior:auto!important;transition:none!important;a
 :root[data-theme=light] .strip-pin.cur .strip-line{background:#050705}
 .face-wheel{flex:1;display:grid;place-items:center;touch-action:none;cursor:grab;min-height:260px}
 .face-wheel:focus-visible{outline:3px solid var(--acid);outline-offset:-3px}
-.face-svg{width:min(100%,62vh,560px);height:auto}
+/* small enough that the step buttons under it stay above the fold on a laptop */
+.face-svg{width:max(240px,min(100%,calc(100vh - 410px),560px));height:auto}
+#guide,#machine-stage,.qep-book,.section-top{scroll-margin-top:calc(var(--header) + 12px)}
 .face-disc{fill:#141b10;stroke:var(--edge);stroke-width:1.5}.face-hub{fill:#2b3327}
 .face-svg .cam{stroke:#3a4235;stroke-width:5;stroke-linecap:round;cursor:pointer}
 .face-svg .cam.up{stroke:var(--acid);stroke-width:6}
