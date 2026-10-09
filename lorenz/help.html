@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080a08">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>How to play Lorenz</title>
+  <meta name="description" content="How to play Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
+  <link rel="canonical" href="https://dexmlabs.app/lorenz/help.html">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/style.css">
+  <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="wordmark" href="./index.html"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="2.5"/><path d="M14 2v4M26 14h-4M14 26v-4M2 14h4"/></svg>Lorenz<span class="header-sub">Cipher machine game</span></a>
+    <nav aria-label="Main">
+      <a class="header-feedback" href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback"><span class="fb-long">Know your Tunny? Tell me what I got wrong.</span><span class="fb-short">Feedback</span></a>
+      <a class="header-coffee" href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="107" height="30"></a>
+      <a href="./index.html">Play</a>
+      <a href="./help.html">Guide</a>
+      <a href="./about.html">About</a>
+    </nav>
+  </header>
+
+  <main id="main" class="document-page">
+    <h1>How to play, and the history</h1>
+    <p class="lede">How to read today's intercept, how the machine works under the bonnet, and the true story of how Bletchley Park broke it.</p>
+    <p class="disclaimer">This is a game. The cam patterns, the QEP book and the messages are made up for it, and nothing here is a real intercept.</p>
+
+    <h2>How to play</h2>
+    <ol>
+      <li>Press Play today's round. Everyone gets the same intercept on the same UTC day, and a new one arrives at 00:00 UTC.</li>
+      <li>Read the QEP number at the top. That's the number the German operator sent in clear before the message.</li>
+      <li>Find that number in the QEP book page. Its line gives the start position for each of the twelve wheels, in the same order as they stand on the machine: five psi, two motor, five chi.</li>
+      <li>Set the twelve wheels to match. Click the arrows, drag a number up or down, or type it in. The arrow keys work too.</li>
+      <li>Press Decode the tape (or the D key). The tape runs through, the wheels turn, and the teleprinter prints what comes out.</li>
+    </ol>
+    <p>The book got damp. On some lines one tens figure is smudged, so all you can read is the last figure. If your line has a smudge, try the positions that end in that figure. A wrong guess prints garbage and costs points, so think before you run the tape.</p>
+    <p>A tip: if the first few letters come out right and then it turns to garbage, the chi and psi wheels are probably fine and a motor wheel is out. That's because the motors only decide when the psi wheels move.</p>
+
+    <h2>Scoring and hints</h2>
+    <p>A correct decode is worth 1,000 points. Each wrong try takes off 150, but running the exact same wrong settings again is free. Checking whether one wheel is right costs 100. Reading the smudge costs 300. You never get less than 100 for a decode. Your score is shown as you go, so you know what a decode is worth right now.</p>
+    <p>Decode the daily round on consecutive UTC days to build a streak. It's kept in this browser only. Practice rounds never touch it. When you decode, a card shows the sum, the tape runs off at speed and the score counts up. With reduced motion on, in settings or on your device, the card and score just appear.</p>
+
+    <h2>Practice</h2>
+    <p>Practice has three tabs. Random settings gives you a fresh intercept as often as you like, on the SZ40 or the SZ42A. Encipher lets you type your own message and get a tape out, using today's cam patterns and whatever wheel settings you choose. Run that tape back in with the same settings and you get your message back. Chi only is below.</p>
+
+    <h2>Chi only mode, which matches the printable model</h2>
+    <p>Chi only uses just the five chi wheels (41, 31, 29, 26 and 23 cams), with no psi or motor wheels, so the key for each character is the chi on its own. It's there because a simplified printable model is on the way, and this mode works the same way as that model. You can type your own cam pattern for each chi wheel and set the start positions, then encipher or decipher.</p>
+    <p>The conventions are the same as the model's, so your paper workings, the model and the screen all agree:</p>
+    <ul>
+      <li>Each character is five impulses, written 1 to 5 from left to right. Impulse 1 is the top hole on the tape, so E is 10000 and T is 00001.</li>
+      <li>A 1 (or x) is a mark: a hole in the tape and a raised cam, with the pin out. A 0 (or .) is a space: no hole and a lowered cam.</li>
+      <li>Impulse 1 comes from chi 1, impulse 2 from chi 2, and so on.</li>
+      <li>Positions count from 01. Position 01 means the first symbol of the pattern you typed is the cam being read for the first character.</li>
+      <li>Read all five wheels, add (XOR) the result to the character, then move every chi wheel on one. Deciphering is the same job with the same start positions.</li>
+      <li>Messages are in Bletchley letters: A to Z, 9 for a space, 3 and 4 for carriage return and line feed, 5 and 8 for figure and letter shift, / for null. A typed space counts as 9, like on the model's letter card.</li>
+    </ul>
+    <p>A worked example, using the key on the model's fixed wheels (the Worked example button loads it). It's an example key made up for the model, not a wartime one. With all five wheels at 01 the first cams read 0 1 0 1 0, which is R. The first letter is H (00101). Adding them, a 0 where they're the same and a 1 where they differ, gives 01111, which is V. Keep going and HELLO enciphers to VNTDH. Three more to try on the model: ATTACK AT DAWN at 05 12 07 20 03 gives AIX4XKOXF9QFCX, BLETCHLEY PARK at 41 31 29 26 23 gives 4ONLYOMTOW9W4T, and TUTTE at 17 03 22 09 11 gives A9SVO.</p>
+
+    <h2>Reading the tape</h2>
+    <p>Each row across the tape is one character, five holes wide. A small sprocket hole runs between holes 2 and 3, two on one side and three on the other, which is how 5 hole teleprinter tape was laid out. The letter under each row is what the teleprinter printed. The arrows mark the shift characters, and &#9251; is a space.</p>
+    <p>Intercepts are written the way Bletchley Park wrote them: letters for letters, and figures for the characters that aren't letters. 9 is a space, 3 a carriage return, 4 a line feed, 5 the shift to figures, 8 the shift back to letters, and / is blank tape. So a full stop goes out as 5M8, because M in figure shift is a full stop.</p>
+    <details><summary>The full teleprinter alphabet</summary>
+    <table class="ita2-table"><caption class="sr-only">The 32 teleprinter characters</caption><thead><tr><th scope="col">Value</th><th scope="col">Impulses 1 to 5</th><th scope="col">Bletchley name</th><th scope="col">Letter shift</th><th scope="col">Figure shift</th></tr></thead><tbody>
+<tr><td>0</td><td>.....</td><td>/</td><td>blank</td><td>same</td></tr>
+<tr><td>1</td><td>....x</td><td>T</td><td>T</td><td>5</td></tr>
+<tr><td>2</td><td>...x.</td><td>3</td><td>carriage return</td><td>same</td></tr>
+<tr><td>3</td><td>...xx</td><td>O</td><td>O</td><td>9</td></tr>
+<tr><td>4</td><td>..x..</td><td>9</td><td>space</td><td>same</td></tr>
+<tr><td>5</td><td>..x.x</td><td>H</td><td>H</td><td>&pound;</td></tr>
+<tr><td>6</td><td>..xx.</td><td>N</td><td>N</td><td>,</td></tr>
+<tr><td>7</td><td>..xxx</td><td>M</td><td>M</td><td>.</td></tr>
+<tr><td>8</td><td>.x...</td><td>4</td><td>line feed</td><td>same</td></tr>
+<tr><td>9</td><td>.x..x</td><td>L</td><td>L</td><td>)</td></tr>
+<tr><td>10</td><td>.x.x.</td><td>R</td><td>R</td><td>4</td></tr>
+<tr><td>11</td><td>.x.xx</td><td>G</td><td>G</td><td>@</td></tr>
+<tr><td>12</td><td>.xx..</td><td>I</td><td>I</td><td>8</td></tr>
+<tr><td>13</td><td>.xx.x</td><td>P</td><td>P</td><td>0</td></tr>
+<tr><td>14</td><td>.xxx.</td><td>C</td><td>C</td><td>:</td></tr>
+<tr><td>15</td><td>.xxxx</td><td>V</td><td>V</td><td>=</td></tr>
+<tr><td>16</td><td>x....</td><td>E</td><td>E</td><td>3</td></tr>
+<tr><td>17</td><td>x...x</td><td>Z</td><td>Z</td><td>+</td></tr>
+<tr><td>18</td><td>x..x.</td><td>D</td><td>D</td><td>(none)</td></tr>
+<tr><td>19</td><td>x..xx</td><td>B</td><td>B</td><td>?</td></tr>
+<tr><td>20</td><td>x.x..</td><td>S</td><td>S</td><td>&#39;</td></tr>
+<tr><td>21</td><td>x.x.x</td><td>Y</td><td>Y</td><td>6</td></tr>
+<tr><td>22</td><td>x.xx.</td><td>F</td><td>F</td><td>%</td></tr>
+<tr><td>23</td><td>x.xxx</td><td>X</td><td>X</td><td>/</td></tr>
+<tr><td>24</td><td>xx...</td><td>A</td><td>A</td><td>minus &#8722;</td></tr>
+<tr><td>25</td><td>xx..x</td><td>W</td><td>W</td><td>2</td></tr>
+<tr><td>26</td><td>xx.x.</td><td>J</td><td>J</td><td>(none)</td></tr>
+<tr><td>27</td><td>xx.xx</td><td>5</td><td>figure shift</td><td>same</td></tr>
+<tr><td>28</td><td>xxx..</td><td>U</td><td>U</td><td>7</td></tr>
+<tr><td>29</td><td>xxx.x</td><td>Q</td><td>Q</td><td>1</td></tr>
+<tr><td>30</td><td>xxxx.</td><td>K</td><td>K</td><td>(</td></tr>
+<tr><td>31</td><td>xxxxx</td><td>8</td><td>letter shift</td><td>same</td></tr>
+    </tbody></table></details>
+
+    <h2>How the machine works</h2>
+    <p>The SZ40 and SZ42 were cipher attachments that sat between a teleprinter and the radio. Each character's five impulses were added, impulse by impulse, to five impulses of key. Adding is simple: two the same gives a dot, two different gives a cross. Add the same key twice and you're back where you started, so one machine with the same settings both enciphers and deciphers.</p>
+    <p>The key came from twelve pinwheels, each with a different number of cams that could be set raised or lowered. Standing in a row, left to right, there were five psi wheels (43, 47, 51, 53 and 59 cams), two motor wheels (37 and 61) and five chi wheels (41, 31, 29, 26 and 23). The 3D view shows them in that order, with raised cams sticking out. It's simplified: I've sized the wheels by cam count so they're easy to tell apart, and it isn't a scale model.</p>
+    <p>For every character, this is exactly what the game does:</p>
+    <ol>
+      <li>Read every wheel at its current position. Nothing has moved yet.</li>
+      <li>The key is the five chi cams added to the five psi cams.</li>
+      <li>The basic motor is the cam on the 37 wheel. On the SZ40 the psi wheels move on after this character only if the basic motor is a cross.</li>
+      <li>Then everything steps. All five chi wheels move on one, every time. The psi wheels all move on one together, or all stay put. The 37 wheel moves on one if the 61 wheel's cam was a cross. The 61 wheel moves on one every time.</li>
+    </ol>
+    <p>On the motor wheels a cross means go and a dot means stop. Because the psi wheels sometimes stood still, they often added the same letter several times in a row. Bletchley called that the extended psi, and it turned out to be the machine's big weakness.</p>
+    <p>The SZ42A, introduced in February 1943, added what Bletchley called a limitation. The one in this game is chi 2 one back: the psi wheels stand still only when the basic motor is a dot and the chi 2 cam read for the previous character is a cross. Otherwise they move. For the very first character the game uses the chi 2 cam one place back on the wheel, which is the same cam. Later limitations brought in the plaintext itself (for example the fifth impulse two characters back), which made depths much harder to use. I haven't put those in.</p>
+
+    <h2>The QEP book</h2>
+    <p>At first the sending operator told the other end where to set the wheels with a 12 letter indicator, sent in clear, one letter per wheel. From October 1942 that changed. Both ends had the same QEP book, a list of a hundred or more wheel settings. The operator sent QEP and a number, both ends set their wheels from that line, and once every line had been used the book was replaced. Settings weren't supposed to be used twice. In the game the QEP number points at a line of twelve start positions, which is how it worked, but the book page, its layout and the smudges are mine.</p>
+
+    <h2>What's real and what's made up</h2>
+    <ul>
+      <li>Real: the twelve wheels and their cam counts, the order they stand in, the motor logic, the chi 2 one back limitation, the teleprinter alphabet, the tape layout and the way the QEP number pointed to a set of start positions.</li>
+      <li>Made up: the cam patterns. The real ones changed regularly and were never published, so the game makes a new set every day from the date. My rules are: chi and psi wheels about half raised with no more than four the same in a row, and the motor wheels a bit over half raised. Those are my rules, not the German ones.</li>
+      <li>Made up: every message. I wrote them in the clipped style of wartime signals in English. Real Tunny traffic was in German, and none of these is a real intercept.</li>
+      <li>Simplified: the receiving teleprinter here prints figures in a UK style, and messages only use letters, figures, spaces and a little punctuation.</li>
+    </ul>
+
+    <h2>The history, briefly</h2>
+    <p>Tunny was Bletchley Park's name for the Lorenz SZ machines and their traffic. The Germans used them for high level messages between the High Command and army commanders across Europe, sent as enciphered teleprinter signals by radio. An experimental link started in June 1941, and by 1944 the British knew of 26 links.</p>
+    <p>On 30 August 1941 an operator sent a message of about 4,000 characters, was asked to send it again, and did so on the same wheel settings, with small changes to the text. Two messages on the same key is called a depth. John Tiltman spent about ten days teasing the two texts apart, and that gave him the key itself.</p>
+    <p>Bill Tutte, a young Cambridge graduate in the Research Section, took that key and found a repeat every 41 characters in its first impulse. By January 1942, working with the rest of the section, he had worked out the logical structure of the whole machine. Nobody at Bletchley saw a real Lorenz machine until the end of the war.</p>
+    <p>From July 1942 a section under Major Ralph Tester, the Testery, broke messages by hand. When the QEP books arrived in October 1942 they had to rely on depths, which got rarer. In November 1942 Tutte found a statistical way to find the chi settings without a depth, but it needed far too much counting to do by hand.</p>
+    <p>Max Newman's section, the Newmanry, set out to do the counting by machine. Its first, Heath Robinson, was working in June 1943. It ran two paper tapes that had to stay in step, which they often didn't. Tommy Flowers, an engineer at the Post Office Research Station at Dollis Hill, proposed an electronic machine that generated the wheel patterns itself and read just one tape. That was Colossus. The first one arrived at Bletchley Park on 18 January 1944 and did its first job on 5 February 1944. The first Mark 2 was working on 1 June 1944, days before D Day, and ten were in use by the end of the war.</p>
+    <p>Colossus didn't print German. It counted, to find the wheel settings. The plaintext came off British Tunny machines, built at Dollis Hill to copy the logic Tutte had worked out.</p>
+
+    <h2 id="sources">Sources</h2>
+    <ul class="sources">
+      <li>Good, Michie and Timms, <a href="http://www.ellsbury.com/tunny/tunny-007.htm">General Report on Tunny (1945), the section on the machine and its motors</a>, transcribed by Graham Ellsbury. The full report is also listed at <a href="https://alanturing.net/turing_archive/archive/index/tunnyreportindex.html">AlanTuring.net</a>.</li>
+      <li>W. T. Tutte, <a href="https://cacr.uwaterloo.ca/techreports/1998/corr98-39.pdf">FISH and I</a>, his own account, a 1998 lecture at the University of Waterloo (PDF).</li>
+      <li>Jack Copeland, <a href="https://www.rutherfordjournal.org/article030109.html">Colossus: Breaking the German Tunny Code at Bletchley Park</a>, The Rutherford Journal.</li>
+      <li>Bletchley Park, <a href="https://www.bletchleypark.org.uk/our-story/75-years-since-colossus-arrived-at-bletchley/">75 years since Colossus arrived at Bletchley</a>.</li>
+      <li>The National Museum of Computing, <a href="https://www.tnmoc.org/colossus">Colossus</a> and <a href="https://www.tnmoc.org/tunny-heath-robinson">Tunny and Heath Robinson</a>.</li>
+      <li>Tony Sale, <a href="https://www.codesandciphers.org.uk/lorenz/fish.htm">The Lorenz cipher and how Bletchley Park broke it</a>, and his page on <a href="https://www.codesandciphers.org.uk/index_files/colmk2d/Bedstead.htm">the Bedstead and the tape layout</a>.</li>
+      <li>The Bill Tutte Memorial Fund, <a href="https://billtuttememorial.org.uk/codebreaking/teleprinter-code/">Teleprinter code</a>.</li>
+    </ul>
+    <p class="prose">Spotted something I've got wrong? Email me: <a href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback">hello@dexmlabs.app</a></p>
+  </main>
+
+
+  <footer class="site-footer">
+    <a class="footer-home" href="../">DEXM Labs</a>
+    <span class="footer-links">
+      <a href="./index.html">Play</a>
+      <a href="./help.html">Guide</a>
+      <a href="./about.html">About</a>
+      <a href="./log.html"><span class="fl-long">What's changed</span><span class="fl-short">Changes</span></a>
+      <a href="../skywave/">Skywave</a>
+      <a href="../privacy/">Privacy</a>
+      <a href="../cookies/">Cookies</a>
+      <a href="../terms/">Terms</a>
+      <a href="../disclaimer/">Disclaimer</a>
+      <a href="../contact/">Contact</a>
+    </span>
+  </footer>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

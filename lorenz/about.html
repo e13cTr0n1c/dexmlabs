@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080a08">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Why I built Lorenz</title>
+  <meta name="description" content="Why I built Lorenz. Lorenz, a daily cipher machine game from Deus Ex Machina Labs.">
+  <link rel="canonical" href="https://dexmlabs.app/lorenz/about.html">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/style.css">
+  <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="wordmark" href="./index.html"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="2.5"/><path d="M14 2v4M26 14h-4M14 26v-4M2 14h4"/></svg>Lorenz<span class="header-sub">Cipher machine game</span></a>
+    <nav aria-label="Main">
+      <a class="header-feedback" href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback"><span class="fb-long">Know your Tunny? Tell me what I got wrong.</span><span class="fb-short">Feedback</span></a>
+      <a class="header-coffee" href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="107" height="30"></a>
+      <a href="./index.html">Play</a>
+      <a href="./help.html">Guide</a>
+      <a href="./about.html">About</a>
+    </nav>
+  </header>
+
+  <main id="main" class="document-page">
+    <h1>Why I built it</h1>
+    <p class="lede">Lorenz is a free daily puzzle about the German teleprinter cipher that Bletchley Park called Tunny. I'm Arthur, and I made it.</p>
+    <p class="disclaimer">This is a game. The cam patterns and messages are made up for it, and nothing here is a real intercept.</p>
+
+    <h2>Me and radio</h2>
+    <div class="me-and-radio">
+      <figure class="arthur-photo arthur-photo-large">
+        <span class="photo-frame"><img src="./img/arthur.jpg" alt="Arthur" width="88" height="88" loading="lazy" decoding="async"></span>
+        <figcaption>Arthur</figcaption>
+      </figure>
+      <p class="prose">I'm into planes and I live near RAF Coningsby. Radio came in through the back door: I set up an SDR on a Raspberry Pi to pick up ADS-B from aircraft. Now I'm studying for my Foundation licence.</p>
+    </div>
+
+    <h2>Why Tunny</h2>
+    <p class="prose">Before this I made <a href="../skywave/">Skywave</a>, a game about how HF radio signals get round the world. Tunny is the same world from another angle. The most important German messages of the war went out as enciphered teleprinter signals, by radio, and British stations sat and listened to them. Then a handful of people at Bletchley Park worked out the machine making them without ever seeing it... I wanted to understand how, so I built one I could play with.</p>
+    <p class="prose">The machine logic follows the wartime General Report on Tunny as closely as I could manage. The wheels, cam counts, motor logic, tape and alphabet are real. The cam patterns and messages are mine. The <a href="./help.html">guide</a> says exactly which is which, with sources.</p>
+
+    <h2>Print your own</h2>
+    <p class="prose">A simplified printable model is on the way. The Chi only mode in practice works the same way as that model.</p>
+
+    <h2>What's stored, and where</h2>
+    <p class="prose">Everything stays in your browser. Each day's intercept is worked out from the UTC date. Your progress, settings, best score and streak are kept in this browser's localStorage. Practice rounds don't touch your streak. There's no backend, no accounts, no cookies and no advertising. I count visits with Cloudflare Web Analytics, which sets no cookies and only gives me totals. See <a href="../cookies/">cookies and storage</a> for how to clear it all.</p>
+    <p class="prose">The only things loaded from elsewhere are the pinned three.js library (from jsDelivr), for the 3D view, and Cloudflare's small analytics script. If three.js can't load, a flat view takes over and the game still works.</p>
+
+    <h2>Credits</h2>
+    <ul>
+      <li><a href="https://threejs.org/">three.js r185 (0.185.0)</a>, under the <a href="https://github.com/mrdoob/three.js/blob/r185/LICENSE">MIT licence</a>.</li>
+      <li>History and machine details from the General Report on Tunny, Bill Tutte's own account, Bletchley Park, The National Museum of Computing and others. They're all listed with links in the <a href="./help.html">guide</a>.</li>
+      <li>Code, text, cam patterns, messages and my photo: mine.</li>
+    </ul>
+    <p class="prose"><a href="./CREDITS.md">Full credits and source links</a> are in CREDITS.md.</p>
+
+    <h2>If you'd like to buy me a coffee</h2>
+    <p class="prose">Lorenz is free and staying free. If you've enjoyed it, a coffee helps.</p>
+    <a class="bmc-link" href="https://buymeacoffee.com/arthurdeusexmachina" rel="noopener noreferrer" target="_blank"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="150" height="42"></a>
+
+    <h2>Tell me what I got wrong</h2>
+    <p class="prose">If you know your Tunny and something here is off, I'd love to hear it. Email me: <a href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback">hello@dexmlabs.app</a>. Arthur</p>
+    <p class="prose">Lorenz is part of <a href="../">Deus Ex Machina Labs</a>. Here's the <a href="../privacy/">privacy notice</a>, <a href="../cookies/">cookies and storage</a>, the <a href="../terms/">terms</a> and the <a href="../disclaimer/">disclaimer</a>, or you can <a href="../contact/">get in touch</a>.</p>
+  </main>
+
+  <footer class="site-footer">
+    <a class="footer-home" href="../">DEXM Labs</a>
+    <span class="footer-links">
+      <a href="./index.html">Play</a>
+      <a href="./help.html">Guide</a>
+      <a href="./about.html">About</a>
+      <a href="./log.html"><span class="fl-long">What's changed</span><span class="fl-short">Changes</span></a>
+      <a href="../skywave/">Skywave</a>
+      <a href="../privacy/">Privacy</a>
+      <a href="../cookies/">Cookies</a>
+      <a href="../terms/">Terms</a>
+      <a href="../disclaimer/">Disclaimer</a>
+      <a href="../contact/">Contact</a>
+    </span>
+  </footer>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
