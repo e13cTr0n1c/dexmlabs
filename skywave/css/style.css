@@ -100,4 +100,4 @@ body[data-screen]:not([data-screen=title]) .storage-note{display:none}
 @media(max-width:760px){.site-footer{overflow:visible;flex-wrap:wrap;align-content:center;gap:4px 14px}.footer-links{display:contents}.site-footer a{white-space:nowrap}.site-footer .fl-long{display:none}.site-footer .fl-short{display:inline}}
 #renderer-status{white-space:nowrap}
 @media(min-width:761px) and (max-width:1000px){.site-footer .fl-long{display:none}.site-footer .fl-short{display:inline}.footer-links{gap:12px}}
-@media(max-width:560px){:root{--footer:52px}.site-footer{gap:4px 12px;padding:6px 12px;line-height:17px}}
+@media(max-width:560px){:root{--footer:52px}.site-footer{gap:4px 10px;padding:6px 12px;line-height:17px}}
