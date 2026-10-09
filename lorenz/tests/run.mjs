@@ -840,6 +840,20 @@ await t('Demo: stages reveal in order and later rows stay hidden', () => {
   const m = DM.demoModel(L.codeOf('A'), L.createMachine({...randomSetup(3), model: L.MODELS.SZ40}).step());
   for (let st = 1; st <= 5; st++) { const d = new JSDOM(DM.demoHTML(m, st)).window.document; assert.equal(d.querySelectorAll('.demo-row.on').length, st); assert.equal(d.querySelector('.demo-row.now').dataset.stage, String(st)); }
 });
+await t('Demo: one flag above each wheel set, in the rack order psi, motor, chi, each showing its own stage', () => {
+  const m = DM.demoModel(L.codeOf('A'), L.createMachine({...randomSetup(4), model: L.MODELS.SZ42A}).step());
+  for (let st = 1; st <= 5; st++) {
+    const d = new JSDOM(`<div>${DM.demoHTML(m, st)}</div>`).window.document, flags = [...d.querySelectorAll('.demo-flag')];
+    assert.deepEqual(flags.map(f => f.dataset.set), ['psi', 'mu', 'chi']);
+    const stagesIn = set => [...d.querySelector(`[data-set=${set}]`).querySelectorAll('.demo-row')].map(r => r.dataset.stage);
+    assert.deepEqual(stagesIn('chi'), ['1', '2']); assert.deepEqual(stagesIn('psi'), ['3', '4']); assert.deepEqual(stagesIn('mu'), ['5']);
+    const now = d.querySelector('.demo-flag.now').dataset.set; assert.equal(now, st <= 2 ? 'chi' : st <= 4 ? 'psi' : 'mu');
+    assert.equal(Boolean(d.querySelector('.demo-motor.on')), st >= 3, 'the motor speaks once psi is in play');
+  }
+  assert.match(new JSDOM(DM.demoHTML(m, 3)).window.document.querySelector('.demo-motor').textContent, m.psiMoved ? /steps/ : /holds/);
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8').split('/* light theme')[0], rules = css.match(/[^}]*\.demo-[^{]*\{[^}]*\}/g).join('');
+  assert.ok(!/animation|transition/.test(rules), 'static frames: nothing in the demonstration animates'); assert.match(css, /@media\(max-width:620px\)\{\.demo-flags/);
+});
 await t('Demo: the whole run takes about 13 seconds whatever the length, the first three characters go slowly', () => {
   for (const n of [1, 2, 3, 4, 20, 68, 150, 400]) {
     const plan = DM.demoSchedule(n); assert.ok(Math.abs(plan.totalMs - 13000) < 1, `n=${n} total ${plan.totalMs}`);
@@ -853,9 +867,10 @@ await t('Demo: the speed menu offers it, and a run shows the panel, then Skip fi
   await bootPage({}, async (d, w) => {
     d.getElementById('play-daily').click(); d.getElementById('speed-select').value = 'demo';
     d.getElementById('run-button').click(); await new Promise(r => setTimeout(r, 400));
-    const panel = d.getElementById('demo-panel'); assert.equal(panel.hidden, false); assert.ok(panel.classList.contains('demo-still'), 'static frames under reduced motion');
+    const panel = d.getElementById('demo-overlay'), stage = d.getElementById('machine-stage'); assert.equal(panel.hidden, false); assert.ok(panel.classList.contains('demo-still'), 'static frames under reduced motion');
+    assert.equal(panel.parentElement, stage, 'drawn on the machine'); assert.equal(d.getElementById('demo-panel'), null, 'the old box is gone'); assert.ok(stage.classList.contains('demo-on'));
     assert.match(panel.querySelector('.demo-head').textContent, /Character 1 of \d+Step [1-5] of 5/);
-    d.getElementById('skip-button').click(); assert.ok(panel.classList.contains('demo-done')); assert.ok(d.getElementById('printed-text').textContent.length > 10);
+    d.getElementById('skip-button').click(); assert.ok(panel.classList.contains('demo-done')); assert.ok(!stage.classList.contains('demo-on')); assert.ok(d.getElementById('printed-text').textContent.length > 10);
   });
 });
 
@@ -958,6 +973,71 @@ await t('Reading aid and reply: 44px tap targets, paper and holes stay paper and
   assert.match(css, /:root\[data-theme=light\] \.aid-hole\.on\{background:#050705/); assert.match(css, /:root\[data-theme=light\] \.aid-sprocket\{background:#050705\}/);
   const aidRules = base.match(/[^}]*\.(aid-|read-aid|hard-reply|reply-)[^{]*\{[^}]*\}/g).join('');
   assert.ok(!/animation|transition/.test(aidRules), 'no motion in the aid or the reply, so reduced motion has nothing to stop');
+});
+
+/* ---------- Setting the wheel patterns too ---------- */
+const setWheels = (d, w, start) => { for (const [id, v] of Object.entries(start)) { const el = d.getElementById(`dial-${id}`); el.value = String(v); el.dispatchEvent(new w.Event('change', {bubbles: true})); } };
+const copyPins = h => Object.fromEntries(Object.entries(h.patterns).map(([k, v]) => [k, v.slice()]));
+const withPins = (st, grid) => ({...st, pins: {...st.pins, grid}});
+await t('Pins: optional, the day\'s patterns on your own pins decode and earn the bonus; one wrong pin does not', () => {
+  for (const h of [HD.makeHardRound({}), HD.makeHardRound({mode: 'practice', seed: 31, model: L.MODELS.SZ42A})]) {
+    let st = HD.newHardState(h); assert.equal(st.pins.on, false); assert.equal(HD.runPatterns(st), h.patterns, 'off: the day\'s patterns');
+    assert.equal(HD.pinsMatch(h, st.pins.grid), false, 'every pin starts down');
+    st = HD.setPinsOn(st, true); assert.equal(HD.runPatterns(st), st.pins.grid);
+    st = HD.togglePin(st, 'chi1', 0); assert.equal(st.pins.grid.chi1[0], 1); st = HD.togglePin(st, 'chi1', 0); assert.equal(st.pins.grid.chi1[0], 0);
+    assert.equal(HD.togglePin(st, 'chi1', 99), st); assert.equal(HD.togglePin(st, 'nope', 0), st);
+    const run = s2 => L.decodeText(L.crypt(h.cipherCodes, {patterns: HD.runPatterns(s2), start: h.start, model: h.model}));
+    const right = withPins(st, copyPins(h)); assert.ok(HD.pinsMatch(h, right.pins.grid)); assert.ok(HD.matchAnswer(run(right), [h.text]).ok, 'the right pins decode');
+    const off = copyPins(h); off.mu37[3] ^= 1; const one = withPins(st, off); assert.equal(HD.pinsMatch(h, off), false);
+    const offAt0 = copyPins(h); offAt0.chi1[(h.start.chi1 - 1)] ^= 1; assert.equal(HD.matchAnswer(run(withPins(st, offAt0)), [h.text]).ok, false, 'a wrong pin garbles the message');
+    assert.equal(HD.notePinRun(one).pins.ranRight, false);
+    const ran = HD.notePinRun(right); assert.equal(ran.pins.ranRight, true);
+    const plain = HD.submitAnswer(HD.newHardState(h), h.text).state, solved = HD.submitAnswer(ran, h.text).state;
+    assert.equal(solved.pins.earned, true); assert.equal(solved.score, plain.score + HD.HARD_RULES.pins);
+    assert.ok(HD.hardBreakdown(solved).lines.some(([k, v]) => k === 'Set the wheel patterns too' && v === '+250'));
+    assert.equal(HD.setPinsOn(solved, false), solved, 'locked once read'); assert.equal(HD.togglePin(solved, 'chi1', 0), solved);
+    // switching back to the day's patterns before reading loses the bonus, even if the pins were right
+    const sneaky = HD.submitAnswer(HD.notePinRun(HD.setPinsOn(right, false)), h.text).state; assert.equal(sneaky.pins.earned, false); assert.equal(sneaky.score, plain.score);
+    const changed = HD.submitAnswer(HD.togglePin(ran, 'psi1', 0), h.text).state; assert.equal(changed.pins.earned, false, 'a pin changed after the run');
+    const back = HD.restoreHard(h, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: solved.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: []}, pins: HD.savePins(solved.pins)})));
+    assert.equal(back.pins.earned, true); assert.equal(back.score, solved.score); assert.ok(HD.pinsMatch(h, back.pins.grid));
+    const junk = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [], pins: {on: true, earned: true, grid: {chi1: 'zz'}}});
+    assert.equal(junk.pins.earned, false, 'no bonus without a read'); assert.equal(junk.pins.grid.chi1.length, 41);
+  }
+});
+await t('Pins: the pattern sheet sits by the QEP book in hard mode only, the grid sets pins, and the machine runs on them', async () => {
+  const h = HD.makeHardRound({}), key = `lorenz:hard:round:${h.key}`;
+  await bootPage({}, async d => { d.getElementById('play-daily').click(); assert.equal(d.getElementById('pin-sheet').hidden, true, 'not in normal mode'); });
+  await bootPage({'lorenz:difficulty': '"hard"'}, async (d, w) => {
+    d.getElementById('play-daily').click();
+    const sheet = d.getElementById('pin-sheet'); assert.equal(sheet.hidden, false); assert.equal(sheet.previousElementSibling.classList.contains('qep-book'), true, 'next to the QEP book');
+    assert.equal(d.getElementById('pin-work').hidden, true, 'off until you choose it');
+    const box = d.getElementById('pins-on'); box.checked = true; box.dispatchEvent(new w.Event('change', {bubbles: true}));
+    assert.equal(d.getElementById('pin-work').hidden, false);
+    const rows = [...d.querySelectorAll('#pin-sheet-body tr')]; assert.equal(rows.length, 12);
+    const chi1Row = rows.find(r => r.querySelector('th').textContent === L.WHEEL.chi1.label); assert.equal(chi1Row.querySelector('td').textContent.replace(/ /g, ''), h.patterns.chi1.map(b => b ? 'x' : '.').join(''));
+    d.querySelector('#pin-wheels [data-wheel=chi2]').click(); assert.equal(d.querySelectorAll('#pin-grid .pin').length, L.WHEEL.chi2.size);
+    const pin = d.querySelector('#pin-grid [data-pin="4"]'); pin.click();
+    const again = d.querySelector('#pin-grid [data-pin="4"]'); assert.equal(again.getAttribute('aria-pressed'), 'true'); assert.ok(again.classList.contains('up'));
+    const saved = JSON.parse(w.localStorage.getItem(key)); assert.equal(saved.pins.on, true); assert.equal(saved.pins.grid.chi2[4], '1');
+    d.getElementById('pin-clear').click(); assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi2, '0'.repeat(L.WHEEL.chi2.size));
+    // run on blank pins: the tape is not the message's tape
+    setWheels(d, w, h.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
+    const want = L.crypt(h.cipherCodes, {patterns: h.patterns, start: h.start, model: h.model}), got = [...d.querySelectorAll('#out-tape button.frame')].map(f => L.codeFromBits([...f.querySelectorAll('i.h')].map(i => i.classList.contains('on') ? 1 : 0)));
+    assert.equal(got.length, want.length); assert.notDeepEqual(got, want);
+  });
+  // with every pin copied right, the run punches the true tape, and reading it pays the bonus on the card
+  const save = {v: HD.HARD_SAVE_VERSION, text: h.text, answers: [], hints: [], qepGuesses: [], ran: null, solved: false, score: 0, reply: {tries: []}, wheels: {...h.start}, pins: HD.savePins({on: true, grid: copyPins(h), ranRight: false, earned: false})};
+  await bootPage({'lorenz:difficulty': '"hard"', [key]: save}, async (d, w) => {
+    d.getElementById('play-daily').click(); setWheels(d, w, h.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
+    const want = L.crypt(h.cipherCodes, {patterns: h.patterns, start: h.start, model: h.model}), got = [...d.querySelectorAll('#out-tape button.frame')].map(f => L.codeFromBits([...f.querySelectorAll('i.h')].map(i => i.classList.contains('on') ? 1 : 0)));
+    assert.deepEqual(got, want);
+    d.getElementById('hard-answer').value = h.text; d.getElementById('hard-answer-go').click();
+    assert.equal(d.getElementById('pins-on').disabled, true); assert.match(d.getElementById('pin-state').textContent, /\+250/);
+    sendReplyDOM(d, w, h); await new Promise(r => setTimeout(r, 0));
+    assert.match(d.getElementById('decoded-card').textContent, /Set the wheel patterns too\+250/);
+  });
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'); assert.match(css, /\.pin\{min-height:44px;min-width:44px/); assert.match(css, /\.pin-wheels button\{min-height:44px\}/); assert.match(css, /\.pin-toggle\{[^}]*min-height:44px/);
 });
 
 for (const r of results) console.log(`${r.pass ? 'PASS' : 'FAIL'} ${r.name}${r.error ? '\n  ' + r.error : ''}`);

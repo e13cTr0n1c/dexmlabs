@@ -10,8 +10,8 @@ export function createMachine2D(stage, {reducedMotion = () => false, labels} = {
   const wheels = LAYOUT.map(w => ({...w, bits: new Array(w.size).fill(0), pos: 0, angle: 0, target: 0, dim: false}));
   let w = 1, h = 1, scale = 1, frame = null, disposed = false;
   function resize() {
-    const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
-    w = Math.max(1, r.width); h = Math.max(1, r.height); canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1), room = parseFloat(getComputedStyle(stage).paddingTop) || 0;
+    w = Math.max(1, r.width); h = Math.max(1, r.height - room); canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     scale = Math.min((w - 24) / (WIDTH + 0.8), (h - 40) / 1.2); draw();
   }

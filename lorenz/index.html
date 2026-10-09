@@ -13,7 +13,7 @@
 <main id="main">
 
 <section id="screen-title" class="screen title-screen" aria-labelledby="title-heading">
-<div id="title-stage-slot" class="stage-slot"><div id="machine-stage" class="machine-stage" role="group" aria-label="The twelve wheels of the machine, with the active cams raised"><div id="machine-labels" class="machine-labels" aria-hidden="true"></div><p id="renderer-note" class="renderer-note" role="status"></p></div></div>
+<div id="title-stage-slot" class="stage-slot"><div id="machine-stage" class="machine-stage" role="group" aria-label="The twelve wheels of the machine, with the active cams raised"><div id="machine-labels" class="machine-labels" aria-hidden="true"></div><div id="demo-overlay" class="demo-overlay" role="group" aria-label="How each character goes through the machine" hidden></div><p id="renderer-note" class="renderer-note" role="status"></p></div></div>
 <div class="title-copy">
 <h1 id="title-heading" tabindex="-1">Lorenz</h1>
 <p class="hero-copy">A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny, a cipher attachment used with a teleprinter.</p>
@@ -55,6 +55,17 @@
 <div id="book-pager" class="book-pager" hidden><button type="button" id="page-prev" class="page-turn" aria-label="Previous page">&#8249;</button><p id="book-date" class="book-date" aria-live="polite"></p><button type="button" id="page-next" class="page-turn" aria-label="Next page">&#8250;</button></div>
 <div class="book-scroll" id="book-scroll"><table id="qep-table" class="qep-table"><caption class="sr-only">QEP numbers and the twelve wheel start positions for each</caption><thead><tr><th scope="col">QEP</th></tr></thead><tbody></tbody></table></div>
 <p class="tiny" id="smudge-note"></p>
+</article>
+<article id="pin-sheet" class="pin-sheet card-box" aria-labelledby="pin-heading" hidden>
+<div class="section-top"><h2 id="pin-heading" class="small-heading">Wheel pattern sheet</h2><span class="tiny" id="pin-state"></span></div>
+<label class="pin-toggle"><input type="checkbox" id="pins-on"> Set wheel patterns too</label>
+<p class="tiny">Operators set the pins on every wheel as well as the start positions. Tick this and the machine runs on your pins, not the day's. Copy the sheet onto each wheel (x is a raised pin), then set the wheels and run the tape. Every pin has to be right for the message to come out, and for the bonus.</p>
+<div id="pin-work" hidden>
+<div class="pin-scroll"><table class="pin-table"><caption class="sr-only">Today's pin patterns, x raised and dot lowered, in fives</caption><tbody id="pin-sheet-body"></tbody></table></div>
+<div id="pin-wheels" class="pin-wheels" role="group" aria-label="Wheel to set"></div>
+<div class="section-top"><p id="pin-wheel-name" class="tiny"></p><button type="button" id="pin-clear" class="secondary small">Clear this wheel</button></div>
+<div id="pin-grid" class="pin-grid" role="group"></div>
+</div>
 </article>
 </div>
 
@@ -101,7 +112,6 @@
 <div id="game-stage-slot" class="stage-slot"></div>
 <section class="teleprinter" aria-labelledby="tp-heading">
 <div class="section-top"><h2 id="tp-heading" class="small-heading">Teleprinter</h2><div class="tp-controls"><label for="speed-select" class="tiny">Speed</label><select id="speed-select"><option value="7">Real (7 a second)</option><option value="20" selected>Quick</option><option value="60">Fast</option><option value="demo">Visual demonstration</option></select><button id="skip-button" class="secondary small" disabled>Skip</button></div></div>
-<div id="demo-panel" class="demo-panel" role="group" aria-label="How each character goes through the machine" hidden></div>
 <div class="tape-wrap"><canvas id="tape-canvas" class="tape-canvas" height="128" aria-hidden="true"></canvas></div>
 <p class="tiny tape-legend" id="tape-legend">Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.</p>
 <div id="hard-out" class="hard-out" hidden><div class="section-top"><span class="eyebrow">Tape out, punched</span><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>

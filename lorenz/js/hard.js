@@ -6,7 +6,8 @@ import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.j
 
 export const HARD_RULES = Object.freeze({base:1000, wrong:150, qepBonus:200, floor:100, pages:5,
   hint:Object.freeze({qep:40, char:10, check:20, smudge:50}),  // hints cost shared points, not score
-  reply:Object.freeze({base:300, wrong:100, floor:50})});  // the reply you send back is scored on its own
+  reply:Object.freeze({base:300, wrong:100, floor:50}),  // the reply you send back is scored on its own
+  pins:250});  // bonus for setting the day's wheel patterns by hand as well
 export const HARD_PREFIX = 'hard:';
 const DAY = 86400000;
 
@@ -109,7 +110,32 @@ export function matchAnswer(input, targets) {
 }
 
 /* ---------- State, scoring, hints ---------- */
-export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}});
+export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:newPins()});
+
+/* ---------- Setting the wheel patterns too (optional) ---------- */
+/** Every pin starts down: you copy the day's patterns from the sheet yourself. */
+export const blankPins = () => Object.fromEntries(Object.values(WHEEL).map(w => [w.id, new Array(w.size).fill(0)]));
+export const newPins = () => ({on:false, grid:blankPins(), ranRight:false, earned:false});
+/** True only when every pin on all twelve wheels matches the day's patterns. */
+export const pinsMatch = (round, grid) => Object.values(WHEEL).every(w => Array.isArray(grid?.[w.id]) && grid[w.id].length === w.size && grid[w.id].every((b, i) => (b ? 1 : 0) === round.patterns[w.id][i]));
+/** The patterns the machine runs on: yours when you've chosen to set them, the day's otherwise. */
+export const runPatterns = st => st.pins?.on ? st.pins.grid : st.round.patterns;
+export function setPinsOn(st, on) { if (st.solved) return st; return {...st, pins:{...st.pins, on:Boolean(on), ranRight:false}}; }
+export function togglePin(st, id, i) {
+  if (st.solved || !st.pins?.on || !WHEEL[id] || !(i >= 0 && i < WHEEL[id].size)) return st;
+  const grid = {...st.pins.grid, [id]: st.pins.grid[id].slice()}; grid[id][i] = grid[id][i] ? 0 : 1;
+  return {...st, pins:{...st.pins, grid, ranRight:false}};
+}
+export const clearPins = (st, id) => st.solved || !WHEEL[id] ? st : {...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}};
+/** Note a run of the tape: the bonus needs the last run before the answer to be on your own, correct patterns. */
+export const notePinRun = st => ({...st, pins:{...st.pins, ranRight: Boolean(st.pins?.on && pinsMatch(st.round, st.pins.grid))}});
+const packPins = grid => Object.fromEntries(Object.entries(grid).map(([k, v]) => [k, v.join('')]));
+export const savePins = p => ({on:p.on, grid:packPins(p.grid), ranRight:p.ranRight, earned:p.earned});
+function readPins(saved) {
+  const p = newPins(); if (!saved || typeof saved !== 'object') return p;
+  for (const w of Object.values(WHEEL)) { const g = saved.grid?.[w.id]; if (typeof g === 'string' && g.length === w.size && /^[01]+$/.test(g)) p.grid[w.id] = [...g].map(Number); }
+  return {...p, on:saved.on === true, ranRight:saved.ranRight === true, earned:saved.earned === true};
+}
 
 /* ---------- The reply ---------- */
 const ACKS = ['ACKNOWLEDGED.', 'RECEIVED AND UNDERSTOOD.', 'PASSED TO HIGHER COMMAND.', 'NOTED. NO FURTHER ORDERS.', 'UNDERSTOOD. WILL COMPLY.'];
@@ -146,12 +172,13 @@ export const qepKnown = st => st.hints.some(h => h.type === 'qep') || st.qepGues
 export function hardPenalty(st) {
   return st.answers.filter(a => !a.ok).length * HARD_RULES.wrong;
 }
-export const hardScoreFor = st => Math.max(HARD_RULES.floor, HARD_RULES.base + (firstGuessRight(st) ? HARD_RULES.qepBonus : 0) - hardPenalty(st));
+export const hardScoreFor = st => Math.max(HARD_RULES.floor, HARD_RULES.base + (firstGuessRight(st) ? HARD_RULES.qepBonus : 0) - hardPenalty(st)) + (st.pins?.earned ? HARD_RULES.pins : 0);
 export function hardBreakdown(st) {
   const f = n => Math.round(n).toLocaleString('en-GB'), lines = [['Decoded', f(HARD_RULES.base)]];
   if (firstGuessRight(st)) lines.push(['Read the preamble first time', `+${f(HARD_RULES.qepBonus)}`]);
   const wrong = st.answers.filter(a => !a.ok).length; if (wrong) lines.push([`${wrong} wrong ${wrong > 1 ? 'readings' : 'reading'}`, `\u2212${f(wrong * HARD_RULES.wrong)}`]);
-  const total = hardScoreFor(st); if (total === HARD_RULES.floor) lines.push(['Never less than', f(HARD_RULES.floor)]);
+  if (st.pins?.earned) lines.push(['Set the wheel patterns too', `+${f(HARD_RULES.pins)}`]);
+  const total = hardScoreFor(st); if (total - (st.pins?.earned ? HARD_RULES.pins : 0) === HARD_RULES.floor) lines.push(['Never less than', f(HARD_RULES.floor)]);
   const reply = [['Reply sent', f(st.reply?.score || 0)]], rw = (st.reply?.tries || []).filter(t => !t.ok).length;
   if (rw) reply.push([`${rw} wrong ${rw > 1 ? 'tapes' : 'tape'} before it`, `\u2212${f(rw * HARD_RULES.reply.wrong)}`]);
   return {lines, total, reply, replyTotal: st.reply?.score || 0};
@@ -169,7 +196,9 @@ export function submitAnswer(st, input) {
   if (!key) return {state:st, result:{ok:false, empty:true, right:0, of:m.of}};
   const repeat = !m.ok && st.answers.some(a => a.key === key);
   const answers = repeat ? st.answers : [...st.answers, {key, ok:m.ok}];
-  const next = {...st, answers, solved:m.ok}; next.score = m.ok ? hardScoreFor(next) : 0;
+  const next = {...st, answers, solved:m.ok};
+  if (m.ok && st.pins) next.pins = {...st.pins, earned: Boolean(st.pins.on && st.pins.ranRight)};
+  next.score = m.ok ? hardScoreFor(next) : 0;
   return {state:next, result:{...m, repeat}};
 }
 /** Characters of the message as printed, for the reveal a character hint. */
@@ -213,7 +242,8 @@ export function restoreHard(round, saved) {
     // Rounds read before replies existed count as finished, so nobody loses a streak.
     const r = s.reply && typeof s.reply === 'object' ? s.reply : null, tries = Array.isArray(r?.tries) ? r.tries.filter(t => t && typeof t.key === 'string').map(t => ({key:t.key, ok:Boolean(t.ok)})) : [];
     const legacy = s.solved === true && (!r || r.legacy === true);
-    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || s.v !== HARD_SAVE_VERSION), refunded, solvedNow};
+    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || s.v !== HARD_SAVE_VERSION), refunded, solvedNow, pins:readPins(s.pins)};
+    if (!st.solved) st.pins.earned = false;
     st.score = st.solved ? hardScoreFor(st) : 0;
     st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0};
     if (st.reply.done && !legacy) st.reply.score = replyScoreFor(st);

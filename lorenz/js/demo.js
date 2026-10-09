@@ -39,16 +39,24 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', 
 const bits = (b, cls = '') => `<span class="demo-bits ${cls}">${b.map(x => `<i class="${x ? 'x' : 'd'}">${x ? 'x' : '.'}</i>`).join('')}</span>`;
 const LABELS = ['In', 'Add chi', 'Add psi', 'Out', 'Wheels turn'];
 
-/** The panel for one character at one stage (1 to 5). Rows past the stage are there but dimmed, so nothing jumps. */
+/** The demonstration drawn on the machine itself: one flag above each wheel set, laid out left to right as the
+ *  wheels are (psi, motor, chi). The character comes in at the chi wheels, crosses to the psi wheels and goes out
+ *  onto the tape; the motor flag says whether psi steps. Rows past the stage are there but hidden, so nothing jumps. */
 export function demoHTML(m, stage, {index = 0, total = 0, fast = false} = {}) {
-  const pad = '<b class="demo-char" aria-hidden="true"></b>';
-  const row = (n, label, body) => `<div class="demo-row${stage >= n ? ' on' : ''}${stage === n && !fast ? ' now' : ''}" data-stage="${n}"><span class="demo-label">${label}</span>${body}</div>`;
-  return `<p class="demo-head"><span>Character ${index + 1} of ${total}</span><span>${fast ? 'Speeding up' : `Step ${Math.min(stage, 5)} of 5: ${LABELS[Math.min(stage, 5) - 1]}`}</span></p>` +
-    row(1, 'In', `<b class="demo-char" data-part="in">${esc(m.in.name)}</b>${bits(m.in.bits, 'in')}`) +
-    row(2, '+ chi', `${pad}${bits(m.chi.bits, 'chi')}<span class="demo-eq">=</span>${bits(m.afterChi.bits, 'after-chi')}`) +
-    row(3, '+ psi', `${pad}${bits(m.psi.bits, 'psi')}<span class="demo-eq">=</span>${bits(m.afterPsi.bits, 'after-psi')}<small class="demo-motor">${esc(m.motor)}</small>`) +
-    row(4, 'Out', `<b class="demo-char" data-part="out">${esc(m.out.name)}</b>${bits(m.out.bits, 'out')}<small>${m.hideOut ? 'punched on the tape, for you to read' : 'sent to the printer'}</small>`) +
-    row(5, 'Wheels', `<small>Every chi wheel steps on one cam${m.chiOnly ? '' : m.psiMoved ? ', and the psi wheels step too' : ', and the psi wheels stay put'}.</small>`);
+  const now = n => stage === n && !fast;
+  const row = (n, label, body) => `<div class="demo-row${stage >= n ? ' on' : ''}${now(n) ? ' now' : ''}" data-stage="${n}"><span class="demo-label">${label}</span>${body}</div>`;
+  const flag = (set, name, stages, body) => `<div class="demo-flag${stages.some(now) ? ' now' : ''}${stage >= stages[0] ? ' on' : ''}" data-set="${set}"><p class="demo-set">${name}</p>${body}</div>`;
+  const motor = m.chiOnly ? 'No psi wheels' : m.psiMoved ? 'Psi steps on' : 'Psi holds still';
+  return `<p class="demo-head"><span>Character ${index + 1} of ${total}</span><span>${fast ? 'Speeding up' : `Step ${Math.min(stage, 5)} of 5: ${LABELS[Math.min(stage, 5) - 1]}`}</span></p><div class="demo-flags">` +
+    flag('psi', 'Psi wheels', [3, 4],
+      row(3, '+ psi', `${bits(m.psi.bits, 'psi')}<span class="demo-eq">=</span>${bits(m.afterPsi.bits, 'after-psi')}`) +
+      row(4, `Out <b class="demo-char" data-part="out">${esc(m.out.name)}</b>`, `${bits(m.out.bits, 'out')}<small>${m.hideOut ? 'punched on the tape' : 'to the printer'}</small>`)) +
+    flag('mu', 'Motor', [3, 5], `<p class="demo-motor${stage >= 3 ? ' on' : ''}" title="${esc(m.motor)}">${motor}</p>` +
+      row(5, 'Turn', `<small>${m.chiOnly ? 'Chi steps' : m.psiMoved ? 'Chi and psi step' : 'Chi steps'}</small>`)) +
+    flag('chi', 'Chi wheels', [1, 2],
+      row(1, `In <b class="demo-char" data-part="in">${esc(m.in.name)}</b>`, bits(m.in.bits, 'in')) +
+      row(2, '+ chi', `${bits(m.chi.bits, 'chi')}<span class="demo-eq">=</span>${bits(m.afterChi.bits, 'after-chi')}`)) +
+    `</div>`;
 }
 
 /** Read the bits back out of the panel, for the tests. */
