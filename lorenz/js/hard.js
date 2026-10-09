@@ -147,9 +147,11 @@ export const isAssisted = assisted;
 export const scopeDone = st => PIN_SCOPES[st.pins.scope || 'one'].every(id => st.pins.grid[id].every((b, i) => (b ? 1 : 0) === st.round.patterns[id][i]));
 /** Choose which wheels you set yourself. Only before the rest have filled in. */
 export const setPinScope = (st, scope) => !assisted(st) || st.solved || st.pins.auto || !PIN_SCOPES[scope] ? st : autoPins({...st, pins:{...st.pins, scope}});
-/** Hard mode: once your chosen wheels are right, the rest are set from the sheet. `filled` lists them in order. */
+/** Hard mode: once your chosen wheels are right, the rest are set from the sheet, and kept so while yours stay right.
+ *  `filled` lists them in order. */
 export function autoPins(st) {
-  if (!assisted(st) || st.pins.auto || !scopeDone(st)) return st;
+  // Whenever your wheels are right, every other wheel is the sheet's, whatever was done to it before or since.
+  if (!assisted(st) || !scopeDone(st)) return st;
   const mine = PIN_SCOPES[st.pins.scope || 'one'], filled = Object.values(WHEEL).map(w => w.id).filter(id => !mine.includes(id));
   const grid = {...st.pins.grid}; for (const id of filled) grid[id] = st.round.patterns[id].slice();
   return {...st, pins:{...st.pins, grid, auto:true, filled}};
