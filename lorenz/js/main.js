@@ -752,6 +752,8 @@ function renderRevealed() {
   const st = app.state, chars = revealedChars(st), el = $('revealed-chars');
   el.hidden = !chars.length; el.textContent = chars.length ? `The message starts: ${chars.replace(/ /g, '\u2423')}` : '';
 }
+/** The other dated page whose line for today's QEP has exactly these settings, if any. */
+const wrongPage = (r, settings) => r.pages?.find(pg => !pg.today && pg.book.some(l => l.qep === r.qep && WHEELS.every(w => Number(settings[w.id]) === l.start[w.id]))) || null;
 function runHard() {
   closeFace(); if (isPins() && !app.state.solved && app.state.step !== 'run') { app.state = setStep(app.state, 'run'); renderGuide(); }
   const st = app.state, r = st.round, settings = {...app.wheels};
@@ -760,6 +762,9 @@ function runHard() {
     if (!app.state.solved) { app.state = notePinRun({...app.state, ran: settings}); saveRound(); }
     showHardTape();
     const blank = isHelped() && !app.state.solved && !app.state.pins.auto;
+    // Hard: the wheels are on another day's line for today's QEP. Say so, since the tape will be nonsense.
+    const other = isHelped() && !app.state.solved && !blank ? wrongPage(app.state.round, settings) : null;
+    if (other) { setFeedback('bad', `The tape's punched, but those are the settings on the ${pageDate(other.key)} page. Today is ${pageDate(app.state.round.key)}, so turn to that page and use its line for QEP ${pad2(app.state.round.qep)}.`); return; }
     setFeedback(blank ? 'bad' : '', app.state.solved ? 'That is the tape you read.' : blank ? `The tape's punched, but ${PIN_SCOPES[app.state.pins.scope].length > 1 ? 'the chi and motor wheels don\'t' : 'χ1 doesn\'t'} match the pattern sheet yet, so the other wheels are still blank and this tape won't read. Set them and run it again.` : "The tape's punched. Read it with the cheat sheet and type what it says. If it reads as nonsense, a wheel is off.");
   }});
 }
