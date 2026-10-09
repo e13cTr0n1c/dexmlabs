@@ -63,7 +63,7 @@ export function createMachine3D(stage, {reducedMotion = () => false, labels} = {
     camera.position.set(Math.sin(yaw) * dist, Math.sin(pitch) * dist * 0.9 + 0.4, Math.cos(yaw) * dist);
     camera.lookAt(0, -0.25, 0); camera.updateProjectionMatrix();
   }
-  function resize() { const r = stage.getBoundingClientRect(); width = Math.max(1, r.width); height = Math.max(1, r.height); renderer.setSize(width, height, false); place(); request(); }
+  function resize() { const r = stage.getBoundingClientRect(), room = parseFloat(getComputedStyle(stage).paddingTop) || 0; width = Math.max(1, r.width); height = Math.max(1, r.height - room); renderer.setSize(width, height, false); place(); request(); }
   const ro = new ResizeObserver(resize); ro.observe(stage);
   // stop drawing while the rack is scrolled out of view
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; if (onScreen) request(); }) : null;

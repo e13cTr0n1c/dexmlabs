@@ -1,8 +1,9 @@
 /** Lorenz: page controller. Wires the pure cipher and game modules to the DOM, the tape and the 3D view. */
-import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
+import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, codeFromBits, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
 import {demoSchedule, demoAt, demoModel, demoHTML} from './demo.js';
 import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
+import {replyFor, submitReply, hardComplete, canon, runPatterns, setPinsOn, togglePin, clearPins, notePinRun, savePins} from './hard.js';
 import {makeHardRound, newHardState, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
 import {tapeHTML, holesHTML, holesText} from './punch.js';
 import {utcDateKey, mulberry32} from './seed.js';
@@ -21,7 +22,7 @@ const fmt = n => Math.round(n).toLocaleString('en-GB');
 const Points = () => globalThis.DexmPoints || null;
 const hintCost = type => app.mode === 'hard' ? HARD_RULES.hint[type === 'reveal' ? 'smudge' : type] : RULES.hint[type];
 const roundRef = r => r.mode === 'daily' ? r.key : `p${r.seed}`;
-const EARN = {daily: 100, hard: 250};
+const EARN = {daily: 100, hard: 250, reply: 100};
 /** Pay for a hint. Returns false (and says why) if there aren't enough points. */
 function pay(type, ref) {
   const P = Points(), cost = hintCost(type); if (!P) return true;
@@ -35,6 +36,7 @@ function awardDaily(key = utcDateKey()) {
   const n = read(`round:${key}`, null), h = read(`hard:round:${key}`, null);
   if (n && n.solved === true) earned(P.earn('lorenz', P.EARN?.lorenz ?? EARN.daily, `lorenz:daily:${key}`), `+${P.EARN?.lorenz ?? EARN.daily} points for today's Lorenz`);
   if (h && h.solved === true) earned(P.earn('lorenz', P.EARN?.lorenzHard ?? EARN.hard, `lorenz:hard:${key}`), `+${P.EARN?.lorenzHard ?? EARN.hard} points for today's hard mode`);
+  if (h && h.solved === true && !h.reply?.legacy && h.reply?.tries?.some(t => t.ok)) earned(P.earn('lorenz', P.EARN?.lorenzReply ?? EARN.reply, `lorenz:hard:reply:${key}`), `+${P.EARN?.lorenzReply ?? EARN.reply} points for your reply`);
 }
 const niceDate = key => new Date(key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'});
 
@@ -60,6 +62,7 @@ async function loadView() {
 }
 function viewPatterns() {
   if (app.screen === 'game' && app.tab === 'chi') { const p = {...(app.daily?.round.patterns || {})}; for (const id of CHI) { const r = parsePattern($(`chi-pat-${id}`)?.value, WHEEL[id].size); if (r.ok) p[id] = r.bits; } return p; }
+  if (app.screen === 'game' && app.mode === 'hard' && app.state?.pins?.on) return app.state.pins.grid;
   return (app.state?.round || app.daily?.round)?.patterns;
 }
 function viewPositions() {
@@ -173,7 +176,7 @@ function newHardPractice(model, render = true) {
   if (!render) return;
   app.state = app.hardPractice; app.page = app.state.round.openIndex; app.marked = new Set(); app.wheels = sanitiseWheels({});
   $('decoded-card').hidden = true; $('hard-answer').value = ''; $('qep-guess').value = ''; $('out-tape').innerHTML = '';
-  showDials(); renderRound(); syncView(false); clearOutput();
+  showDials(); renderRound(); syncView(false); clearOutput(); resetHardExtras(); renderReply();
 }
 function newPractice(model, render = true) {
   if (app.mode === 'hard') return newHardPractice(model, render);
@@ -198,8 +201,8 @@ function restoreState(round, saved) {
 const sanitiseWheels = w => Object.fromEntries(WHEELS.map(x => [x.id, checkPosition(w?.[x.id], x.size).ok ? Number(w[x.id]) : POSITION_BASE]));
 function enterGame() {
   show('game'); renderTabs(); renderRound(); showDials(); clearOutput();
-  const st = app.state;
-  if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; showCard(false); } }
+  const st = app.state; resetHardExtras();
+  if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; if (hardComplete(st)) showCard(false); } renderReply(); }
   else if (app.tab === 'random' && st.solved) { replaySolved(); showCard(false); }
   syncView(false);
   const h = {random:'game-heading', encipher:'encipher-heading', chi:'chi-heading'}[app.tab]; $(h)?.focus({preventScroll: true});
@@ -219,7 +222,7 @@ function renderTabs() {
 }
 function showModeParts() {
   const hard = app.mode === 'hard';
-  for (const id of ['today-line', 'preamble-box', 'book-pager', 'hard-out']) $(id).hidden = !hard;
+  for (const id of ['today-line', 'preamble-box', 'book-pager', 'hard-out', 'pin-sheet']) $(id).hidden = !hard;
   $('printed-box').hidden = hard;
   document.querySelectorAll('[data-hint=qep],[data-hint=char]').forEach(b => { b.hidden = !hard; });
   $('tape-legend').textContent = hard ? 'Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. In hard mode nothing is printed under it.' : 'Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.';
@@ -270,7 +273,7 @@ function saveRound() {
   const st = app.state;
   if (app.mode === 'hard') {
     if (st.round.mode === 'practice') { app.hardPractice = st; app.hardPracticeWheels = {...app.wheels}; return; }
-    write(`hard:round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, wheels: app.wheels});
+    write(`hard:round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, pins: savePins(st.pins), wheels: app.wheels});
     try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'hard:round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     return;
   }
@@ -304,23 +307,25 @@ function runTape({codes, machine, label, onDone, outputAs = 'print'}) {
     app.view?.setPositions(last.after); const moved = new Set(['chi1','chi2','chi3','chi4','chi5','mu61', ...(last.psiMoved ? PSI : []), ...(last.mu37Moved ? ['mu37'] : [])]);
     showLabelPositions(last.after, moved);
   };
-  const panel = $('demo-panel'), demo = $('speed-select').value === 'demo' && panel;
+  const panel = $('demo-overlay'), demo = $('speed-select').value === 'demo' && panel;
+  // which wheel sets the character is passing through, so the rest of the rack dims while it does
+  const focus = stage => app.view?.setDim(stage <= 2 ? [...PSI, 'mu37', 'mu61'] : stage <= 4 ? [...CHI] : []);
   const finish = () => {
     run.done = true; app.run = null; $('run-button').disabled = false; $('skip-button').disabled = true;
     printed.textContent = outputAs === 'bp' ? groups(text.join('')) : text.join('');
     app.lastOut = printed.textContent; $('printed-copy').hidden = !app.lastOut;
     app.view?.setPositions(machine.positions(), {animate: false}); showLabelPositions(machine.positions());
-    if (demo) panel.classList.add('demo-done');
+    if (demo) { panel.classList.add('demo-done'); $('machine-stage').classList.remove('demo-on'); syncView(false); }
     onDone?.(out);
   };
   run.skip = () => { if (run.pending) { commit(run.pending); run.pending = null; } while (run.i < codes.length) one(); tape.setRows(tape.rows); cancelAnimationFrame(run.frame); finish(); };
-  if (panel) { panel.hidden = !demo; panel.innerHTML = ''; panel.classList.remove('demo-done'); panel.classList.toggle('demo-still', reducedMotion()); }
+  if (panel) { panel.hidden = !demo; panel.innerHTML = ''; panel.classList.remove('demo-done'); panel.classList.toggle('demo-still', reducedMotion()); $('machine-stage').classList.toggle('demo-on', Boolean(demo)); }
   if (!codes.length) { finish(); return; }
   if (demo) {
     // Visual demonstration: the first few characters stage by stage, then the rest speeds up. About 13 seconds in all.
     const plan = demoSchedule(codes.length), opts = {hideOut: outputAs === 'tape', chiOnly: machine.model === undefined};
     let shown = '';
-    const draw = (p, stage, index, fast) => { const key = `${index}:${stage}:${fast}`; if (key === shown) return; shown = key; panel.innerHTML = demoHTML(demoModel(p.c, p.s, opts), stage, {index, total: codes.length, fast}); };
+    const draw = (p, stage, index, fast) => { const key = `${index}:${stage}:${fast}`; if (key === shown) return; shown = key; panel.innerHTML = demoHTML(demoModel(p.c, p.s, opts), stage, {index, total: codes.length, fast}); if (machine.model !== undefined) focus(fast ? 5 : stage); };
     const frame = now => {
       if (app.run !== run) return;
       if (run.t0 === undefined) run.t0 = now; // time from the first frame, on the frame clock
@@ -354,7 +359,7 @@ function runTape({codes, machine, label, onDone, outputAs = 'print'}) {
 }
 
 /** On a stacked (phone) layout the teleprinter is below the button, so bring it into view. */
-function revealTeleprinter() { if (window.matchMedia?.('(max-width: 1100px)').matches) document.querySelector('.teleprinter')?.scrollIntoView({block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth'}); }
+function revealTeleprinter() { if (window.matchMedia?.('(max-width: 1100px)').matches) ($('speed-select').value === 'demo' ? $('machine-stage') : document.querySelector('.teleprinter'))?.scrollIntoView({block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth'}); }
 function onRun() {
   if (app.run || app.screen !== 'game') return;
   $('decoded-card').hidden = true;
@@ -500,7 +505,7 @@ function renderHard() {
   const pre = $('preamble-tape'); pre.innerHTML = tapeHTML(r.preamble);
   pre.setAttribute('aria-label', `Preamble tape, ${r.preamble.length} rows, impulse 1 first: ${r.preamble.map(c => holesText(c)).join('; ')}`);
   $('qep-table').tHead.innerHTML = bookHeadHTML();
-  renderBookPage(0);
+  renderBookPage(0); renderPins();
   renderRevealed(); updateHintButtons(); updateScore();
 }
 function renderBookPage(dir) {
@@ -518,11 +523,87 @@ function turnPage(dir) {
   const n = Math.min(app.state.round.pages.length - 1, Math.max(0, app.page + dir)); if (n === app.page) return;
   app.page = n; renderBookPage(dir);
 }
-function hardOutput(settings) { const r = app.state.round; return crypt(r.cipherCodes, {patterns: r.patterns, start: settings, model: r.model}); }
+function hardOutput(settings) { const r = app.state.round; return crypt(r.cipherCodes, {patterns: runPatterns(app.state), start: settings, model: r.model}); }
 function showHardTape() {
   const st = app.state, settings = sanitiseWheels(st.ran || st.round.start), codes = hardOutput(settings);
   tape.setRows(codes.map(code => ({code, print: '', control: null})));
   $('out-tape').innerHTML = tapeHTML(codes, {buttons: true, marked: app.marked});
+  app.outCodes = codes; if (!app.aid || app.aid.length !== codes.length) app.aid = {index: 0, bits: [0, 0, 0, 0, 0], figs: false, length: codes.length};
+  renderAid();
+}
+function resetHardExtras() { app.aid = null; app.outCodes = null; $('read-aid').hidden = true; $('reply-input').value = ''; $('reply-tape').hidden = true; $('reply-tape').innerHTML = ''; document.querySelectorAll('#cheat-body tr').forEach(tr => { tr.classList.remove('aid-match'); tr.removeAttribute('aria-current'); [...tr.cells].forEach(c => c.classList.remove('aid-col')); }); }
+/* ---------- Wheel pattern sheet: set the day's pins by hand as well, for a bonus ---------- */
+const patternRow = bits => bits.map(b => b ? 'x' : '.').join('').replace(/(.{5})/g, '$1 ').trim();
+function renderPins() {
+  const st = app.state; if (app.mode !== 'hard' || !st?.pins) return;
+  const p = st.pins, on = p.on, sel = app.pinWheel || 'chi1', w = WHEEL[sel];
+  $('pins-on').checked = on; $('pins-on').disabled = st.solved; $('pin-work').hidden = !on;
+  $('pin-state').textContent = st.solved ? (p.earned ? `Patterns set by hand: +${HARD_RULES.pins} pts` : 'Read without setting the patterns') : on ? 'Your pins are on the machine' : `Optional, +${HARD_RULES.pins} pts`;
+  if (!on) return;
+  $('pin-sheet-body').innerHTML = WHEELS.map(x => `<tr><th scope="row">${x.label}</th><td>${patternRow(st.round.patterns[x.id])}</td></tr>`).join('');
+  document.querySelectorAll('#pin-wheels button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wheel === sel)));
+  $('pin-wheel-name').textContent = `${w.label}, ${w.size} pins, ${p.grid[sel].filter(Boolean).length} raised`;
+  const grid = $('pin-grid'); grid.setAttribute('aria-label', `Pins of ${w.label}`);
+  grid.innerHTML = p.grid[sel].map((b, i) => `<button type="button" class="pin${b ? ' up' : ''}" data-pin="${i}" aria-pressed="${b ? 'true' : 'false'}" aria-label="Pin ${i + 1}"${st.solved ? ' disabled' : ''}>${i + 1}</button>`).join('');
+  $('pin-clear').disabled = st.solved;
+}
+function bindPins() {
+  $('pin-wheels').innerHTML = WHEELS.map(w => `<button type="button" data-wheel="${w.id}" aria-pressed="false">${w.label}</button>`).join('');
+  $('pins-on').addEventListener('change', e => { if (app.mode !== 'hard' || app.run) { e.target.checked = Boolean(app.state?.pins?.on); return; } app.state = setPinsOn(app.state, e.target.checked); saveRound(); renderPins(); syncView(false);
+    setFeedback('', app.state.pins.on ? 'Copy every wheel from the pattern sheet onto the pin grid. The machine now runs on your pins.' : "Back to the day's patterns on the machine."); });
+  $('pin-wheels').addEventListener('click', e => { const b = e.target.closest('[data-wheel]'); if (!b) return; app.pinWheel = b.dataset.wheel; renderPins(); });
+  $('pin-grid').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (!b || app.run) return; const i = Number(b.dataset.pin);
+    app.state = togglePin(app.state, app.pinWheel || 'chi1', i); saveRound(); renderPins(); syncView(false); $('pin-grid').querySelector(`[data-pin="${i}"]`)?.focus(); });
+  $('pin-clear').addEventListener('click', () => { if (app.run) return; app.state = clearPins(app.state, app.pinWheel || 'chi1'); saveRound(); renderPins(); syncView(false); });
+}
+/* ---------- Reading aid: you punch a copy of one row, the cheat sheet lights up the line, you read it ---------- */
+function renderAid() {
+  const box = $('read-aid'), n = app.outCodes?.length || 0; box.hidden = app.mode !== 'hard' || !n; if (box.hidden) return;
+  const a = app.aid; a.index = Math.min(n - 1, Math.max(0, a.index));
+  $('aid-pos').textContent = `Row ${a.index + 1} of ${n}`;
+  box.querySelectorAll('.aid-hole').forEach(b => { const on = a.bits[Number(b.dataset.bit)] === 1; b.setAttribute('aria-pressed', String(on)); b.classList.toggle('on', on); });
+  $('aid-shift').textContent = a.figs ? 'Figure shift' : 'Letter shift'; $('aid-shift').setAttribute('aria-pressed', String(a.figs));
+  $('aid-prev').disabled = a.index === 0; $('aid-next').disabled = a.index >= n - 1;
+  const tapeEl = $('out-tape');
+  tapeEl.querySelectorAll('.aid-current').forEach(f => { f.classList.remove('aid-current'); f.removeAttribute('aria-current'); });
+  const f = tapeEl.querySelector(`[data-frame="${a.index}"]`);
+  if (f) { f.classList.add('aid-current'); f.setAttribute('aria-current', 'true'); const sc = f.closest('.out-tape') || tapeEl; if (sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, f.offsetLeft - sc.clientWidth / 2); }
+  const code = codeFromBits(a.bits);
+  document.querySelectorAll('#cheat-body tr').forEach((tr, i) => {
+    const on = i === code; tr.classList.toggle('aid-match', on); if (on) tr.setAttribute('aria-current', 'true'); else tr.removeAttribute('aria-current');
+    tr.cells[1]?.classList.toggle('aid-col', on && !a.figs); tr.cells[2]?.classList.toggle('aid-col', on && a.figs);
+  });
+}
+function aidMove(dir) { const a = app.aid; if (!a) return; if (dir > 0) { app.marked.add(a.index); $('out-tape').querySelector(`[data-frame="${a.index}"]`)?.classList.add('read'); } a.index += dir; a.bits = [0, 0, 0, 0, 0]; renderAid(); }
+function bindAid() {
+  document.querySelectorAll('.aid-hole').forEach(b => b.addEventListener('click', () => { const a = app.aid; if (!a) return; const i = Number(b.dataset.bit); a.bits[i] = a.bits[i] ? 0 : 1; renderAid(); }));
+  $('aid-prev').addEventListener('click', () => aidMove(-1)); $('aid-next').addEventListener('click', () => aidMove(1));
+  $('aid-shift').addEventListener('click', () => { if (!app.aid) return; app.aid.figs = !app.aid.figs; renderAid(); });
+  $('aid-clear').addEventListener('click', () => { if (!app.aid) return; app.aid.bits = [0, 0, 0, 0, 0]; renderAid(); });
+}
+/* ---------- The reply: once the message is read, encipher a short answer and punch it ---------- */
+function renderReply() {
+  const st = app.state, box = $('hard-reply'), on = app.mode === 'hard' && Boolean(st?.solved); box.hidden = !on; if (!on) return;
+  $('reply-plain').textContent = replyFor(st.round);
+  const done = st.reply.done, wrong = st.reply.tries.filter(t => !t.ok).length;
+  $('reply-state').textContent = done ? (st.reply.legacy ? 'Read before replies existed' : `Sent, ${fmt(st.reply.score)} pts`) : wrong ? `Not through yet, ${wrong} wrong ${wrong > 1 ? 'tapes' : 'tape'}` : 'Not sent yet';
+  box.classList.toggle('sent', done); $('reply-go').textContent = done ? 'Reply sent' : 'Encipher and punch the reply'; $('reply-go').disabled = done; $('reply-input').disabled = done;
+  if (done && !$('reply-input').value) $('reply-input').value = replyFor(st.round);
+}
+function sendReply() {
+  if (app.mode !== 'hard' || app.run) return;
+  const st = app.state, r = st.round; if (!st.solved) { setFeedback('bad', 'Read the message first, then send the reply.'); return; }
+  if (st.reply.done) { showCard(false); return; }
+  const text = canon($('reply-input').value); if (!text) { setFeedback('bad', 'Type the reply first.'); return; }
+  const codes = encodeText(text); if (codes.dropped.length) { setFeedback('bad', `The teleprinter can't send ${[...new Set(codes.dropped)].join(' ')}. Stick to letters, figures and the punctuation in the reply.`); return; }
+  const settings = {...app.wheels}; setFeedback('', 'Punching the reply...');
+  runTape({codes, machine: createMachine({patterns: r.patterns, start: settings, model: r.model}), outputAs: 'tape', label: 'Reply', onDone: out => {
+    const rt = $('reply-tape'); rt.hidden = false; rt.innerHTML = tapeHTML(out);
+    const {state, result} = submitReply(app.state, out); app.state = state; saveRound(); renderReply();
+    if (result.ok) return replySuccess();
+    setFeedback('bad', result.repeat ? "That's the same tape as before, so it's free. It still doesn't read as the reply at the other end."
+      : `That tape doesn't read as the reply at the other end. Check the wheels are still on the settings you read the message with, and the words match. That cost ${HARD_RULES.reply.wrong} reply points.`);
+  }});
 }
 function renderRevealed() {
   const st = app.state, chars = revealedChars(st), el = $('revealed-chars');
@@ -531,19 +612,19 @@ function renderRevealed() {
 function runHard() {
   const st = app.state, r = st.round, settings = {...app.wheels};
   setFeedback('', 'Punching the tape...'); revealTeleprinter(); app.marked = new Set();
-  runTape({codes: r.cipherCodes, machine: createMachine({patterns: r.patterns, start: settings, model: r.model}), outputAs: 'tape', onDone: () => {
-    if (!app.state.solved) { app.state = {...app.state, ran: settings}; saveRound(); }
+  runTape({codes: r.cipherCodes, machine: createMachine({patterns: runPatterns(st), start: settings, model: r.model}), outputAs: 'tape', onDone: () => {
+    if (!app.state.solved) { app.state = notePinRun({...app.state, ran: settings}); saveRound(); }
     showHardTape();
     setFeedback('', app.state.solved ? 'That is the tape you read.' : "The tape's punched. Read it with the cheat sheet and type what it says. If it reads as nonsense, a wheel is off.");
   }});
 }
 function checkReading() {
   if (app.mode !== 'hard' || app.run) return;
-  const st = app.state; if (st.solved) { showCard(false); return; }
+  const st = app.state; if (st.solved) { if (hardComplete(st)) showCard(false); else { renderReply(); $('reply-input').focus(); } return; }
   const {state, result} = submitAnswer(st, $('hard-answer').value);
   if (result.empty) { setFeedback('bad', 'Type what the tape says first.'); return; }
   app.state = state; saveRound(); updateScore(); updateHintButtons();
-  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Wheels, book and tape, all by hand.'); return; }
+  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Now send the reply below to finish the round.'); return; }
   setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : `Not right yet. ${result.right} of ${result.of} words are right. That cost ${HARD_RULES.wrong} points.`);
 }
 function checkQep() {
@@ -563,11 +644,16 @@ function hardHint(type) {
   if (kind === 'smudge') { renderBookPage(0); setFeedback('', hardSmudgeText(st.round)); }
 }
 function hardSuccess() {
+  const st = app.state; $('qep-number').textContent = pad2(st.round.qep);
+  counter.animateTo(st.score, {from: 0, reducedMotion: reducedMotion()});
+  setFeedback('good', 'Message read!! Now send the reply below to finish the round.');
+  renderPins(); renderReply(); const box = $('hard-reply'); box.scrollIntoView?.({block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth'}); $('reply-input').focus({preventScroll: true});
+}
+function replySuccess() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
   if (st.round.mode !== 'practice') { app.hardStats = updateHardStats(app.hardStats, st); write('hard:stats', app.hardStats); }
   else { const P = Points(), r = P?.earnPractice('lorenz', utcDateKey()); earned(r, `+${P?.EARN?.practice ?? 20} points for a practice round`); }
-  $('qep-number').textContent = pad2(st.round.qep);
-  setFeedback('good', 'Message read!! Wheels, book and tape, all by hand.');
+  setFeedback('good', 'Reply sent!! Read by hand and answered on the machine.');
   if (plan.fly) {
     const tp = $('screen-game').querySelector('.teleprinter'); tape.fly(); tp.classList.add('tape-fly', 'hard-win'); setTimeout(() => tp.classList.remove('tape-fly', 'hard-win'), 1700);
     const burst = document.createElement('div'); burst.className = 'hard-burst'; burst.setAttribute('aria-hidden', 'true'); document.body.append(burst); setTimeout(() => burst.remove(), 1700);
@@ -580,7 +666,7 @@ function showHardCard(animate) {
   const st = app.state, r = st.round, b = hardBreakdown(st), s = app.hardStats, card = $('decoded-card'), practice = r.mode === 'practice';
   const streak = s && !practice ? `<p class="tiny">Hard mode streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best: ${fmt(s.best)} pts.</p>` : '';
   card.className = 'decoded-card hard-card';
-  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button>${practice ? '<button type="button" data-card="next">Next round</button>' : '<button type="button" data-card="normal">Normal mode</button>'}</div>${practice ? '' : `<p class="countdown">Next intercept in ${countdown()}.</p>`}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
+  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand and answered, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Message</span><span id="card-total">${fmt(st.score)} pts</span></p>${st.reply?.legacy ? '' : `<p class="card-reply-label tiny">Your reply</p><blockquote class="card-reply">${escapeHTML(replyFor(r))}</blockquote><dl>${b.reply.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total reply-total"><span>Reply</span><span id="card-reply-total">${fmt(b.replyTotal)} pts</span></p>`}${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button>${practice ? '<button type="button" data-card="next">Next round</button>' : '<button type="button" data-card="normal">Normal mode</button>'}</div>${practice ? '' : `<p class="countdown">Next intercept in ${countdown()}.</p>`}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
   applyPrintLink(card);
   card.hidden = false; fitCard();
   card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
@@ -604,11 +690,11 @@ function trapFocus(dialog) {
   });
 }
 function openCheat(opener) {
-  const d = $('cheat-dialog'); d.showModal(); d.querySelector('[data-close]').focus();
+  const d = $('cheat-dialog'); d.showModal(); d.querySelector('[data-close]').focus(); if (app.mode === 'hard') renderAid(); d.querySelector('.aid-match')?.scrollIntoView?.({block: 'nearest'});
   d.addEventListener('close', () => opener?.focus?.(), {once: true});
 }
 function bindHard() {
-  buildCheatSheet(); trapFocus($('cheat-dialog'));
+  bindPins(); buildCheatSheet(); trapFocus($('cheat-dialog')); bindAid(); $('reply-go').addEventListener('click', sendReply);
   document.querySelectorAll('[data-cheat]').forEach(b => b.addEventListener('click', () => openCheat(b)));
   $('page-prev').addEventListener('click', () => turnPage(-1)); $('page-next').addEventListener('click', () => turnPage(1));
   $('qep-guess-go').addEventListener('click', checkQep);
