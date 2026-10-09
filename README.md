@@ -4,7 +4,7 @@ Static site for Deus Ex Machina Labs (DEXM LABS): small free browser games and m
 
 - `/` homepage: the games, the makes (3D print designs on Cults3D, the band plan desk mat on Fourthwall) and Buy Me a Coffee
 - `/skywave/` Skywave, a daily HF propagation puzzle (three.js from jsDelivr)
-- `/lorenz/` Lorenz, a daily puzzle on the Lorenz SZ42 cipher machine (three.js from jsDelivr)
+- `/lorenz/` Lorenz, a daily puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny (three.js from jsDelivr)
 - `/privacy/`, `/cookies/`, `/terms/`, `/disclaimer/`, `/contact/` policy pages
 - `/tools/` and `/templates/` only hold redirect pages now. The UK tax calculators and spreadsheet templates moved to https://e13ctr0n1c.github.io/, and each old URL sends visitors to the matching page there (noindex, not in the sitemap)
 - Visits are counted with Cloudflare Web Analytics (cookieless, aggregate only). The beacon is on every generated page; the Skywave and Lorenz pages carry it by hand

@@ -69,7 +69,7 @@ MAKES=[(CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for sho
  (EFHW,'EFHW toroid box','3D print for FT240 and FT140 cores.','Cults3D'),
  (DRILL,'RF panel drill guide','3D print for SO-239, N and BNC holes.','Cults3D'),
  (MAT,'Band plan desk mat','UK ham bands, 160m to 70cm.','Fourthwall')]
-LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ42 cipher machine that Bletchley Park called Tunny. Find the settings in the key book, set twelve wheels and decode the tape.'
+LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Find the settings in the key book, set twelve wheels and decode the tape.'
 home=head('Deus Ex Machina Labs / God from the lab','Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily puzzle on the cipher machine Bletchley Park called Tunny, and 3D print designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"Deus Ex Machina Labs","alternateName":"DEXM LABS","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
@@ -203,7 +203,7 @@ doc('disclaimer','Disclaimer','DISCLAIMER','Skywave and Lorenz are games. Skywav
 <p>Skywave's radio propagation model is deliberately simplified to make a fair, playable puzzle. It is not a prediction or planning tool. Don't use it to plan real contacts, emergency communications or anything that matters. For real conditions, use VOACAP or live propagation data.</p>
 <p>All stations and callsigns in the game are fictional. Any match with a real station is a coincidence.</p>
 <h2>Lorenz is a game</h2>
-<p>Lorenz follows how the Lorenz SZ42 cipher machine worked, but the wheel patterns and messages are made up for the game. Nothing in it is a real intercept.</p>
+<p>Lorenz follows how the Lorenz SZ40/42 cipher machine worked, but the wheel patterns and messages are made up for the game. Nothing in it is a real intercept.</p>
 <h2>No warranty</h2>
 <p>Everything on this site is provided as is, with no warranty that it is accurate, complete or available. See the <a href="../terms/">terms</a>.</p>
 <h2>Makes</h2>
@@ -260,7 +260,7 @@ GAME_PAGES=[('skywave/','Skywave','A daily HF propagation puzzle on a 3D globe. 
  ('skywave/help.html','How to play Skywave','The rules of the daily Skywave puzzle.'),
  ('skywave/about.html','Who made Skywave','Who made Skywave and why.'),
  ('skywave/log.html',"What's changed in Skywave",'The Skywave change log.'),
- ('lorenz/','Lorenz','A daily puzzle on the Lorenz SZ42 cipher machine that Bletchley Park called Tunny. Set the twelve wheels and read the intercept. Free, no account, no cookies.'),
+ ('lorenz/','Lorenz','A daily puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Set the twelve wheels and read the intercept. Free, no account, no cookies.'),
  ('lorenz/help.html','How to play Lorenz','The rules of the daily Lorenz puzzle.'),
  ('lorenz/about.html','Why I built Lorenz','Why I built Lorenz.'),
  ('lorenz/log.html',"What's changed in Lorenz",'The Lorenz change log.')]

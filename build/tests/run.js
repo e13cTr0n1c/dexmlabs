@@ -25,7 +25,7 @@ t("homepage: games first, then makes, then support", function () {
 });
 t("Lorenz card wording", function () {
   var x = visible(dom("index.html"));
-  assert.ok(x.indexOf("the Lorenz SZ42 cipher machine that Bletchley Park called Tunny") >= 0);
+  assert.ok(x.indexOf("the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny") >= 0);
   ["index.html", "llms.txt"].forEach(function (f) { assert.ok(!/teleprinter machine|teleprinter cipher machine/i.test(read(f)), f); });
 });
 t("nav: home, games, makes", function () {

@@ -12,7 +12,7 @@
 - [How to play Skywave](https://dexmlabs.app/skywave/help.html): The rules of the daily Skywave puzzle.
 - [Who made Skywave](https://dexmlabs.app/skywave/about.html): Who made Skywave and why.
 - [What's changed in Skywave](https://dexmlabs.app/skywave/log.html): The Skywave change log.
-- [Lorenz](https://dexmlabs.app/lorenz/): A daily puzzle on the Lorenz SZ42 cipher machine that Bletchley Park called Tunny. Set the twelve wheels and read the intercept. Free, no account, no cookies.
+- [Lorenz](https://dexmlabs.app/lorenz/): A daily puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Set the twelve wheels and read the intercept. Free, no account, no cookies.
 - [How to play Lorenz](https://dexmlabs.app/lorenz/help.html): The rules of the daily Lorenz puzzle.
 - [Why I built Lorenz](https://dexmlabs.app/lorenz/about.html): Why I built Lorenz.
 - [What's changed in Lorenz](https://dexmlabs.app/lorenz/log.html): The Lorenz change log.
