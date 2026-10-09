@@ -1355,6 +1355,36 @@ await t('Motor first: in hard, a wheel you were not asked to set is overwritten 
   const r = HD.makeHardRound({realistic: true}); let rs = HD.togglePin(HD.newHardState(r), 'mu37', 0); r.patterns.chi1.forEach((b, i) => { if (b) rs = HD.togglePin(rs, 'chi1', i); });
   assert.equal(rs.pins.grid.mu37[0], 1); assert.equal(rs.pins.auto, false);
 });
+await t('Practice pins: every practice round, either model, runs on its own patterns; only today\'s page reads; another day\'s line for the QEP is named', async () => {
+  for (let k = 1; k <= 40; k++) for (const model of [L.MODELS.SZ40, L.MODELS.SZ42A]) {
+    const seed = (k * 2654435761) >>> 0, h = HD.makeHardRound({mode: 'practice', seed, model}), daily = HD.makeHardRound({});
+    let st = HD.newHardState(h); h.patterns.chi1.forEach((b, i) => { if (b) st = HD.togglePin(st, 'chi1', i); });
+    assert.equal(st.pins.auto, true); assert.ok(HD.pinsMatch(h, st.pins.grid), 'filled from the practice sheet');
+    if (JSON.stringify(h.patterns) !== JSON.stringify(daily.patterns)) assert.equal(HD.pinsMatch(daily, st.pins.grid), false, 'not the daily one');
+    const today = h.pages[h.todayIndex]; assert.equal(today.key, h.key); assert.deepEqual(today.book.find(l => l.qep === h.qep).start, h.start);
+    assert.equal(L.decodeText(L.crypt(h.cipherCodes, {patterns: HD.runPatterns(st), start: h.start, model: h.model})), h.text, `${model} ${seed}`);
+    for (const pg of h.pages.filter(x => !x.today)) { const line = pg.book.find(l => l.qep === h.qep); assert.ok(line, 'every page has a line for the QEP');
+      assert.notEqual(L.decodeText(L.crypt(h.cipherCodes, {patterns: h.patterns, start: line.start, model: h.model})), h.text, 'another day\'s line gives nonsense'); }
+  }
+  // Arthur's screenshot: after a 105 character run from ψ 34 18 17 the labels read 30 06 48, the ψ wheels having moved 82 times together
+  const after = (s0, n, size) => (s0 - 1 + n) % size + 1; assert.deepEqual([after(34, 82, 43), after(18, 82, 47), after(17, 82, 51), after(38, 105, 41)], [30, 6, 48, 20]);
+  // in the page: a hard practice round run on another day's line says which page that was
+  await bootPage({'lorenz:difficulty': '"hard"'}, async (d, w) => {
+    const seed = 2654435761; Math.random = () => seed / 2 ** 32; d.getElementById('play-practice').click(); Math.random = () => 0.5;
+    const h = HD.makeHardRound({mode: 'practice', seed}); d.getElementById('qep-guess').value = String(h.qep); d.getElementById('qep-guess-go').click();
+    d.querySelector('#pin-wheels [data-wheel=chi1]').click(); h.patterns.chi1.forEach((b, i) => { if (b) d.querySelector(`#pin-grid [data-pin="${i}"]`).click(); });
+    const other = h.pages.find(x => !x.today); setWheels(d, w, other.book.find(l => l.qep === h.qep).start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
+    assert.equal(d.getElementById('feedback').textContent, `The tape's punched, but those are the settings on the ${HD.pageDate(other.key)} page. Today is ${HD.pageDate(h.key)}, so turn to that page and use its line for QEP ${G.pad2(h.qep)}.`);
+    setWheels(d, w, h.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
+    assert.deepEqual(tapeOut(d), L.crypt(h.cipherCodes, {patterns: h.patterns, start: h.start, model: h.model})); assert.match(d.getElementById('feedback').textContent, /^The tape's punched\. Read it/);
+  });
+  // realistic says nothing about pages
+  await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {
+    const seed = 2654435761; Math.random = () => seed / 2 ** 32; d.getElementById('play-practice').click(); Math.random = () => 0.5;
+    const h = HD.makeHardRound({mode: 'practice', seed}); const other = h.pages.find(x => !x.today); setWheels(d, w, other.book.find(l => l.qep === h.qep).start);
+    d.getElementById('run-button').click(); d.getElementById('skip-button').click(); assert.doesNotMatch(d.getElementById('feedback').textContent, /page/);
+  });
+});
 await t('Framing: every wheel label projects inside the canvas, for every stage size the page uses', () => {
   const LY = LAYOUT_MOD;
   for (const [w, h] of [[640, 308], [640, 352], [730, 396], [348, 250], [348, 250 + 196], [540, 400], [1000, 400], [300, 200], [900, 560]]) for (const yaw of [-0.55, -0.35, 0, 0.6, 1.1, -1.1]) {
