@@ -61,11 +61,27 @@ export function makeRound({mode = 'daily', date = new Date(), seed, model} = {})
   const smudge = makeSmudge(rng, start);
   const others = new Set([qep]); const book = [];
   while (book.length < RULES.bookEntries - 1) { const q = randomInt(rng, 1, 99); if (!others.has(q)) { others.add(q); const st = randomPositions(rng); book.push({qep:q, start:st, smudge: rng() < .5 ? makeSmudge(rng, st) : null}); } }
+  // Today's line always carries today's smudge: the book, the hint and the decode all read this one entry.
   book.splice(randomInt(rng, 0, book.length), 0, {qep, start, smudge});
   const text = mode === 'daily' ? messageFor(number) : MESSAGES[randomInt(rng, 0, MESSAGES.length - 1)];
   const plainCodes = [...encodeText(text)];
   const cipherCodes = crypt(plainCodes, {patterns, start, model:chosenModel});
   return {mode, key, number, seed:s, model:chosenModel, patterns, start, qep, smudge, book: book.sort((a, b) => a.qep - b.qep), text, plainCodes, cipherCodes, cipher: toBP(cipherCodes)};
+}
+
+/** The book line for the round's QEP number. The rendered book and the reveal hint both read from it. */
+export const answerLine = round => round.book.find(e => e.qep === round.qep);
+/** What one cell of the book shows. A smudged cell keeps its '?' for good; once the smudge has been read
+ *  (the reveal hint, answer line only), the full figure comes with it as `read`. */
+export function bookCell(round, entry, wheel, revealed = false) {
+  const value = pad2(entry.start[wheel]), sm = entry.smudge?.wheel === wheel ? entry.smudge : null;
+  if (!sm) return {text: value, smudged: false, read: null};
+  return {text: sm.shown, smudged: true, read: revealed && entry.qep === round.qep ? value : null};
+}
+/** The words of the 'Read the smudge' hint, from the answer line. Null when that line is fully readable. */
+export function revealText(round) {
+  const sm = answerLine(round)?.smudge; if (!sm) return null;
+  return `The smudged figure on QEP ${pad2(round.qep)} is ${WHEEL[sm.wheel].label} at ${pad2(answerLine(round).start[sm.wheel])}.`;
 }
 
 /** Pure round state. */
@@ -88,12 +104,14 @@ export function attempt(state, settings) {
   next.score = ok ? scoreFor(next) : 0;
   return {state: next, result: {ok, repeat}};
 }
-/** Hints: 'reveal' shows the smudged wheel's position; 'check' says whether one wheel is right. */
+/** Hints: 'reveal' shows the smudged wheel's position on the answer line (free and empty if it has no smudge);
+ *  'check' says whether one wheel is right. */
 export function useHint(state, type, settings, wheel) {
   if (state.solved) return {state, answer:null};
   if (type === 'reveal') {
-    const sm = state.round.smudge; const already = state.hints.some(h => h.type === 'reveal');
-    return {state: already ? state : {...state, hints:[...state.hints, {type}]}, answer:{wheel:sm.wheel, value:state.round.start[sm.wheel]}};
+    const line = answerLine(state.round), sm = line?.smudge; if (!sm) return {state, answer:null};
+    const already = state.hints.some(h => h.type === 'reveal');
+    return {state: already ? state : {...state, hints:[...state.hints, {type}]}, answer:{wheel:sm.wheel, value:line.start[sm.wheel]}};
   }
   if (type === 'check') {
     if (!WHEEL[wheel]) throw new RangeError('Unknown wheel');

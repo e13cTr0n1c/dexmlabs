@@ -1,6 +1,7 @@
 /** Lorenz: page controller. Wires the pure cipher and game modules to the DOM, the tape and the 3D view. */
 import {WHEELS, WHEEL, CHI, PSI, MODELS, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
-import {makeRound, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern} from './game.js';
+import {makeRound, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
+import {bookHeadHTML, bookBodyHTML, smudgeNote} from './book.js';
 import {utcDateKey, mulberry32} from './seed.js';
 import {Tape} from './tape.js';
 import {ScoreCounter, rewardPlan, scoreBreakdown} from './reward.js';
@@ -107,7 +108,7 @@ function refreshTitle() {
 function startDaily() {
   app.mode = 'daily'; app.tab = 'random'; app.daily = {round: makeRound({mode:'daily'})};
   const r = app.daily.round, saved = read(`round:${r.key}`, null);
-  app.state = {...newState(r), ...(saved ? {attempts: saved.attempts || [], hints: saved.hints || [], solved: Boolean(saved.solved), score: saved.score || 0} : {})};
+  app.state = restoreState(r, saved);
   app.wheels = sanitiseWheels(saved?.wheels);
   enterGame();
 }
@@ -121,6 +122,14 @@ function newPractice(model, render = true) {
   const seed = (Math.random() * 2 ** 32) >>> 0;
   app.practice = newState(makeRound({mode:'practice', seed, model}));
   if (render) { app.state = app.practice; renderRound(); syncView(false); clearOutput(); }
+}
+/** Saved progress from localStorage, checked field by field so an old or damaged save can't break the round. */
+function restoreState(round, saved) {
+  const s = saved && typeof saved === 'object' ? saved : {};
+  const attempts = Array.isArray(s.attempts) ? s.attempts.filter(a => a && typeof a === 'object' && typeof a.key === 'string').map(a => ({key: a.key, ok: Boolean(a.ok)})) : [];
+  const hints = Array.isArray(s.hints) ? s.hints.filter(h => h && typeof h === 'object' && (h.type === 'reveal' || h.type === 'check')).map(h => h.type === 'check' ? {type: 'check', wheel: String(h.wheel)} : {type: 'reveal'}) : [];
+  const score = Number.isFinite(s.score) ? s.score : 0;
+  return {...newState(round), attempts, hints, solved: s.solved === true, score};
 }
 const sanitiseWheels = w => Object.fromEntries(WHEELS.map(x => [x.id, checkPosition(w?.[x.id], x.size).ok ? Number(w[x.id]) : POSITION_BASE]));
 function enterGame() {
@@ -154,18 +163,14 @@ function renderRound() {
   $('cipher-count').textContent = `${r.cipher.length} characters`;
   $('book-page').textContent = String(1 + (r.seed % 37));
   const revealed = st.hints.some(h => h.type === 'reveal');
-  const head = `<tr><th scope="col">QEP</th>${WHEELS.map(w => `<th scope="col" class="grp-${w.group}"><abbr title="${w.label}, ${w.size} cams">${w.label}</abbr></th>`).join('')}</tr>`;
-  $('qep-table').tHead.innerHTML = head;
-  $('qep-table').tBodies[0].innerHTML = r.book.map(e => `<tr><td>${pad2(e.qep)}</td>${WHEELS.map(w => {
-    if (e.smudge?.wheel === w.id) { if (e.qep === r.qep && revealed) return `<td class="grp-${w.group} revealed">${pad2(e.start[w.id])}</td>`; return `<td class="grp-${w.group} smudge"><span aria-hidden="true">${e.smudge.shown}</span><span class="sr-only">smudged, ends in ${e.smudge.shown.slice(1)}</span></td>`; }
-    return `<td class="grp-${w.group}">${pad2(e.start[w.id])}</td>`;
-  }).join('')}</tr>`).join('');
-  $('smudge-note').textContent = 'The book got damp in the truck. Where a tens figure is smudged, only the last figure is readable, so try each position that ends in it.';
+  $('qep-table').tHead.innerHTML = bookHeadHTML();
+  $('qep-table').tBodies[0].innerHTML = bookBodyHTML(r, revealed);
+  $('smudge-note').textContent = smudgeNote(r, revealed);
   updateHintButtons(); updateScore();
 }
 function updateHintButtons() {
   const st = app.state, solved = st?.solved;
-  document.querySelectorAll('[data-hint]').forEach(b => { b.disabled = Boolean(solved) || (b.dataset.hint === 'reveal' && st.hints.some(h => h.type === 'reveal')); });
+  document.querySelectorAll('[data-hint]').forEach(b => { b.disabled = Boolean(solved) || (b.dataset.hint === 'reveal' && (st.hints.some(h => h.type === 'reveal') || !answerLine(st.round)?.smudge)); });
 }
 function updateScore() { if (!app.state) return; counter.show(app.state.solved ? app.state.score : scoreFor(app.state)); $('score-display').title = app.state.solved ? 'Your score' : 'What a correct decode is worth now'; }
 function saveRound() {
@@ -332,9 +337,11 @@ function runChi() {
 function hint(type) {
   const st = app.state; if (!st || st.solved) return;
   if (type === 'check') { $('check-dialog').showModal(); return; }
-  const {state, answer} = useHint(st, 'reveal', app.wheels); app.state = state; if (st.round.mode === 'practice') app.practice = state;
+  const {state, answer} = useHint(st, 'reveal', app.wheels);
+  if (!answer) { setFeedback('', `Every figure on QEP ${pad2(st.round.qep)} is readable.`); return; }
+  app.state = state; if (st.round.mode === 'practice') app.practice = state;
   saveRound(); renderRound();
-  setFeedback('', `The smudged figure on QEP ${pad2(st.round.qep)} is ${WHEEL[answer.wheel].label} at ${pad2(answer.value)}.`);
+  setFeedback('', revealText(st.round));
 }
 function doCheck() {
   const wheel = $('check-select').value, {state, answer} = useHint(app.state, 'check', app.wheels, wheel);

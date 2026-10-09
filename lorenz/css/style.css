@@ -121,7 +121,8 @@ body[data-screen=title] .machine-labels,body[data-screen=title] .renderer-note{d
 .qep-table th.grp-mu,.qep-table td.grp-mu{background:#10150d}
 .qep-table td:first-child,.qep-table th:first-child{text-align:left;color:var(--acid);padding-right:8px}
 .qep-table .smudge{color:var(--amber);font-weight:700;text-shadow:0 0 6px #ffbf6988}
-.qep-table .revealed{color:var(--acid)}
+.qep-table tr.today-line td{box-shadow:inset 0 0 0 100vmax rgba(214,255,0,.08)}.qep-table tr.today-line td:first-child{box-shadow:inset 3px 0 0 #d6ff00,inset 0 0 0 100vmax rgba(214,255,0,.08);font-weight:700}
+.qep-table .smudge-read{display:block;font-size:10px;font-weight:400;color:var(--acid);text-shadow:none}
 .dials{display:grid;grid-template-columns:repeat(5,1fr) 6px repeat(2,1fr) 6px repeat(5,1fr);gap:4px;margin-top:10px}
 .dial-gap{width:6px}
 .dial{display:flex;flex-direction:column;align-items:stretch;text-align:center;min-width:0}
