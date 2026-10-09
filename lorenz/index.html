@@ -64,7 +64,8 @@
 <article id="pin-sheet" class="pin-sheet card-box" aria-labelledby="pin-heading" hidden>
 <div class="section-top" data-panel="pins" data-panel-name="the wheel pattern sheet"><h2 id="pin-heading" class="small-heading">Wheel pattern sheet</h2><span class="tiny" id="pin-state"></span></div>
 <div id="panel-pins">
-<p class="tiny">In realistic mode you set the pins on every wheel yourself, as the operators did. Copy this sheet onto the machine: x is a raised pin, a dot is a lowered one. Tap a wheel on the machine, or use the button, to see it face on and set its pins. Every pin has to be right for the message to come out.</p>
+<p class="tiny" id="pin-help"></p>
+<div id="pin-scope" class="pin-scope" role="group" aria-label="Which wheels you set yourself" hidden><button type="button" class="secondary" data-scope="one" aria-pressed="true">Set one chi wheel</button><button type="button" class="secondary" data-scope="chimu" aria-pressed="false">Set the chi and motor wheels</button></div>
 <div class="pin-scroll"><table class="pin-table"><caption class="sr-only">Today's pin patterns, x raised and dot lowered, in fives</caption><tbody id="pin-sheet-body"></tbody></table></div>
 <button type="button" id="pin-open" class="secondary pin-open">Set the pins on the machine</button>
 <details class="pin-list" id="pin-list"><summary>List view</summary>
@@ -133,12 +134,14 @@
 <button type="button" id="aid-next" class="secondary aid-nav">Next</button></div>
 <div class="aid-tools"><button type="button" id="aid-shift" class="secondary" aria-pressed="false">Letter shift</button><button type="button" id="aid-clear" class="secondary">Clear holes</button><button type="button" class="secondary" data-cheat>Open the cheat sheet</button></div>
 </div>
+<p class="tiny prove-note" id="prove-note" hidden>Get the first 5 characters right and the rest fills in for you.</p>
 <label for="hard-answer" class="field-label">What the tape says</label><textarea id="hard-answer" rows="3" maxlength="400" spellcheck="false" autocomplete="off"></textarea>
 <p class="tiny" id="revealed-chars" hidden></p>
 <button type="button" id="hard-answer-go" class="primary wide">Check my reading</button>
 <div id="hard-reply" class="hard-reply" hidden><div class="section-top"><span class="eyebrow">Your reply</span><span class="tiny" id="reply-state">Not sent yet</span></div>
 <p class="tiny">Now send a reply back. Leave the wheels on the settings you read the message with, type the reply, and the machine enciphers it and punches the tape.</p>
 <p class="reply-plain"><code id="reply-plain"></code></p>
+<p class="tiny prove-note" id="reply-note" hidden>Get the first 5 characters right and the rest fills in for you.</p>
 <label for="reply-input" class="field-label">Reply to send</label><textarea id="reply-input" rows="2" maxlength="200" spellcheck="false" autocomplete="off"></textarea>
 <button type="button" id="reply-go" class="primary wide">Encipher and punch the reply</button>
 <div id="reply-tape" class="punch-tape out-tape" aria-label="The reply tape you punched" hidden></div>

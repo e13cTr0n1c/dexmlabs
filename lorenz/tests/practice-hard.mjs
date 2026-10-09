@@ -61,17 +61,19 @@ await t('Hard practice: the tape decodes to the round\'s own text, and the check
     assert.equal(HD.matchAnswer(wrong, G.acceptedTexts(h)).ok, false, 'a wrong wheel reads as garbage');
   }
 });
+/** Pins set from the sheet and a run on them, as if the player had done the pin step. */
+const ready = st => HD.notePinRun({...st, pins: {...st.pins, grid: Object.fromEntries(Object.entries(st.round.patterns).map(([k, v]) => [k, v.slice()]))}});
 await t('Hard practice: a correct answer solves it, is scored like hard mode, and never touches hard stats or the share number', () => {
   const prev = G.statsFrom({'2026-10-08': {score: 900, tries: 1}}, todayKey);
   for (const seed of SEEDS.slice(0, 12)) {
-    const h = HD.makeHardRound({mode: 'practice', seed}); let st = HD.newHardState(h);
+    const h = HD.makeHardRound({mode: 'practice', seed}); let st = ready(HD.newHardState(h));
     st = HD.submitAnswer(st, 'NOT IT AT ALL').state; assert.equal(st.solved, false); assert.equal(st.answers.length, 1);
     st = HD.useHardHint(st, 'char').state; const {state, result} = HD.submitAnswer(st, h.text.toLowerCase());
     assert.equal(result.ok, true); assert.equal(state.solved, true); assert.equal(state.score, HD.hardScoreFor(state)); assert.equal(state.score, 1000 - 150, 'hints are paid in points, not score');
     assert.equal(HD.updateHardStats(prev, state), prev, 'practice never counts in hard stats');
     assert.match(HD.hardShareText(state, 'u'), /^Lorenz practice HARD/);
   }
-  const d = HD.newHardState(HD.makeHardRound({})), read = HD.submitAnswer(d, d.round.text).state, solved = HD.submitReply(read, HD.replyTape(d.round, HD.replyFor(d.round), d.round.start)).state;
+  const d = ready(HD.newHardState(HD.makeHardRound({}))), read = HD.submitAnswer(d, d.round.text).state, solved = HD.submitReply(read, HD.replyTape(d.round, HD.replyFor(d.round), d.round.start)).state;
   assert.equal(HD.updateHardStats(prev, read), prev, 'read but not answered does not count yet');
   assert.ok(HD.updateHardStats(prev, solved).history[todayKey], 'the daily still counts'); assert.match(HD.hardShareText(solved, 'u'), /^Lorenz #\d+ HARD/);
 });
@@ -98,6 +100,8 @@ async function bootPage(storage, fn) {
 /** The next practice round uses this seed (practice seeds come from Math.random). */
 const nextSeed = seed => { Math.random = () => seed / 2 ** 32; };
 const setWheels = (d, w, start) => { for (const [id, v] of Object.entries(start)) { const i = d.getElementById(`dial-${id}`); i.value = String(v); i.dispatchEvent(new w.Event('change')); } };
+/** Hard mode: set χ1 from the sheet in the list view, and the rest fill in. */
+const setChi1 = (d, h) => { d.querySelector('#pin-wheels [data-wheel=chi1]').click(); h.patterns.chi1.forEach((b, i) => { if (b) d.querySelector(`#pin-grid [data-pin="${i}"]`).click(); }); };
 const runAndSkip = d => { d.getElementById('run-button').click(); d.getElementById('skip-button').click(); };
 
 const daily = HD.makeHardRound({});
@@ -133,6 +137,7 @@ for (const seed of [42, 7, 31337, 4000000000, (Math.random() * 2 ** 32) >>> 0]) 
       d.getElementById('qep-guess').value = String(h.qep); d.getElementById('qep-guess-go').click(); assert.equal(d.getElementById('qep-number').textContent, G.pad2(h.qep));
       d.querySelector('[data-hint=char]').click(); assert.match(d.getElementById('revealed-chars').textContent, new RegExp(`^The message starts: ${h.text[0]}`));
       d.querySelector('[data-hint=reveal]').click(); assert.match(d.getElementById('smudge-note').textContent, new RegExp(`${L.WHEEL[h.smudge.wheel].label} at ${G.pad2(h.start[h.smudge.wheel])}`));
+      setChi1(d, h); assert.match(d.getElementById('feedback').textContent, /the other wheels are set for you/);
       setWheels(d, w, h.start); runAndSkip(d);
       assert.equal(d.querySelectorAll('#out-tape [data-frame]').length, h.cipherCodes.length); assert.equal(d.getElementById('printed-text').textContent, '', 'tape only, nothing printed');
       d.getElementById('hard-answer').value = 'XQZ VVK PLOM'; d.getElementById('hard-answer-go').click(); assert.match(d.getElementById('feedback').textContent, /Not right yet\. 0 of \d+ words/);
