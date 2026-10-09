@@ -4,6 +4,7 @@ import {demoSchedule, demoAt, demoModel, demoHTML} from './demo.js';
 import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
 import {createPinFace} from './pinface.js';
+import {setStep} from './hard.js';
 import {replyFor, submitReply, hardComplete, canon, runPatterns, togglePin, clearPins, notePinRun, savePins} from './hard.js';
 import {makeHardRound, newHardState, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
 import {tapeHTML, holesHTML, holesText} from './punch.js';
@@ -191,7 +192,7 @@ function newHardPractice(model, render = true) {
   if (!render) return;
   app.state = app[slot]; closeFace(); app.page = app.state.round.openIndex; app.marked = new Set(); app.wheels = sanitiseWheels({});
   $('decoded-card').hidden = true; $('hard-answer').value = ''; $('qep-guess').value = ''; $('out-tape').innerHTML = '';
-  showDials(); renderRound(); syncView(false); clearOutput(); resetHardExtras(); renderReply(); renderPins();
+  showDials(); renderRound(); syncView(false); clearOutput(); resetHardExtras(); renderReply(); renderPins(); renderGuide(); goStep('qep', {scroll: false});
 }
 function newPractice(model, render = true) {
   if (app.mode === 'hard') return newHardPractice(model, render);
@@ -219,7 +220,8 @@ function enterGame() {
   const st = app.state; resetHardExtras();
   if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; if (hardComplete(st)) showCard(false); } renderReply(); }
   else if (app.tab === 'random' && st.solved) { replaySolved(); showCard(false); }
-  syncView(false);
+  syncView(false); renderGuide();
+  if (isReal() && !st.solved) goStep(st.step, {scroll: false});
   const h = {random:'game-heading', encipher:'encipher-heading', chi:'chi-heading'}[app.tab]; $(h)?.focus({preventScroll: true});
   location.hash = app.mode === 'daily' ? 'daily' : hardPractice() ? (isReal() ? 'realistic-practice' : 'hard-practice') : app.mode === 'hard' ? (isReal() ? 'realistic' : 'hard') : ({random:'practice', encipher:'encipher', chi:'chi'}[app.tab]);
 }
@@ -291,7 +293,7 @@ function saveRound() {
   const st = app.state;
   if (app.mode === 'hard') {
     if (st.round.mode === 'practice') { const slot = st.round.realistic ? 'realPractice' : 'hardPractice'; app[slot] = st; app[slot + 'Wheels'] = {...app.wheels}; return; }
-    write(`${kp()}round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, pins: savePins(st.pins), wheels: app.wheels});
+    write(`${kp()}round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, pins: savePins(st.pins), step: st.step, wheels: app.wheels});
     try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + kp() + 'round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     return;
   }
@@ -591,16 +593,47 @@ function bindPanels() {
 function openFace(id = app.pinWheel || 'chi1') {
   if (!isReal() || app.run) return;
   if (!app.faceOpen) { app.faceOpen = true; PANEL_IDS().forEach(n => setPanel(n, false, {remember: false})); }
-  $('machine-stage').classList.add('face-on'); app.face.open(id);
+  $('machine-stage').classList.add('face-on'); app.face.open(id); renderGuide();
   $('machine-stage').scrollIntoView?.({block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth'});
 }
 function closeFace() {
   if (!app.faceOpen) return; app.faceOpen = false; app.face?.close(); $('machine-stage').classList.remove('face-on');
   const saved = read('panels', {}) || {}; PANEL_IDS().forEach(n => setPanel(n, !saved[n], {remember: false}));
-  syncView(false);
+  syncView(false); renderGuide();
+}
+/* ---------- Realistic: the guided steps. Read the QEP, set the pins, set the start positions, run the tape.
+ * The QEP tells you when it's right; the pins never do. You can go back to any step to fix something. ---------- */
+const STEP_TEXT = {qep: 'Step 1 of 4: read the QEP number off the preamble.', pins: "Step 2 of 4: set every wheel's pins from the pattern sheet.", start: "Step 3 of 4: find today's line in the QEP book and set the start positions.", run: 'Step 4 of 4: run the tape and read what it punches.'};
+const STEP_NAV = {qep: [], pins: [['qep', 'Back to the QEP'], ['start', 'Set start positions']], start: [['pins', 'Back to setting pins'], ['run', 'Run the tape']], run: [['pins', 'Back to setting pins'], ['start', 'Go to start positions']]};
+const STEP_NEXT = {pins: 'start', start: 'run'};
+function renderGuide() {
+  const g = $('guide'), st = app.state, on = isReal() && Boolean(st) && !st.solved; g.hidden = !on;
+  const extra = $('pin-face').querySelector('.face-extra'); if (extra) extra.innerHTML = on && st.step !== 'qep' ? '<button type="button" class="primary" data-step="start">Set start positions</button>' : '';
+  if (!on) return;
+  $('guide-step').textContent = STEP_TEXT[st.step];
+  $('guide-nav').innerHTML = STEP_NAV[st.step].map(([to, text]) => `<button type="button" class="${STEP_NEXT[st.step] === to ? 'primary' : 'secondary'}" data-step="${to}">${text}</button>`).join('');
+}
+function goStep(want, {scroll = true} = {}) {
+  if (!isReal() || app.state.solved || app.run) return;
+  app.state = setStep(app.state, want); saveRound();
+  const step = app.state.step, shut = names => names.forEach(n => setPanel(n, false, {remember: false})), show = names => names.forEach(n => setPanel(n, true, {remember: false}));
+  const go = el => { if (scroll) el?.scrollIntoView?.({block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth'}); };
+  if (step === 'pins') { openFace(); renderGuide(); return; }
+  closeFace();
+  if (step === 'qep') { show(['preamble']); go($('preamble-box')); }
+  if (step === 'start') { shut(['preamble', 'tape', 'pins']); show(['book', 'wheels']); go(document.querySelector('.qep-book')); }
+  if (step === 'run') { shut(['preamble', 'tape', 'pins', 'book']); show(['wheels', 'teleprinter']); go($('guide')); }
+  renderGuide();
+}
+function bindGuide() {
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-step]'); if (!b || !isReal()) return;
+    const to = b.dataset.step; goStep(to); if (to === 'run' && !app.state.solved) onRun();
+  });
 }
 function bindPins() {
-  app.face = createPinFace($('pin-face'), {get: () => ({grid: app.state.pins.grid, locked: app.state.solved}), toggle: setPin, back: () => { closeFace(); $('pin-open').focus({preventScroll: true}); }, onWheel: id => { app.pinWheel = id; renderPins(); }, reducedMotion});
+  bindGuide();
+  app.face = createPinFace($('pin-face'), {get: () => ({grid: app.state.pins.grid, locked: app.state.solved, sheet: app.state.round.patterns}), toggle: setPin, back: () => { closeFace(); $('pin-open').focus({preventScroll: true}); }, onWheel: id => { app.pinWheel = id; renderPins(); }, reducedMotion});
   $('pin-open').addEventListener('click', () => openFace());
   // pick a wheel on the machine: its label, or a tap on the rack nearest to it
   const pick = el => { const i = app.labels.indexOf(el); if (i >= 0) openFace(WHEELS[i].id); };
@@ -673,7 +706,7 @@ function renderRevealed() {
   el.hidden = !chars.length; el.textContent = chars.length ? `The message starts: ${chars.replace(/ /g, '\u2423')}` : '';
 }
 function runHard() {
-  closeFace();
+  closeFace(); if (isReal() && !app.state.solved && app.state.step !== 'run') { app.state = setStep(app.state, 'run'); renderGuide(); }
   const st = app.state, r = st.round, settings = {...app.wheels};
   setFeedback('', 'Punching the tape...'); revealTeleprinter(); app.marked = new Set();
   runTape({codes: r.cipherCodes, machine: createMachine({patterns: runPatterns(st), start: settings, model: r.model}), outputAs: 'tape', onDone: () => {
@@ -697,14 +730,15 @@ function checkQep() {
   if (!result.valid) { $('qep-guess').setAttribute('aria-invalid', 'true'); setFeedback('bad', 'Type a number from 1 to 99.'); return; }
   $('qep-guess').removeAttribute('aria-invalid'); app.state = state; saveRound(); updateScore(); updateHintButtons();
   $('qep-number').textContent = qepKnown(app.state) || app.state.solved ? pad2(st.round.qep) : '??';
-  setFeedback(result.ok ? 'good' : 'bad', result.ok ? `That's it, QEP ${pad2(st.round.qep)}. Now find today's page.` : "That's not what the preamble says. Have another look at the figure shift.");
+  setFeedback(result.ok ? 'good' : 'bad', result.ok ? (isReal() ? `That's it, QEP ${pad2(st.round.qep)}. Now set the pins on every wheel.` : `That's it, QEP ${pad2(st.round.qep)}. Now find today's page.`) : "That's not what the preamble says. Have another look at the figure shift.");
+  if (result.ok && isReal() && app.state.step === 'qep') goStep('pins');
 }
 function hardHint(type) {
   const kind = type === 'reveal' ? 'smudge' : type, st = app.state, {state, answer} = useHardHint(st, kind, {settings: app.wheels});
   if (!answer) { setFeedback('', kind === 'smudge' ? "Every figure on today's line is readable." : 'Nothing more to reveal.'); return; }
   if (state !== st && !pay(kind, `lorenz:${isReal() ? 'real' : 'hard'}:${kind}:${roundRef(st.round)}${kind === 'char' ? ':' + answer.index : ''}`)) return;
   app.state = state; saveRound(); updateScore(); updateHintButtons();
-  if (kind === 'qep') { $('qep-number').textContent = pad2(answer.qep); setFeedback('', `The preamble reads QEP ${pad2(answer.qep)}. That cost ${HARD_RULES.hint.qep} points.`); }
+  if (kind === 'qep') { $('qep-number').textContent = pad2(answer.qep); setFeedback('', `The preamble reads QEP ${pad2(answer.qep)}. That cost ${HARD_RULES.hint.qep} points.`); if (isReal() && app.state.step === 'qep') goStep('pins'); }
   if (kind === 'char') { renderRevealed(); setFeedback('', `Character ${answer.index + 1} of the message is ${answer.char === ' ' ? 'a space' : answer.char}. That cost ${HARD_RULES.hint.char} points.`); }
   if (kind === 'smudge') { renderBookPage(0); setFeedback('', hardSmudgeText(st.round)); }
 }
@@ -712,7 +746,7 @@ function hardSuccess() {
   const st = app.state; $('qep-number').textContent = pad2(st.round.qep);
   counter.animateTo(st.score, {from: 0, reducedMotion: reducedMotion()});
   setFeedback('good', 'Message read!! Now send the reply below to finish the round.');
-  renderPins(); renderReply(); const box = $('hard-reply'); box.scrollIntoView?.({block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth'}); $('reply-input').focus({preventScroll: true});
+  renderPins(); renderGuide(); renderReply(); const box = $('hard-reply'); box.scrollIntoView?.({block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth'}); $('reply-input').focus({preventScroll: true});
 }
 function replySuccess() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});

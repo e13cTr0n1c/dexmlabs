@@ -113,7 +113,20 @@ export function matchAnswer(input, targets) {
 }
 
 /* ---------- State, scoring, hints ---------- */
-export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:{...newPins(), on: Boolean(round.realistic)}});
+export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:{...newPins(), on: Boolean(round.realistic)}, step: round.realistic ? 'qep' : null});
+
+/* ---------- Realistic mode's guided steps ---------- */
+/** Read the QEP, set the pins, set the start positions, run the tape and read it. You can go back to any step you've
+ *  reached; nothing about the steps says whether your pins are right. */
+export const GUIDE_STEPS = Object.freeze(['qep', 'pins', 'start', 'run']);
+/** The step to show: the one asked for, as long as the QEP has been read for anything past the first. */
+export function guideStep(st, want) {
+  if (!st?.round?.realistic) return null;
+  const known = st.solved || st.hints.some(h => h.type === 'qep') || st.qepGuesses.includes(st.round.qep);
+  if (!known) return 'qep';
+  return GUIDE_STEPS.includes(want) && want !== 'qep' ? want : want === 'qep' ? 'qep' : st.ran ? 'run' : 'pins';
+}
+export const setStep = (st, want) => ({...st, step: guideStep(st, want)});
 
 /* ---------- Setting the wheel patterns too (optional) ---------- */
 /** Every pin starts down: you copy the day's patterns from the sheet yourself. */
@@ -252,6 +265,7 @@ export function restoreHard(round, saved) {
     // Hard mode no longer sets pins: an unfinished hard round with them switched on goes back to the day's patterns.
     if (!round.realistic) { st.pins.on = false; st.pins.ranRight = false; } else st.pins.on = true;
     st.score = st.solved ? hardScoreFor(st) : 0;
+    st.step = guideStep(st, s.step);
     st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0};
     if (st.reply.done && !legacy) st.reply.score = replyScoreFor(st);
     return st;

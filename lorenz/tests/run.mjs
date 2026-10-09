@@ -980,6 +980,7 @@ const setWheels = (d, w, start) => { for (const [id, v] of Object.entries(start)
 const copyPins = h => Object.fromEntries(Object.entries(h.patterns).map(([k, v]) => [k, v.slice()]));
 const withPins = (st, grid) => ({...st, pins: {...st.pins, grid}});
 const PF = await import('../js/pinface.js');
+const LAYOUT_MOD = await import('../js/layout.js');
 const tapeOut = d => [...d.querySelectorAll('#out-tape button.frame')].map(f => L.codeFromBits([...f.querySelectorAll('i.h')].map(i => i.classList.contains('on') ? 1 : 0)));
 const realSave = (h, grid, extra = {}) => ({v: HD.HARD_SAVE_VERSION, text: h.text, answers: [], hints: [], qepGuesses: [], ran: null, solved: false, score: 0, reply: {tries: []}, wheels: {...h.start}, pins: HD.savePins({on: true, grid, ranRight: false, earned: false}), ...extra});
 await t('Modes: hard runs on the day\'s pins and can\'t set them; realistic runs on yours, with its own higher scoring', () => {
@@ -1073,11 +1074,11 @@ await t('Pin view: pick a wheel on the machine, it turns face on, pins toggle an
     pinBtn.click(); assert.equal(pinBtn.getAttribute('aria-pressed'), 'true'); assert.equal(pinBtn.textContent, 'Lower pin 1');
     assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi1[0], '1'); assert.equal(shown.at(-1).chi1[0], 1, 'the 3D model gets the raised pin');
     assert.ok(face.querySelector('.cam.up.cur'), 'drawn raised at the top');
-    face.querySelector('[data-face=turn-on]').click(); assert.equal(wheel.dataset.pos, '1');
+    face.querySelector('[data-face=step-forward]').click(); assert.equal(wheel.dataset.pos, '1');
     wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true})); assert.equal(wheel.dataset.pos, '2');
     wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: ' ', bubbles: true})); assert.equal(shown.at(-1).chi1[2], 1);
     wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); assert.equal(shown.at(-1).chi1[2], 0, 'and down again');
-    face.querySelector('[data-face=turn-back]').click(); face.querySelector('[data-face=turn-back]').click(); face.querySelector('[data-face=turn-back]').click(); assert.equal(wheel.dataset.pos, '40', 'turns right round');
+    face.querySelector('[data-face=step-back]').click(); face.querySelector('[data-face=step-back]').click(); face.querySelector('[data-face=step-back]').click(); assert.equal(wheel.dataset.pos, '40', 'turns right round');
     face.querySelector('.cam[data-cam="5"]').dispatchEvent(new w.MouseEvent('click', {bubbles: true})); assert.equal(shown.at(-1).chi1[5], 1, 'a cam can be tapped too');
     face.querySelector('[data-face=next-wheel]').click(); assert.equal(wheel.dataset.wheel, 'chi2'); face.querySelector('[data-face=prev-wheel]').click(); face.querySelector('[data-face=prev-wheel]').click(); assert.equal(wheel.dataset.wheel, 'mu61');
     // one tap brings a panel back while the face is open, without changing what you saved
@@ -1099,46 +1100,109 @@ await t('Pin view: pick a wheel on the machine, it turns face on, pins toggle an
   assert.match(css, /:root\[data-theme=light\] \.face-svg \.cam\.up\{stroke:#5f7800\}/);
   const faceRules = base.match(/[^}]*\.(face-|pin-face|panel-)[^{]*\{[^}]*\}/g).join(''); assert.ok(!/animation|transition/.test(faceRules), 'nothing moves by itself, so reduced motion is safe');
 });
-await t('Pin strip: a window on the rim under a fixed pointer, the top pin in the middle, wrapping, in step with the cog and model', async () => {
-  const r = HD.makeHardRound({realistic: true}), key = `lorenz:real:round:${r.key}`;
+await t('Pin strip: the pattern sheet in a window under a fixed pointer, wrapping, centred, in step with your cog and the model', async () => {
+  const r = HD.makeHardRound({realistic: true}), key = `lorenz:real:round:${r.key}`, sheet = r.patterns.chi1;
   assert.equal(PF.stripReach(0), 4); assert.equal(PF.stripReach(350), 3, '44px pins on a phone'); assert.equal(PF.stripReach(540), 5); assert.equal(PF.stripReach(2000), 5); assert.equal(PF.stripReach(120), 2);
   await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {
     const shown = []; w.addEventListener('lorenz:view', e => shown.push(e.detail.patterns));
     d.getElementById('play-daily').click(); d.getElementById('pin-open').click();
     const face = d.getElementById('pin-face'), strip = face.querySelector('.face-strip'), wheel = face.querySelector('.face-wheel');
     assert.ok(strip.compareDocumentPosition(wheel) & w.Node.DOCUMENT_POSITION_FOLLOWING, 'the strip sits above the cog'); assert.ok(strip.querySelector('.strip-pointer'), 'with its pointer');
+    assert.deepEqual([...face.querySelectorAll('.face-caption')].map(c => c.textContent), ['Pattern sheet', 'Your pins']);
     const visible = () => [...strip.querySelectorAll('.strip-pin:not([aria-hidden])')];
     const nums = () => visible().map(b => b.querySelector('.strip-n').textContent);
     const centre = () => { const v = visible(); return v[(v.length - 1) / 2]; };
-    // pin 1 at the top: 38 to 41 wrap round on its left
-    assert.deepEqual(nums(), ['38', '39', '40', '41', '1', '2', '3', '4', '5']); assert.equal(strip.querySelectorAll('.strip-pin').length, 11, 'one hidden either side to slide in');
+    // the strip draws the sheet, not your pins
+    const sheetOk = () => visible().every(b => b.classList.contains('up') === (sheet[Number(b.dataset.strip)] === 1));
+    assert.deepEqual(nums(), ['38', '39', '40', '41', '1', '2', '3', '4', '5']); assert.equal(strip.querySelectorAll('.strip-pin').length, 11, 'one hidden either side to slide in'); assert.ok(sheetOk());
     assert.equal(centre().dataset.strip, '0'); assert.ok(centre().classList.contains('cur')); assert.equal(centre().getAttribute('aria-current'), 'true'); assert.equal(strip.querySelectorAll('.cur').length, 1);
-    assert.ok(visible().every(b => b.tagName === 'BUTTON' && b.getAttribute('aria-pressed') === 'false')); assert.equal(visible()[0].getAttribute('aria-label'), 'Pin 38');
-    // turning the cog slides the window, wrapping back past the last pin
-    face.querySelector('[data-face=turn-back]').click(); assert.equal(wheel.dataset.pos, '40'); assert.deepEqual(nums(), ['37', '38', '39', '40', '41', '1', '2', '3', '4']); assert.equal(centre().dataset.strip, '40');
-    face.querySelector('[data-face=turn-on]').click(); face.querySelector('[data-face=turn-on]').click(); assert.deepEqual(nums(), ['39', '40', '41', '1', '2', '3', '4', '5', '6']);
-    // tapping a visible pin toggles it on the cog and the model, and brings it to the middle
-    visible().find(b => b.dataset.strip === '40').click();
-    assert.equal(wheel.dataset.pos, '40'); assert.equal(centre().dataset.strip, '40'); assert.equal(centre().getAttribute('aria-pressed'), 'true'); assert.ok(centre().classList.contains('up'));
-    assert.ok(face.querySelector('.cam.up.cur[data-cam="40"]'), 'raised on the cog'); assert.equal(shown.at(-1).chi1[40], 1, 'and on the model'); assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi1[40], '1');
-    assert.deepEqual(nums(), ['37', '38', '39', '40', '41', '1', '2', '3', '4']);
-    centre().click(); assert.equal(centre().getAttribute('aria-pressed'), 'false'); assert.equal(shown.at(-1).chi1[40], 0, 'and down again');
+    assert.ok(visible().every(b => b.tagName === 'BUTTON' && b.getAttribute('aria-pressed') === 'false'), 'pressed means your pin, and yours all start down');
+    assert.equal(visible()[0].getAttribute('aria-label'), `Pin 38, sheet ${sheet[37] ? 'raised' : 'lowered'}`);
+    // only the pin at the top is marked when yours differs from the sheet
+    const markOk = () => { const c = centre(), i = Number(c.dataset.strip), mine = JSON.parse(w.localStorage.getItem(key) || 'null')?.pins?.grid?.chi1?.[i] === '1';
+      assert.equal(c.classList.contains('differs'), (sheet[i] === 1) !== mine); assert.equal(strip.querySelectorAll('.differs').length, c.classList.contains('differs') ? 1 : 0); };
+    const firstUp = sheet.indexOf(1), firstDown = sheet.indexOf(0);
+    face.querySelector('[data-face=step-back]').click(); assert.equal(wheel.dataset.pos, '40'); assert.deepEqual(nums(), ['37', '38', '39', '40', '41', '1', '2', '3', '4']); assert.equal(centre().dataset.strip, '40'); assert.ok(sheetOk());
+    face.querySelector('[data-face=step-forward]').click(); face.querySelector('[data-face=step-forward]').click(); assert.deepEqual(nums(), ['39', '40', '41', '1', '2', '3', '4', '5', '6']);
+    // tap a pin: your pin toggles on the cog and the model, it comes to the middle, and the sheet stays as it is
+    for (let n = 0; n < 50 && Number(wheel.dataset.pos) !== firstUp; n++) face.querySelector('[data-face=step-forward]').click();
+    assert.equal(wheel.dataset.pos, String(firstUp)); assert.ok(centre().classList.contains('differs'), 'sheet up, yours down'); assert.match(centre().getAttribute('aria-label'), /yours differs/);
+    visible().find(b => b.dataset.strip === String(firstUp)).click();
+    assert.equal(centre().getAttribute('aria-pressed'), 'true'); assert.ok(centre().classList.contains('up')); assert.ok(!centre().classList.contains('differs'), 'now it matches the sheet'); markOk();
+    assert.ok(face.querySelector(`.cam.up.cur[data-cam="${firstUp}"]`), 'raised on the cog'); assert.equal(shown.at(-1).chi1[firstUp], 1, 'and on the model'); assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi1[firstUp], '1');
+    centre().click(); assert.equal(centre().getAttribute('aria-pressed'), 'false'); assert.equal(shown.at(-1).chi1[firstUp], 0, 'and down again'); assert.ok(centre().classList.contains('differs')); assert.ok(sheetOk());
     // the cog's own controls show up in the strip
-    face.querySelector('[data-face=pin]').click(); assert.equal(centre().getAttribute('aria-pressed'), 'true');
-    wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true})); wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: ' ', bubbles: true}));
-    assert.equal(centre().dataset.strip, '0'); assert.equal(centre().getAttribute('aria-pressed'), 'true'); assert.equal(visible().find(b => b.dataset.strip === '40').getAttribute('aria-pressed'), 'true');
-    face.querySelector('.cam[data-cam="20"]').dispatchEvent(new w.MouseEvent('click', {bubbles: true})); assert.equal(centre().dataset.strip, '20'); assert.equal(centre().getAttribute('aria-pressed'), 'true');
-    // reduced motion (on in these tests): the window steps with no slide
-    const track = strip.querySelector('.strip-track'); face.querySelector('[data-face=turn-on]').click(); assert.equal(track.style.transform, ''); assert.notEqual(track.style.transition, 'transform .18s ease-out');
+    face.querySelector('[data-face=pin]').click(); assert.equal(centre().getAttribute('aria-pressed'), 'true'); markOk();
+    for (let n = 0; n < 50 && Number(wheel.dataset.pos) !== firstDown; n++) wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true}));
+    assert.ok(!centre().classList.contains('differs'), 'both down'); wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: ' ', bubbles: true})); assert.ok(centre().classList.contains('differs'), 'raised where the sheet has it down'); markOk();
+    face.querySelector('.cam[data-cam="20"]').dispatchEvent(new w.MouseEvent('click', {bubbles: true})); assert.equal(centre().dataset.strip, '20'); markOk();
+    // no overall verdict anywhere in the view
+    assert.ok(!/correct|all right|matches/i.test(face.textContent));
+    const track = strip.querySelector('.strip-track'); face.querySelector('[data-face=step-forward]').click(); assert.equal(track.style.transform, ''); assert.notEqual(track.style.transition, 'transform .18s ease-out');
     face.querySelector('[data-face=next-wheel]').click(); assert.equal(centre().dataset.strip, '0'); assert.equal(nums().at(-1), '5'); assert.equal(nums()[0], String(L.WHEEL.chi2.size - 3));
+    assert.deepEqual([...face.querySelectorAll('.face-controls button')].map(b => b.textContent).filter(t => /Step/.test(t)), ['Step back', 'Step forward']);
   });
   const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'), base = css.split('/* light theme')[0];
   assert.match(base, /\.face-strip\{position:relative;overflow:hidden;/); assert.ok(!/\.face-strip\{[^}]*overflow-x:auto/.test(base), 'no sideways scrolling');
   assert.match(base, /\.strip-pin\{flex:0 0 44px;min-width:44px;min-height:64px/); assert.match(base, /\.strip-pointer\{[^}]*border-top:12px solid #ff4d3d/);
   assert.match(base, /@media\(prefers-reduced-motion:reduce\)\{\.strip-track\{transition:none!important\}\}/);
-  assert.match(css, /:root\[data-theme=light\] \.strip-pin\.up \.strip-line\{background:#5f7800\}/);
+  assert.match(css, /:root\[data-theme=light\] \.strip-pin\.up \.strip-line\{background:#5f7800\}/); assert.match(css, /:root\[data-theme=light\] \.face-strip \.strip-pin\.differs/);
   assert.match(fs.readFileSync(path.join(ROOT, 'js/pinface.js'), 'utf8'), /\|\| reducedMotion\(\)\) return;/, 'the slide is skipped under reduced motion');
 });
+await t('Guided realistic: QEP, pins, start positions, run; the QEP says when it is right, the pins never do; the step survives a reload', async () => {
+  const r = HD.makeHardRound({realistic: true}), key = `lorenz:real:round:${r.key}`;
+  const stepText = d => d.getElementById('guide-step').textContent, nav = d => [...d.querySelectorAll('#guide-nav button')].map(b => b.textContent);
+  const open = (d, n) => d.querySelector(`[data-panel=${n}] .panel-toggle`).getAttribute('aria-expanded') === 'true';
+  let saved;
+  await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {
+    d.getElementById('play-daily').click();
+    assert.equal(d.getElementById('guide').hidden, false); assert.match(stepText(d), /^Step 1 of 4: read the QEP/); assert.deepEqual(nav(d), []); assert.ok(open(d, 'preamble'));
+    d.getElementById('qep-guess').value = String(r.qep % 99 + 1); d.getElementById('qep-guess-go').click();
+    assert.match(d.getElementById('feedback').textContent, /not what the preamble says/); assert.match(stepText(d), /^Step 1/); assert.equal(d.getElementById('pin-face').hidden, true);
+    d.getElementById('qep-guess').value = String(r.qep); d.getElementById('qep-guess-go').click();
+    assert.match(d.getElementById('feedback').textContent, /That's it, QEP .*set the pins/);
+    assert.match(stepText(d), /^Step 2 of 4: set every wheel's pins/); assert.equal(d.getElementById('pin-face').hidden, false, 'straight into pin setting');
+    assert.ok(!open(d, 'preamble') && !open(d, 'tape') && !open(d, 'book'), 'the earlier panels fold away'); assert.deepEqual(nav(d), ['Back to the QEP', 'Set start positions']);
+    const faceStart = d.querySelector('#pin-face .face-extra [data-step=start]'); assert.equal(faceStart.textContent, 'Set start positions');
+    // set a pin wrong on purpose: nothing says so beyond the sheet
+    d.querySelector('#pin-face [data-face=pin]').click(); const before = stepText(d) + nav(d).join(); d.querySelector('#pin-face [data-face=pin]').click(); assert.equal(stepText(d) + nav(d).join(), before);
+    faceStart.click();
+    assert.match(stepText(d), /^Step 3 of 4: find today's line/); assert.equal(d.getElementById('pin-face').hidden, true); assert.ok(open(d, 'book') && open(d, 'wheels')); assert.ok(!open(d, 'pins') && !open(d, 'preamble'));
+    assert.deepEqual(nav(d), ['Back to setting pins', 'Run the tape']);
+    saved = Object.fromEntries(Object.keys(w.localStorage).map(k => [k, w.localStorage.getItem(k)])); assert.equal(JSON.parse(saved[key]).step, 'start');
+  });
+  await bootPage(saved, async (d, w) => {
+    d.getElementById('play-daily').click(); assert.match(stepText(d), /^Step 3 of 4/, 'restored'); assert.equal(d.getElementById('pin-face').hidden, true); assert.ok(open(d, 'book'));
+    d.querySelector('#guide-nav [data-step=pins]').click(); assert.match(stepText(d), /^Step 2/); assert.equal(d.getElementById('pin-face').hidden, false); assert.equal(JSON.parse(w.localStorage.getItem(key)).step, 'pins');
+    d.querySelector('#guide-nav [data-step=qep]').click(); assert.match(stepText(d), /^Step 1/); assert.equal(d.getElementById('pin-face').hidden, true); assert.ok(open(d, 'preamble'));
+    // the QEP is already read, so the way on is open again
+    d.getElementById('qep-guess').value = String(r.qep); d.getElementById('qep-guess-go').click(); assert.match(stepText(d), /^Step 2/);
+    d.querySelector('#guide-nav [data-step=start]').click(); setWheels(d, w, r.start);
+    d.querySelector('#guide-nav [data-step=run]').click(); d.getElementById('skip-button').click();
+    assert.match(stepText(d), /^Step 4 of 4: run the tape/); assert.ok(d.querySelectorAll('#out-tape button.frame').length > 0, 'Run the tape ran it'); assert.deepEqual(nav(d), ['Back to setting pins', 'Go to start positions']);
+    saved = Object.fromEntries(Object.keys(w.localStorage).map(k => [k, w.localStorage.getItem(k)])); assert.equal(JSON.parse(saved[key]).step, 'run');
+  });
+  await bootPage(saved, async d => { d.getElementById('play-daily').click(); assert.match(stepText(d), /^Step 4/, 'restored after the run'); });
+  await bootPage({'lorenz:difficulty': '"hard"'}, async d => { d.getElementById('play-daily').click(); assert.equal(d.getElementById('guide').hidden, true, 'hard mode is not guided'); });
+  // saves from before the steps: worked out from what was done
+  const st0 = HD.restoreHard(r, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: []}); assert.equal(st0.step, 'qep');
+  assert.equal(HD.restoreHard(r, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [r.qep]}).step, 'pins');
+  assert.equal(HD.restoreHard(r, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [r.qep], ran: {...r.start}}).step, 'run');
+  assert.equal(HD.restoreHard(r, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [], step: 'run'}).step, 'qep', "can't skip the QEP");
+  assert.equal(HD.restoreHard(r, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [{type: 'qep'}], qepGuesses: [], step: 'start'}).step, 'start');
+  assert.equal(HD.newHardState(HD.makeHardRound({})).step, null);
+});
+await t('Framing: every wheel label projects inside the canvas, for every stage size the page uses', () => {
+  const LY = LAYOUT_MOD;
+  for (const [w, h] of [[640, 308], [640, 352], [730, 396], [348, 250], [348, 250 + 196], [540, 400], [1000, 400], [300, 200], [900, 560]]) for (const yaw of [-0.55, -0.35, 0, 0.6, 1.1, -1.1]) {
+    const f = LY.frameCamera(w, h, {yaw}), t = Math.tan(15 * Math.PI / 180);
+    for (const wh of LY.LAYOUT) {
+      const p = LY.project([wh.x, wh.r + LY.LABEL_LIFT, 0], f.position, f.target, t, w / h), px = (p[0] + 1) / 2 * w, py = (1 - p[1]) / 2 * h;
+      assert.ok(py - 34 >= 0 && py <= h && px - 18 >= 0 && px + 18 <= w, `${wh.id} label at ${w}x${h} yaw ${yaw}: ${px.toFixed(0)},${py.toFixed(0)}`);
+    }
+  }
+});
+
 await t('Layout: the run bar sits in the column, so it can never be drawn over a panel heading', () => {
   const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'), bar = css.match(/^\.action-bar\{[^}]*\}/m)[0];
   assert.ok(!/sticky|fixed/.test(bar), bar); assert.match(bar, /background:#080a08;/, 'solid, nothing shows through');
