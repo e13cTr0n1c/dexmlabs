@@ -3,7 +3,8 @@ import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine,
 import {demoSchedule, demoAt, demoModel, demoHTML} from './demo.js';
 import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
-import {replyFor, submitReply, hardComplete, canon, runPatterns, setPinsOn, togglePin, clearPins, notePinRun, savePins} from './hard.js';
+import {createPinFace} from './pinface.js';
+import {replyFor, submitReply, hardComplete, canon, runPatterns, togglePin, clearPins, notePinRun, savePins} from './hard.js';
 import {makeHardRound, newHardState, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
 import {tapeHTML, holesHTML, holesText} from './punch.js';
 import {utcDateKey, mulberry32} from './seed.js';
@@ -22,7 +23,7 @@ const fmt = n => Math.round(n).toLocaleString('en-GB');
 const Points = () => globalThis.DexmPoints || null;
 const hintCost = type => app.mode === 'hard' ? HARD_RULES.hint[type === 'reveal' ? 'smudge' : type] : RULES.hint[type];
 const roundRef = r => r.mode === 'daily' ? r.key : `p${r.seed}`;
-const EARN = {daily: 100, hard: 250, reply: 100};
+const EARN = {daily: 100, hard: 250, real: 400, reply: 100};
 /** Pay for a hint. Returns false (and says why) if there aren't enough points. */
 function pay(type, ref) {
   const P = Points(), cost = hintCost(type); if (!P) return true;
@@ -33,10 +34,14 @@ function earned(r, what) { if (r?.ok) toast(`${what}. You now have ${fmt(r.balan
 /** Pay out today's daily rounds once each: normal and hard. Also catches rounds solved before points existed. */
 function awardDaily(key = utcDateKey()) {
   const P = Points(); if (!P) return;
-  const n = read(`round:${key}`, null), h = read(`hard:round:${key}`, null);
+  const n = read(`round:${key}`, null);
   if (n && n.solved === true) earned(P.earn('lorenz', P.EARN?.lorenz ?? EARN.daily, `lorenz:daily:${key}`), `+${P.EARN?.lorenz ?? EARN.daily} points for today's Lorenz`);
-  if (h && h.solved === true) earned(P.earn('lorenz', P.EARN?.lorenzHard ?? EARN.hard, `lorenz:hard:${key}`), `+${P.EARN?.lorenzHard ?? EARN.hard} points for today's hard mode`);
-  if (h && h.solved === true && !h.reply?.legacy && h.reply?.tries?.some(t => t.ok)) earned(P.earn('lorenz', P.EARN?.lorenzReply ?? EARN.reply, `lorenz:hard:reply:${key}`), `+${P.EARN?.lorenzReply ?? EARN.reply} points for your reply`);
+  // hard and realistic each pay their own points, and each reply too
+  for (const [k, amount, name] of [['hard', P.EARN?.lorenzHard ?? EARN.hard, 'hard mode'], ['real', P.EARN?.lorenzReal ?? EARN.real, 'realistic mode']]) {
+    const h = read(`${k}:round:${key}`, null);
+    if (h && h.solved === true) earned(P.earn('lorenz', amount, `lorenz:${k}:${key}`), `+${amount} points for today's ${name}`);
+    if (h && h.solved === true && !h.reply?.legacy && h.reply?.tries?.some(t => t.ok)) earned(P.earn('lorenz', P.EARN?.lorenzReply ?? EARN.reply, `lorenz:${k}:reply:${key}`), `+${P.EARN?.lorenzReply ?? EARN.reply} points for your reply`);
+  }
 }
 const niceDate = key => new Date(key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'});
 
@@ -45,6 +50,12 @@ export const reducedMotion = () => Boolean(app.settings.reducedMotion || (typeof
 let tape, counter;
 /** True while a hard mode practice round is on screen: hard mode's parts, but nothing saved and no daily stats. */
 const hardPractice = () => app.mode === 'hard' && app.state?.round?.mode === 'practice';
+/** Realistic mode is hard mode on your own pins: the same screens, its own saves, stats, streak and points. */
+const isReal = () => app.mode === 'hard' && Boolean(app.state?.round?.realistic);
+const kp = () => (isReal() ? 'real:' : 'hard:');
+const statsSlot = () => (isReal() ? 'realStats' : 'hardStats');
+function recordHardStats() { const k = statsSlot(); app[k] = updateHardStats(app[k], app.state); write(`${kp()}stats`, app[k]); }
+const practiceSlot = () => (app.difficulty === 'realistic' ? 'realPractice' : 'hardPractice');
 
 /* ---------- 3D view, loaded after first paint so the page is usable straight away ---------- */
 function webglOK() { try { const c = document.createElement('canvas'); return Boolean(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } }
@@ -62,7 +73,7 @@ async function loadView() {
 }
 function viewPatterns() {
   if (app.screen === 'game' && app.tab === 'chi') { const p = {...(app.daily?.round.patterns || {})}; for (const id of CHI) { const r = parsePattern($(`chi-pat-${id}`)?.value, WHEEL[id].size); if (r.ok) p[id] = r.bits; } return p; }
-  if (app.screen === 'game' && app.mode === 'hard' && app.state?.pins?.on) return app.state.pins.grid;
+  if (app.screen === 'game' && isReal()) return app.state.pins.grid;
   return (app.state?.round || app.daily?.round)?.patterns;
 }
 function viewPositions() {
@@ -70,8 +81,11 @@ function viewPositions() {
   return app.screen === 'title' ? (app.daily?.round.start) : app.wheels;
 }
 function syncView(animate = true) {
+  const pats = viewPatterns();
+  // tell anyone watching (the tests) what the model is showing, whether or not it has loaded yet
+  window.dispatchEvent(new window.CustomEvent('lorenz:view', {detail: {patterns: pats}}));
   const v = app.view; if (!v) return;
-  v.setPatterns(viewPatterns()); v.setPositions(viewPositions(), {animate});
+  v.setPatterns(pats); v.setPositions(viewPositions(), {animate});
   v.setDim(app.screen === 'game' && app.tab === 'chi' ? [...PSI, 'mu37', 'mu61'] : []);
   v.setIdle(app.screen === 'title');
   showLabelPositions(viewPositions());
@@ -128,11 +142,11 @@ function show(screen) {
 function refreshTitle() {
   const s = app.stats, day = app.daily.round;
   $('header-day').textContent = `#${day.number}, ${new Date(day.key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'UTC'})}`;
-  const hard = app.difficulty === 'hard', saved = read(`${hard ? 'hard:' : ''}round:${day.key}`, null), st = hard ? app.hardStats : s;
+  const d = app.difficulty, hard = d !== 'normal', saved = read(`${{hard:'hard:', realistic:'real:'}[d] || ''}round:${day.key}`, null), st = d === 'realistic' ? app.realStats : hard ? app.hardStats : s;
   $('play-daily').firstChild.textContent = saved?.solved ? "See today's result " : "Play today's round ";
   document.querySelectorAll('[data-difficulty]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.difficulty === app.difficulty)));
-  $('mode-note').textContent = hard ? 'Hard: the same intercept, but the QEP number is on the tape, the book has five dated pages, and the machine only punches tape. You read it yourself. Practice plays the same way, on random settings.' : 'Normal: the QEP number is given and the teleprinter prints the message.';
-  $('title-stats').textContent = st?.rounds ? `Your ${hard ? 'hard mode ' : ''}streak: ${st.streak} day${st.streak === 1 ? '' : 's'}. Best score ${fmt(st.best)}. A new intercept every day at 00:00 UTC.` : 'Twelve wheels, 501 cams, a new intercept every day at 00:00 UTC.';
+  $('mode-note').textContent = d === 'realistic' ? "Realistic: hard mode, and you set every wheel's pins yourself from the day's pattern sheet, as the operators did. Its own score, streak and points. Practice plays the same way." : hard ? 'Hard: the same intercept, but the QEP number is on the tape, the book has five dated pages, and the machine only punches tape. You read it yourself. Practice plays the same way, on random settings.' : 'Normal: the QEP number is given and the teleprinter prints the message.';
+  $('title-stats').textContent = st?.rounds ? `Your ${d === 'realistic' ? 'realistic mode ' : hard ? 'hard mode ' : ''}streak: ${st.streak} day${st.streak === 1 ? '' : 's'}. Best score ${fmt(st.best)}. A new intercept every day at 00:00 UTC.` : 'Twelve wheels, 501 cams, a new intercept every day at 00:00 UTC.';
 }
 function startDaily() {
   app.mode = 'daily'; app.tab = 'random';
@@ -143,20 +157,21 @@ function startDaily() {
   enterGame();
 }
 function startHard() {
-  app.mode = 'hard'; app.tab = 'random'; let r = makeHardRound({});
-  const saved = read(`hard:round:${r.key}`, null);
-  r = withSavedText(r, saved, t => makeHardRound({text: t}));
+  const realistic = app.difficulty === 'realistic';
+  app.mode = 'hard'; app.tab = 'random'; let r = makeHardRound({realistic});
+  const saved = read(`${realistic ? 'real:' : 'hard:'}round:${r.key}`, null);
+  r = withSavedText(r, saved, t => makeHardRound({text: t, realistic}));
   app.state = restoreHard(r, saved); app.wheels = sanitiseWheels(saved?.wheels); app.page = r.openIndex; app.marked = new Set();
   const {refunded, solvedNow} = app.state;
   if (refunded || solvedNow || saved?.v !== HARD_SAVE_VERSION) saveRound();
-  if (solvedNow) { app.hardStats = updateHardStats(app.hardStats, app.state); write('hard:stats', app.hardStats); }
+  if (solvedNow) recordHardStats();
   enterGame();
   if (refunded || solvedNow) setFeedback('good', solvedNow
     ? `Sorry, my answer check was wrong earlier. Your reading was right, so the round's solved and I've given back the ${fmt(refunded * HARD_RULES.wrong)} points it took.`
     : `Sorry, my answer check was wrong earlier. I've given back the ${fmt(refunded * HARD_RULES.wrong)} points it took for your readings.`);
 }
 function startPractice(tab = 'random') {
-  if (tab === 'random' && app.difficulty === 'hard') return startHardPractice();
+  if (tab === 'random' && app.difficulty !== 'normal') return startHardPractice();
   app.mode = 'practice'; app.tab = tab;
   if (!app.practice) newPractice(MODELS.SZ40, false);
   app.state = app.practice; app.wheels = sanitiseWheels(app.practiceWheels);
@@ -166,17 +181,17 @@ function startPractice(tab = 'random') {
  *  Kept in memory like normal practice, so the daily hard save, stats and streak are never touched. */
 function startHardPractice() {
   app.mode = 'hard'; app.tab = 'random';
-  if (!app.hardPractice) newHardPractice(undefined, false);
-  app.state = app.hardPractice; app.wheels = sanitiseWheels(app.hardPracticeWheels); app.page = app.state.round.openIndex; app.marked = new Set();
+  const slot = practiceSlot(); if (!app[slot]) newHardPractice(undefined, false);
+  app.state = app[slot]; app.wheels = sanitiseWheels(app[slot + 'Wheels']); app.page = app.state.round.openIndex; app.marked = new Set();
   enterGame();
 }
 function newHardPractice(model, render = true) {
   const seed = (Math.random() * 2 ** 32) >>> 0;
-  app.hardPractice = newHardState(makeHardRound({mode:'practice', seed, model})); app.hardPracticeWheels = null;
+  const slot = practiceSlot(); app[slot] = newHardState(makeHardRound({mode:'practice', seed, model, realistic: slot === 'realPractice'})); app[slot + 'Wheels'] = null;
   if (!render) return;
-  app.state = app.hardPractice; app.page = app.state.round.openIndex; app.marked = new Set(); app.wheels = sanitiseWheels({});
+  app.state = app[slot]; closeFace(); app.page = app.state.round.openIndex; app.marked = new Set(); app.wheels = sanitiseWheels({});
   $('decoded-card').hidden = true; $('hard-answer').value = ''; $('qep-guess').value = ''; $('out-tape').innerHTML = '';
-  showDials(); renderRound(); syncView(false); clearOutput(); resetHardExtras(); renderReply();
+  showDials(); renderRound(); syncView(false); clearOutput(); resetHardExtras(); renderReply(); renderPins();
 }
 function newPractice(model, render = true) {
   if (app.mode === 'hard') return newHardPractice(model, render);
@@ -200,13 +215,13 @@ function restoreState(round, saved) {
 }
 const sanitiseWheels = w => Object.fromEntries(WHEELS.map(x => [x.id, checkPosition(w?.[x.id], x.size).ok ? Number(w[x.id]) : POSITION_BASE]));
 function enterGame() {
-  show('game'); renderTabs(); renderRound(); showDials(); clearOutput();
+  closeFace(); show('game'); renderTabs(); renderRound(); showDials(); clearOutput();
   const st = app.state; resetHardExtras();
   if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; if (hardComplete(st)) showCard(false); } renderReply(); }
   else if (app.tab === 'random' && st.solved) { replaySolved(); showCard(false); }
   syncView(false);
   const h = {random:'game-heading', encipher:'encipher-heading', chi:'chi-heading'}[app.tab]; $(h)?.focus({preventScroll: true});
-  location.hash = app.mode === 'daily' ? 'daily' : hardPractice() ? 'hard-practice' : app.mode === 'hard' ? 'hard' : ({random:'practice', encipher:'encipher', chi:'chi'}[app.tab]);
+  location.hash = app.mode === 'daily' ? 'daily' : hardPractice() ? (isReal() ? 'realistic-practice' : 'hard-practice') : app.mode === 'hard' ? (isReal() ? 'realistic' : 'hard') : ({random:'practice', encipher:'encipher', chi:'chi'}[app.tab]);
 }
 function renderTabs() {
   const practice = app.mode === 'practice';
@@ -222,7 +237,10 @@ function renderTabs() {
 }
 function showModeParts() {
   const hard = app.mode === 'hard';
-  for (const id of ['today-line', 'preamble-box', 'book-pager', 'hard-out', 'pin-sheet']) $(id).hidden = !hard;
+  for (const id of ['today-line', 'preamble-box', 'book-pager', 'hard-out']) $(id).hidden = !hard;
+  $('pin-sheet').hidden = !isReal(); $('machine-stage').classList.toggle('pick', isReal() && app.screen === 'game');
+  app.labels.forEach((el, i) => { if (isReal()) { el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', `Set the pins on ${WHEELS[i].label}`); } else { el.removeAttribute('tabindex'); el.removeAttribute('role'); el.removeAttribute('aria-label'); } });
+  $('machine-labels').setAttribute('aria-hidden', String(!isReal()));
   $('printed-box').hidden = hard;
   document.querySelectorAll('[data-hint=qep],[data-hint=char]').forEach(b => { b.hidden = !hard; });
   $('tape-legend').textContent = hard ? 'Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. In hard mode nothing is printed under it.' : 'Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.';
@@ -272,9 +290,9 @@ function saveRound() {
   if (app.state?.solved && app.state.round.mode === 'daily') queueMicrotask(() => awardDaily(app.state.round.key));
   const st = app.state;
   if (app.mode === 'hard') {
-    if (st.round.mode === 'practice') { app.hardPractice = st; app.hardPracticeWheels = {...app.wheels}; return; }
-    write(`hard:round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, pins: savePins(st.pins), wheels: app.wheels});
-    try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'hard:round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+    if (st.round.mode === 'practice') { const slot = st.round.realistic ? 'realPractice' : 'hardPractice'; app[slot] = st; app[slot + 'Wheels'] = {...app.wheels}; return; }
+    write(`${kp()}round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, pins: savePins(st.pins), wheels: app.wheels});
+    try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + kp() + 'round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     return;
   }
   if (st.round.mode !== 'daily') { app.practiceWheels = {...app.wheels}; return; }
@@ -494,7 +512,8 @@ function runChi() {
 function renderHard() {
   const st = app.state, r = st.round;
   const practice = r.mode === 'practice';
-  $('round-label').textContent = practice ? 'Practice, hard, random settings' : `Lorenz #${r.number}, hard, ${niceDate(r.key)}`;
+  const mode = r.realistic ? 'realistic' : 'hard';
+  $('round-label').textContent = practice ? `Practice, ${mode}, random settings` : `Lorenz #${r.number}, ${mode}, ${niceDate(r.key)}`;
   $('qep-number').textContent = qepKnown(st) || st.solved ? pad2(r.qep) : '??';
   $('round-intro').textContent = "The QEP number came on the tape, sent in clear before the message. Read it with the cheat sheet, find today's page in the book, set the wheels and run the tape. Then read what the machine punched.";
   $('model-name').textContent = r.model === MODELS.SZ42A ? 'SZ42A, with the chi 2 one back limitation' : 'SZ40, basic motor';
@@ -532,29 +551,73 @@ function showHardTape() {
   renderAid();
 }
 function resetHardExtras() { app.aid = null; app.outCodes = null; $('read-aid').hidden = true; $('reply-input').value = ''; $('reply-tape').hidden = true; $('reply-tape').innerHTML = ''; document.querySelectorAll('#cheat-body tr').forEach(tr => { tr.classList.remove('aid-match'); tr.removeAttribute('aria-current'); [...tr.cells].forEach(c => c.classList.remove('aid-col')); }); }
-/* ---------- Wheel pattern sheet: set the day's pins by hand as well, for a bonus ---------- */
+/* ---------- Wheel pattern sheet and setting pins face on (realistic mode) ---------- */
 const patternRow = bits => bits.map(b => b ? 'x' : '.').join('').replace(/(.{5})/g, '$1 ').trim();
 function renderPins() {
-  const st = app.state; if (app.mode !== 'hard' || !st?.pins) return;
-  const p = st.pins, on = p.on, sel = app.pinWheel || 'chi1', w = WHEEL[sel];
-  $('pins-on').checked = on; $('pins-on').disabled = st.solved; $('pin-work').hidden = !on;
-  $('pin-state').textContent = st.solved ? (p.earned ? `Patterns set by hand: +${HARD_RULES.pins} pts` : 'Read without setting the patterns') : on ? 'Your pins are on the machine' : `Optional, +${HARD_RULES.pins} pts`;
-  if (!on) return;
+  const st = app.state; if (!isReal() || !st?.pins) return;
+  const p = st.pins, sel = app.pinWheel || 'chi1', w = WHEEL[sel];
+  const done = WHEELS.filter(x => p.grid[x.id].some(Boolean)).length;
+  $('pin-state').textContent = st.solved ? 'Read on your own pins' : `${done} of 12 wheels have pins up`;
   $('pin-sheet-body').innerHTML = WHEELS.map(x => `<tr><th scope="row">${x.label}</th><td>${patternRow(st.round.patterns[x.id])}</td></tr>`).join('');
   document.querySelectorAll('#pin-wheels button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wheel === sel)));
   $('pin-wheel-name').textContent = `${w.label}, ${w.size} pins, ${p.grid[sel].filter(Boolean).length} raised`;
   const grid = $('pin-grid'); grid.setAttribute('aria-label', `Pins of ${w.label}`);
   grid.innerHTML = p.grid[sel].map((b, i) => `<button type="button" class="pin${b ? ' up' : ''}" data-pin="${i}" aria-pressed="${b ? 'true' : 'false'}" aria-label="Pin ${i + 1}"${st.solved ? ' disabled' : ''}>${i + 1}</button>`).join('');
   $('pin-clear').disabled = st.solved;
+  if (app.face && !$('pin-face').hidden) app.face.draw();
+}
+function setPin(id, i) {
+  if (!isReal() || app.run) return;
+  app.state = togglePin(app.state, id, i); saveRound(); renderPins(); syncView(false);
+}
+/* Collapsible panels: each one remembers whether you hid it. While the face on view is open they all fold away
+ * for the time being, any one can be brought back with a tap, and Back puts them as you had them. */
+const PANEL_IDS = () => [...document.querySelectorAll('[data-panel]')].map(h => h.dataset.panel);
+function setPanel(name, open, {remember = true} = {}) {
+  const head = document.querySelector(`[data-panel="${name}"]`), body = $(`panel-${name}`), btn = head?.querySelector('.panel-toggle'); if (!body || !btn) return;
+  body.hidden = !open; btn.setAttribute('aria-expanded', String(open)); btn.textContent = open ? 'Hide' : 'Show';
+  btn.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} ${head.dataset.panelName}`); head.closest('.card-box,.teleprinter,.hint-row,.preamble-box')?.classList.toggle('panel-shut', !open);
+  if (remember) { const saved = read('panels', {}) || {}; if (open) delete saved[name]; else saved[name] = true; write('panels', saved); }
+}
+function bindPanels() {
+  const saved = read('panels', {}) || {};
+  document.querySelectorAll('[data-panel]').forEach(head => {
+    const name = head.dataset.panel, btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'panel-toggle text-button'; btn.setAttribute('aria-controls', `panel-${name}`); head.append(btn);
+    btn.addEventListener('click', () => setPanel(name, btn.getAttribute('aria-expanded') !== 'true', {remember: !app.faceOpen}));
+    setPanel(name, !saved[name], {remember: false});
+  });
+}
+function openFace(id = app.pinWheel || 'chi1') {
+  if (!isReal() || app.run) return;
+  if (!app.faceOpen) { app.faceOpen = true; PANEL_IDS().forEach(n => setPanel(n, false, {remember: false})); }
+  $('machine-stage').classList.add('face-on'); app.face.open(id);
+  $('machine-stage').scrollIntoView?.({block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth'});
+}
+function closeFace() {
+  if (!app.faceOpen) return; app.faceOpen = false; app.face?.close(); $('machine-stage').classList.remove('face-on');
+  const saved = read('panels', {}) || {}; PANEL_IDS().forEach(n => setPanel(n, !saved[n], {remember: false}));
+  syncView(false);
 }
 function bindPins() {
+  app.face = createPinFace($('pin-face'), {get: () => ({grid: app.state.pins.grid, locked: app.state.solved}), toggle: setPin, back: () => { closeFace(); $('pin-open').focus({preventScroll: true}); }, onWheel: id => { app.pinWheel = id; renderPins(); }});
+  $('pin-open').addEventListener('click', () => openFace());
+  // pick a wheel on the machine: its label, or a tap on the rack nearest to it
+  const pick = el => { const i = app.labels.indexOf(el); if (i >= 0) openFace(WHEELS[i].id); };
+  $('machine-labels').addEventListener('click', e => { const el = e.target.closest('.wheel-label'); if (el && isReal()) pick(el); });
+  $('machine-labels').addEventListener('keydown', e => { const el = e.target.closest('.wheel-label'); if (el && isReal() && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(el); } });
+  let down = null;
+  $('machine-stage').addEventListener('pointerdown', e => { down = {x: e.clientX, y: e.clientY}; });
+  $('machine-stage').addEventListener('click', e => {
+    if (!isReal() || app.faceOpen || app.screen !== 'game' || e.target.closest('.wheel-label,#pin-face,#demo-overlay') || e.target.tagName !== 'CANVAS') return;
+    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return; // that was a drag to look round
+    let best = null, gap = Infinity; app.labels.forEach(el => { const r = el.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - e.clientX); if (d < gap) { gap = d; best = el; } });
+    if (best) pick(best);
+  });
   $('pin-wheels').innerHTML = WHEELS.map(w => `<button type="button" data-wheel="${w.id}" aria-pressed="false">${w.label}</button>`).join('');
-  $('pins-on').addEventListener('change', e => { if (app.mode !== 'hard' || app.run) { e.target.checked = Boolean(app.state?.pins?.on); return; } app.state = setPinsOn(app.state, e.target.checked); saveRound(); renderPins(); syncView(false);
-    setFeedback('', app.state.pins.on ? 'Copy every wheel from the pattern sheet onto the pin grid. The machine now runs on your pins.' : "Back to the day's patterns on the machine."); });
   $('pin-wheels').addEventListener('click', e => { const b = e.target.closest('[data-wheel]'); if (!b) return; app.pinWheel = b.dataset.wheel; renderPins(); });
-  $('pin-grid').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (!b || app.run) return; const i = Number(b.dataset.pin);
-    app.state = togglePin(app.state, app.pinWheel || 'chi1', i); saveRound(); renderPins(); syncView(false); $('pin-grid').querySelector(`[data-pin="${i}"]`)?.focus(); });
-  $('pin-clear').addEventListener('click', () => { if (app.run) return; app.state = clearPins(app.state, app.pinWheel || 'chi1'); saveRound(); renderPins(); syncView(false); });
+  $('pin-grid').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (!b) return; const i = Number(b.dataset.pin); setPin(app.pinWheel || 'chi1', i); $('pin-grid').querySelector(`[data-pin="${i}"]`)?.focus(); });
+  $('pin-clear').addEventListener('click', () => { if (app.run || !isReal()) return; app.state = clearPins(app.state, app.pinWheel || 'chi1'); saveRound(); renderPins(); syncView(false); });
 }
 /* ---------- Reading aid: you punch a copy of one row, the cheat sheet lights up the line, you read it ---------- */
 function renderAid() {
@@ -610,6 +673,7 @@ function renderRevealed() {
   el.hidden = !chars.length; el.textContent = chars.length ? `The message starts: ${chars.replace(/ /g, '\u2423')}` : '';
 }
 function runHard() {
+  closeFace();
   const st = app.state, r = st.round, settings = {...app.wheels};
   setFeedback('', 'Punching the tape...'); revealTeleprinter(); app.marked = new Set();
   runTape({codes: r.cipherCodes, machine: createMachine({patterns: runPatterns(st), start: settings, model: r.model}), outputAs: 'tape', onDone: () => {
@@ -623,6 +687,7 @@ function checkReading() {
   const st = app.state; if (st.solved) { if (hardComplete(st)) showCard(false); else { renderReply(); $('reply-input').focus(); } return; }
   const {state, result} = submitAnswer(st, $('hard-answer').value);
   if (result.empty) { setFeedback('bad', 'Type what the tape says first.'); return; }
+  if (result.needPins) { setFeedback('bad', "In realistic mode the reading has to come off your own pins. Set every wheel from the pattern sheet, run the tape again and read that. This one didn't cost anything."); return; }
   app.state = state; saveRound(); updateScore(); updateHintButtons();
   if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Now send the reply below to finish the round.'); return; }
   setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : `Not right yet. ${result.right} of ${result.of} words are right. That cost ${HARD_RULES.wrong} points.`);
@@ -637,7 +702,7 @@ function checkQep() {
 function hardHint(type) {
   const kind = type === 'reveal' ? 'smudge' : type, st = app.state, {state, answer} = useHardHint(st, kind, {settings: app.wheels});
   if (!answer) { setFeedback('', kind === 'smudge' ? "Every figure on today's line is readable." : 'Nothing more to reveal.'); return; }
-  if (state !== st && !pay(kind, `lorenz:hard:${kind}:${roundRef(st.round)}${kind === 'char' ? ':' + answer.index : ''}`)) return;
+  if (state !== st && !pay(kind, `lorenz:${isReal() ? 'real' : 'hard'}:${kind}:${roundRef(st.round)}${kind === 'char' ? ':' + answer.index : ''}`)) return;
   app.state = state; saveRound(); updateScore(); updateHintButtons();
   if (kind === 'qep') { $('qep-number').textContent = pad2(answer.qep); setFeedback('', `The preamble reads QEP ${pad2(answer.qep)}. That cost ${HARD_RULES.hint.qep} points.`); }
   if (kind === 'char') { renderRevealed(); setFeedback('', `Character ${answer.index + 1} of the message is ${answer.char === ' ' ? 'a space' : answer.char}. That cost ${HARD_RULES.hint.char} points.`); }
@@ -651,9 +716,9 @@ function hardSuccess() {
 }
 function replySuccess() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
-  if (st.round.mode !== 'practice') { app.hardStats = updateHardStats(app.hardStats, st); write('hard:stats', app.hardStats); }
+  if (st.round.mode !== 'practice') recordHardStats();
   else { const P = Points(), r = P?.earnPractice('lorenz', utcDateKey()); earned(r, `+${P?.EARN?.practice ?? 20} points for a practice round`); }
-  setFeedback('good', 'Reply sent!! Read by hand and answered on the machine.');
+  setFeedback('good', 'Reply sent. Read by hand and answered on the machine.');
   if (plan.fly) {
     const tp = $('screen-game').querySelector('.teleprinter'); tape.fly(); tp.classList.add('tape-fly', 'hard-win'); setTimeout(() => tp.classList.remove('tape-fly', 'hard-win'), 1700);
     const burst = document.createElement('div'); burst.className = 'hard-burst'; burst.setAttribute('aria-hidden', 'true'); document.body.append(burst); setTimeout(() => burst.remove(), 1700);
@@ -663,10 +728,10 @@ function replySuccess() {
   if (plan.delay) setTimeout(() => showCard(true), plan.delay); else showCard(false);
 }
 function showHardCard(animate) {
-  const st = app.state, r = st.round, b = hardBreakdown(st), s = app.hardStats, card = $('decoded-card'), practice = r.mode === 'practice';
+  const st = app.state, r = st.round, b = hardBreakdown(st), s = app[statsSlot()], card = $('decoded-card'), practice = r.mode === 'practice';
   const streak = s && !practice ? `<p class="tiny">Hard mode streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best: ${fmt(s.best)} pts.</p>` : '';
   card.className = 'decoded-card hard-card';
-  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand and answered, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Message</span><span id="card-total">${fmt(st.score)} pts</span></p>${st.reply?.legacy ? '' : `<p class="card-reply-label tiny">Your reply</p><blockquote class="card-reply">${escapeHTML(replyFor(r))}</blockquote><dl>${b.reply.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total reply-total"><span>Reply</span><span id="card-reply-total">${fmt(b.replyTotal)} pts</span></p>`}${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button>${practice ? '<button type="button" data-card="next">Next round</button>' : '<button type="button" data-card="normal">Normal mode</button>'}</div>${practice ? '' : `<p class="countdown">Next intercept in ${countdown()}.</p>`}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
+  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand and answered, ${r.realistic ? 'realistic mode, on your own pins' : 'hard mode'}</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Message</span><span id="card-total">${fmt(st.score)} pts</span></p>${st.reply?.legacy ? '' : `<p class="card-reply-label tiny">Your reply</p><blockquote class="card-reply">${escapeHTML(replyFor(r))}</blockquote><dl>${b.reply.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total reply-total"><span>Reply</span><span id="card-reply-total">${fmt(b.replyTotal)} pts</span></p>`}${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button>${practice ? '<button type="button" data-card="next">Next round</button>' : '<button type="button" data-card="normal">Normal mode</button>'}</div>${practice ? '' : `<p class="countdown">Next intercept in ${countdown()}.</p>`}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
   applyPrintLink(card);
   card.hidden = false; fitCard();
   card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
@@ -694,7 +759,7 @@ function openCheat(opener) {
   d.addEventListener('close', () => opener?.focus?.(), {once: true});
 }
 function bindHard() {
-  bindPins(); buildCheatSheet(); trapFocus($('cheat-dialog')); bindAid(); $('reply-go').addEventListener('click', sendReply);
+  bindPins(); bindPanels(); buildCheatSheet(); trapFocus($('cheat-dialog')); bindAid(); $('reply-go').addEventListener('click', sendReply);
   document.querySelectorAll('[data-cheat]').forEach(b => b.addEventListener('click', () => openCheat(b)));
   $('page-prev').addEventListener('click', () => turnPage(-1)); $('page-next').addEventListener('click', () => turnPage(1));
   $('qep-guess-go').addEventListener('click', checkQep);
@@ -751,7 +816,7 @@ function applySettings() {
 
 function bind() {
   document.querySelectorAll('[data-action=title]').forEach(b => b.addEventListener('click', () => { history.replaceState(null, '', location.pathname); show('title'); }));
-  $('play-daily').addEventListener('click', () => (app.difficulty === 'hard' ? startHard() : startDaily()));
+  $('play-daily').addEventListener('click', () => (app.difficulty !== 'normal' ? startHard() : startDaily()));
   document.querySelectorAll('[data-difficulty]').forEach(b => b.addEventListener('click', () => { app.difficulty = b.dataset.difficulty; write('difficulty', app.difficulty); refreshTitle(); }));
   bindHard();
   $('play-practice').addEventListener('click', () => startPractice('random'));
@@ -787,8 +852,8 @@ function bind() {
 function route() {
   const h = location.hash.slice(1);
   if (h === 'daily' && !(app.screen === 'game' && app.mode === 'daily')) startDaily();
-  else if (h === 'hard' && !(app.screen === 'game' && app.mode === 'hard' && !hardPractice())) { app.difficulty = 'hard'; startHard(); }
-  else if (h === 'hard-practice' && !(app.screen === 'game' && hardPractice())) { app.difficulty = 'hard'; startHardPractice(); }
+  else if ((h === 'hard' || h === 'realistic') && !(app.screen === 'game' && app.mode === 'hard' && !hardPractice() && isReal() === (h === 'realistic'))) { app.difficulty = h; startHard(); }
+  else if ((h === 'hard-practice' || h === 'realistic-practice') && !(app.screen === 'game' && hardPractice() && isReal() === (h === 'realistic-practice'))) { app.difficulty = h === 'hard-practice' ? 'hard' : 'realistic'; startHardPractice(); }
   else if (['practice', 'encipher', 'chi'].includes(h)) { const tab = h === 'practice' ? 'random' : h; if (!(app.screen === 'game' && app.mode === 'practice' && app.tab === tab)) startPractice(tab); }
   else if (!h && app.screen !== 'title') show('title');
 }
@@ -797,7 +862,8 @@ function boot() {
   app.settings = {...app.settings, ...read('settings', {})};
   app.stats = statsFrom(read('stats', null)?.history || {}, utcDateKey());
   const hs = read('hard:stats', null); app.hardStats = statsFrom(hs && typeof hs.history === 'object' && hs.history ? hs.history : {}, utcDateKey());
-  app.difficulty = read('difficulty', 'normal') === 'hard' ? 'hard' : 'normal';
+  const rs = read('real:stats', null); app.realStats = statsFrom(rs && typeof rs.history === 'object' && rs.history ? rs.history : {}, utcDateKey());
+  app.difficulty = ['hard', 'realistic'].includes(read('difficulty', 'normal')) ? read('difficulty', 'normal') : 'normal';
   app.daily = {round: makeRound({mode: 'daily'})};
   buildDials(); buildChi(); bind(); applySettings(); refreshTitle(); applyPrintLink(document);
   awardDaily(); Points()?.on('change', () => { if (app.state) updateHintButtons(); });

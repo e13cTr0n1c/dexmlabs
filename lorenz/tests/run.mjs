@@ -927,7 +927,7 @@ await t('Reply: in the page it finishes the round, pays 100 points once, and nor
     sendReplyDOM(d, w, h, {start: {...h.start, psi1: h.start.psi1 % 43 + 1}}); assert.match(d.getElementById('feedback').textContent, /doesn't read as the reply/); assert.equal(d.getElementById('decoded-card').hidden, true);
     assert.equal(d.getElementById('reply-tape').hidden, false);
     sendReplyDOM(d, w, h); await new Promise(r => setTimeout(r, 0));
-    assert.match(d.getElementById('feedback').textContent, /Reply sent!!/); assert.equal(d.getElementById('hard-reply').classList.contains('sent'), true);
+    assert.match(d.getElementById('feedback').textContent, /Reply sent\./); assert.equal(d.getElementById('hard-reply').classList.contains('sent'), true);
     const card = d.getElementById('decoded-card'); assert.equal(card.hidden, false); assert.match(card.textContent, /Read by hand and answered/); assert.ok(card.textContent.includes(HD.replyFor(h)));
     assert.equal(d.getElementById('card-reply-total').textContent, '200 pts');
     assert.equal(P.balance(), before + 100); assert.ok(P.has(`lorenz:hard:reply:${h.key}`));
@@ -979,65 +979,141 @@ await t('Reading aid and reply: 44px tap targets, paper and holes stay paper and
 const setWheels = (d, w, start) => { for (const [id, v] of Object.entries(start)) { const el = d.getElementById(`dial-${id}`); el.value = String(v); el.dispatchEvent(new w.Event('change', {bubbles: true})); } };
 const copyPins = h => Object.fromEntries(Object.entries(h.patterns).map(([k, v]) => [k, v.slice()]));
 const withPins = (st, grid) => ({...st, pins: {...st.pins, grid}});
-await t('Pins: optional, the day\'s patterns on your own pins decode and earn the bonus; one wrong pin does not', () => {
-  for (const h of [HD.makeHardRound({}), HD.makeHardRound({mode: 'practice', seed: 31, model: L.MODELS.SZ42A})]) {
-    let st = HD.newHardState(h); assert.equal(st.pins.on, false); assert.equal(HD.runPatterns(st), h.patterns, 'off: the day\'s patterns');
-    assert.equal(HD.pinsMatch(h, st.pins.grid), false, 'every pin starts down');
-    st = HD.setPinsOn(st, true); assert.equal(HD.runPatterns(st), st.pins.grid);
-    st = HD.togglePin(st, 'chi1', 0); assert.equal(st.pins.grid.chi1[0], 1); st = HD.togglePin(st, 'chi1', 0); assert.equal(st.pins.grid.chi1[0], 0);
-    assert.equal(HD.togglePin(st, 'chi1', 99), st); assert.equal(HD.togglePin(st, 'nope', 0), st);
-    const run = s2 => L.decodeText(L.crypt(h.cipherCodes, {patterns: HD.runPatterns(s2), start: h.start, model: h.model}));
-    const right = withPins(st, copyPins(h)); assert.ok(HD.pinsMatch(h, right.pins.grid)); assert.ok(HD.matchAnswer(run(right), [h.text]).ok, 'the right pins decode');
-    const off = copyPins(h); off.mu37[3] ^= 1; const one = withPins(st, off); assert.equal(HD.pinsMatch(h, off), false);
-    const offAt0 = copyPins(h); offAt0.chi1[(h.start.chi1 - 1)] ^= 1; assert.equal(HD.matchAnswer(run(withPins(st, offAt0)), [h.text]).ok, false, 'a wrong pin garbles the message');
-    assert.equal(HD.notePinRun(one).pins.ranRight, false);
-    const ran = HD.notePinRun(right); assert.equal(ran.pins.ranRight, true);
-    const plain = HD.submitAnswer(HD.newHardState(h), h.text).state, solved = HD.submitAnswer(ran, h.text).state;
-    assert.equal(solved.pins.earned, true); assert.equal(solved.score, plain.score + HD.HARD_RULES.pins);
-    assert.ok(HD.hardBreakdown(solved).lines.some(([k, v]) => k === 'Set the wheel patterns too' && v === '+250'));
-    assert.equal(HD.setPinsOn(solved, false), solved, 'locked once read'); assert.equal(HD.togglePin(solved, 'chi1', 0), solved);
-    // switching back to the day's patterns before reading loses the bonus, even if the pins were right
-    const sneaky = HD.submitAnswer(HD.notePinRun(HD.setPinsOn(right, false)), h.text).state; assert.equal(sneaky.pins.earned, false); assert.equal(sneaky.score, plain.score);
-    const changed = HD.submitAnswer(HD.togglePin(ran, 'psi1', 0), h.text).state; assert.equal(changed.pins.earned, false, 'a pin changed after the run');
-    const back = HD.restoreHard(h, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: solved.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: []}, pins: HD.savePins(solved.pins)})));
-    assert.equal(back.pins.earned, true); assert.equal(back.score, solved.score); assert.ok(HD.pinsMatch(h, back.pins.grid));
-    const junk = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [], pins: {on: true, earned: true, grid: {chi1: 'zz'}}});
-    assert.equal(junk.pins.earned, false, 'no bonus without a read'); assert.equal(junk.pins.grid.chi1.length, 41);
+const PF = await import('../js/pinface.js');
+const tapeOut = d => [...d.querySelectorAll('#out-tape button.frame')].map(f => L.codeFromBits([...f.querySelectorAll('i.h')].map(i => i.classList.contains('on') ? 1 : 0)));
+const realSave = (h, grid, extra = {}) => ({v: HD.HARD_SAVE_VERSION, text: h.text, answers: [], hints: [], qepGuesses: [], ran: null, solved: false, score: 0, reply: {tries: []}, wheels: {...h.start}, pins: HD.savePins({on: true, grid, ranRight: false, earned: false}), ...extra});
+await t('Modes: hard runs on the day\'s pins and can\'t set them; realistic runs on yours, with its own higher scoring', () => {
+  for (const opts of [{}, {mode: 'practice', seed: 31, model: L.MODELS.SZ42A}]) {
+    const h = HD.makeHardRound(opts), r = HD.makeHardRound({...opts, realistic: true});
+    assert.equal(h.realistic, false); assert.equal(r.realistic, true); assert.equal(r.text, h.text, 'the same intercept'); assert.deepEqual(r.start, h.start);
+    const hs = HD.newHardState(h), rs = HD.newHardState(r);
+    assert.equal(hs.pins.on, false); assert.equal(HD.runPatterns(hs), h.patterns); assert.equal(HD.togglePin(hs, 'chi1', 0), hs, 'no pin setting in hard'); assert.equal(HD.clearPins(hs, 'chi1'), hs);
+    assert.equal(rs.pins.on, true); assert.equal(HD.runPatterns(rs), rs.pins.grid); assert.equal(HD.pinsMatch(r, rs.pins.grid), false, 'every pin starts down');
+    let st = HD.togglePin(rs, 'chi1', 0); assert.equal(st.pins.grid.chi1[0], 1); assert.equal(HD.togglePin(st, 'chi1', 99), st);
+    const run = s2 => L.decodeText(L.crypt(r.cipherCodes, {patterns: HD.runPatterns(s2), start: r.start, model: r.model}));
+    const right = withPins(rs, copyPins(r)); assert.ok(HD.matchAnswer(run(right), [r.text]).ok, 'the right pins decode');
+    const off = copyPins(r); off.chi1[r.start.chi1 - 1] ^= 1; assert.equal(HD.matchAnswer(run(withPins(rs, off)), [r.text]).ok, false, 'one wrong pin garbles it');
+    // the reading must come off a run on your own right pins; until then a right reading isn't counted either way
+    const early = HD.submitAnswer(right, r.text); assert.equal(early.result.needPins, true); assert.equal(early.state.answers.length, 0);
+    assert.equal(HD.submitAnswer(HD.notePinRun(withPins(rs, off)), r.text).result.needPins, true);
+    const ran = HD.notePinRun(right); assert.equal(ran.pins.ranRight, true); assert.equal(HD.togglePin(ran, 'psi1', 0).pins.ranRight, false, 'a pin changed after the run');
+    const real = HD.submitAnswer(ran, r.text).state, hard = HD.submitAnswer(hs, h.text).state;
+    assert.equal(real.solved, true); assert.equal(hard.solved, true); assert.ok(real.score > hard.score, 'realistic scores more');
+    assert.equal(real.score, HD.REAL_RULES.base); assert.equal(hard.score, HD.HARD_RULES.base);
+    assert.equal(HD.hardBreakdown(real).lines[0][0], 'Decoded on your own pins'); assert.equal(HD.hardBreakdown(hard).lines[0][0], 'Decoded');
+    let low = HD.notePinRun(right); for (let i = 0; i < 12; i++) low = HD.submitAnswer(low, `WRONG ${i}`).state; assert.equal(HD.submitAnswer(low, r.text).state.score, HD.REAL_RULES.floor);
+    assert.equal(HD.togglePin(real, 'chi1', 0), real, 'locked once read');
+    if (!opts.mode) { assert.match(HD.hardShareText(real, 'u'), /REALISTIC/); assert.match(HD.hardShareText(hard, 'u'), /HARD/); }
+    const done = HD.submitReply(real, HD.replyTape(r, HD.replyFor(r), r.start)).state; assert.ok(HD.hardComplete(done)); assert.equal(done.reply.score, 300);
+    const back = HD.restoreHard(r, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: done.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: done.reply.tries}, pins: HD.savePins(done.pins)})));
+    assert.equal(back.score, real.score); assert.ok(HD.pinsMatch(r, back.pins.grid)); assert.ok(HD.hardComplete(back));
   }
 });
-await t('Pins: the pattern sheet sits by the QEP book in hard mode only, the grid sets pins, and the machine runs on them', async () => {
-  const h = HD.makeHardRound({}), key = `lorenz:hard:round:${h.key}`;
-  await bootPage({}, async d => { d.getElementById('play-daily').click(); assert.equal(d.getElementById('pin-sheet').hidden, true, 'not in normal mode'); });
-  await bootPage({'lorenz:difficulty': '"hard"'}, async (d, w) => {
+await t('Legacy saves: hard rounds from the optional pin days keep their score; unfinished ones drop back to the day\'s pins', () => {
+  const h = HD.makeHardRound({}), grid = HD.savePins({on: true, grid: copyPins(h), ranRight: true, earned: true});
+  const read = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [{key: HD.canon(h.text), ok: true}], hints: [], qepGuesses: [], solved: true, reply: {tries: []}, pins: grid});
+  assert.equal(read.score, HD.HARD_RULES.base + HD.HARD_RULES.pins, 'the bonus they earned stays'); assert.ok(HD.hardBreakdown(read).lines.some(([k]) => k === 'Set the wheel patterns too'));
+  const open = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [], ran: {...h.start}, solved: false, reply: {tries: []}, pins: {...grid, earned: false}});
+  assert.equal(open.pins.on, false); assert.equal(HD.runPatterns(open), h.patterns); assert.equal(HD.submitAnswer(open, h.text).state.score, HD.HARD_RULES.base, 'no bonus any more, no pins needed');
+  const plain = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [{key: 'X', ok: true}], hints: [], qepGuesses: [], solved: true});
+  assert.equal(plain.score, HD.HARD_RULES.base); assert.ok(HD.hardComplete(plain), 'pre reply saves still finished');
+  const r = HD.makeHardRound({realistic: true}), rs = HD.restoreHard(r, {v: HD.HARD_SAVE_VERSION, answers: [], hints: [], qepGuesses: [], pins: {on: false, grid: {chi1: 'zz'}}});
+  assert.equal(rs.pins.on, true, 'realistic is always on your pins'); assert.equal(rs.pins.grid.chi1.length, 41);
+});
+await t('Modes in the page: three buttons, realistic has its own save, stats and points, hard and its streak are untouched', async () => {
+  const h = HD.makeHardRound({}), r = HD.makeHardRound({realistic: true});
+  const hardStats = {history: {[h.key]: {score: 1000, tries: 1, reply: 300}}};
+  const hardKey = `lorenz:hard:round:${h.key}`, hardSaved = {v: HD.HARD_SAVE_VERSION, text: h.text, answers: [{key: HD.canon(h.text), ok: true}], hints: [], qepGuesses: [], ran: {...h.start}, solved: true, score: 1000, reply: {tries: [{key: '1', ok: true}]}, wheels: {...h.start}};
+  await bootPage({'lorenz:difficulty': '"hard"', 'lorenz:hard:stats': hardStats, [hardKey]: hardSaved, [`lorenz:real:round:${r.key}`]: realSave(r, copyPins(r))}, async (d, w) => {
+    assert.deepEqual([...d.querySelectorAll('[data-difficulty]')].map(b => b.textContent), ['Normal', 'Hard', 'Realistic']);
+    assert.match(d.getElementById('title-stats').textContent, /hard mode streak: 1 day/);
+    d.querySelector('[data-difficulty=realistic]').click(); assert.match(d.getElementById('mode-note').textContent, /^Realistic: hard mode, and you set every wheel's pins yourself/);
+    assert.equal(JSON.parse(w.localStorage.getItem('lorenz:difficulty')), 'realistic');
+    d.getElementById('play-daily').click(); assert.equal(w.location.hash, '#realistic');
+    assert.equal(d.getElementById('pin-sheet').hidden, false); assert.match(d.getElementById('round-label').textContent, /, realistic, /);
+    assert.equal(d.getElementById('decoded-card').hidden, true, 'the hard round being done does not finish this one');
+    setWheels(d, w, r.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
+    assert.deepEqual(tapeOut(d), L.crypt(r.cipherCodes, {patterns: r.patterns, start: r.start, model: r.model}), 'your right pins punch the true tape');
+    const before = w.DexmPoints.balance();
+    d.getElementById('hard-answer').value = r.text; d.getElementById('hard-answer-go').click();
+    sendReplyDOM(d, w, r); await new Promise(x => setTimeout(x, 0));
+    assert.match(d.getElementById('decoded-card').textContent, /realistic mode, on your own pins/); assert.match(d.getElementById('card-total').textContent, /1,5\d\d pts/);
+    assert.equal(w.DexmPoints.balance(), before + 400 + 100); assert.ok(w.DexmPoints.has(`lorenz:real:${r.key}`)); assert.ok(w.DexmPoints.has(`lorenz:real:reply:${r.key}`));
+    const rstats = JSON.parse(w.localStorage.getItem('lorenz:real:stats')); assert.ok(rstats.history[r.key].score >= 1500);
+    assert.deepEqual(JSON.parse(w.localStorage.getItem('lorenz:hard:stats')), hardStats, 'hard stats untouched'); assert.deepEqual(JSON.parse(w.localStorage.getItem(hardKey)), hardSaved, 'hard save untouched');
+    d.querySelector('[data-action=title]').click(); assert.match(d.getElementById('title-stats').textContent, /realistic mode streak: 1 day/);
+    d.querySelector('[data-difficulty=hard]').click(); d.getElementById('play-daily').click(); assert.equal(w.location.hash, '#hard');
+    assert.equal(d.getElementById('pin-sheet').hidden, true, 'no pin setting in hard'); assert.equal(d.getElementById('decoded-card').hidden, false, 'the old hard round is still done');
+    d.querySelector('[data-action=title]').click(); d.querySelector('[data-difficulty=normal]').click(); d.getElementById('play-daily').click(); assert.equal(d.getElementById('pin-sheet').hidden, true);
+  }, {points: true});
+  // practice in all three
+  await bootPage({}, async (d, w) => {
+    for (const [mode, label] of [['normal', /Practice/], ['hard', /^Practice, hard, random settings$/], ['realistic', /^Practice, realistic, random settings$/]]) {
+      d.querySelector('[data-action=title]')?.click(); d.querySelector(`[data-difficulty=${mode}]`).click(); d.getElementById('play-practice').click();
+      assert.match(d.getElementById('round-label').textContent, label); assert.equal(d.getElementById('pin-sheet').hidden, mode !== 'realistic');
+      if (mode !== 'normal') assert.equal(w.location.hash, `#${mode}-practice`);
+    }
+    assert.ok(!Object.keys(w.localStorage).some(k => k.startsWith('lorenz:real:round:')), 'practice saves nothing');
+  });
+});
+await t('Pin view: pick a wheel on the machine, it turns face on, pins toggle and turn, the model follows, Back restores', async () => {
+  const r = HD.makeHardRound({realistic: true}), key = `lorenz:real:round:${r.key}`;
+  await bootPage({'lorenz:difficulty': '"realistic"', 'lorenz:panels': {wheels: true}}, async (d, w) => {
+    const shown = []; w.addEventListener('lorenz:view', e => shown.push(e.detail.patterns));
     d.getElementById('play-daily').click();
-    const sheet = d.getElementById('pin-sheet'); assert.equal(sheet.hidden, false); assert.equal(sheet.previousElementSibling.classList.contains('qep-book'), true, 'next to the QEP book');
-    assert.equal(d.getElementById('pin-work').hidden, true, 'off until you choose it');
-    const box = d.getElementById('pins-on'); box.checked = true; box.dispatchEvent(new w.Event('change', {bubbles: true}));
-    assert.equal(d.getElementById('pin-work').hidden, false);
-    const rows = [...d.querySelectorAll('#pin-sheet-body tr')]; assert.equal(rows.length, 12);
-    const chi1Row = rows.find(r => r.querySelector('th').textContent === L.WHEEL.chi1.label); assert.equal(chi1Row.querySelector('td').textContent.replace(/ /g, ''), h.patterns.chi1.map(b => b ? 'x' : '.').join(''));
-    d.querySelector('#pin-wheels [data-wheel=chi2]').click(); assert.equal(d.querySelectorAll('#pin-grid .pin').length, L.WHEEL.chi2.size);
-    const pin = d.querySelector('#pin-grid [data-pin="4"]'); pin.click();
-    const again = d.querySelector('#pin-grid [data-pin="4"]'); assert.equal(again.getAttribute('aria-pressed'), 'true'); assert.ok(again.classList.contains('up'));
-    const saved = JSON.parse(w.localStorage.getItem(key)); assert.equal(saved.pins.on, true); assert.equal(saved.pins.grid.chi2[4], '1');
-    d.getElementById('pin-clear').click(); assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi2, '0'.repeat(L.WHEEL.chi2.size));
-    // run on blank pins: the tape is not the message's tape
-    setWheels(d, w, h.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
-    const want = L.crypt(h.cipherCodes, {patterns: h.patterns, start: h.start, model: h.model}), got = [...d.querySelectorAll('#out-tape button.frame')].map(f => L.codeFromBits([...f.querySelectorAll('i.h')].map(i => i.classList.contains('on') ? 1 : 0)));
-    assert.equal(got.length, want.length); assert.notDeepEqual(got, want);
+    const labels = [...d.querySelectorAll('#machine-labels .wheel-label')], chi1 = labels[L.WHEELS.findIndex(x => x.id === 'chi1')];
+    assert.equal(chi1.getAttribute('role'), 'button'); assert.equal(chi1.tabIndex, 0); assert.equal(chi1.getAttribute('aria-label'), `Set the pins on ${L.WHEEL.chi1.label}`);
+    chi1.click();
+    const face = d.getElementById('pin-face'), stage = d.getElementById('machine-stage'), wheel = face.querySelector('.face-wheel');
+    assert.equal(face.hidden, false); assert.ok(stage.classList.contains('face-on')); assert.equal(wheel.dataset.wheel, 'chi1'); assert.equal(wheel.dataset.pos, '0');
+    assert.equal(face.querySelectorAll('.cam').length, 41); assert.equal(face.querySelectorAll('.cam-n').length, 41, 'numbers round the edge');
+    // every panel folds away while the wheel is face on
+    const toggles = [...d.querySelectorAll('.panel-toggle')]; assert.ok(toggles.length >= 7); assert.ok(toggles.every(b => b.getAttribute('aria-expanded') === 'false'));
+    const pinBtn = face.querySelector('[data-face=pin]'); assert.equal(pinBtn.textContent, 'Raise pin 1');
+    pinBtn.click(); assert.equal(pinBtn.getAttribute('aria-pressed'), 'true'); assert.equal(pinBtn.textContent, 'Lower pin 1');
+    assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.grid.chi1[0], '1'); assert.equal(shown.at(-1).chi1[0], 1, 'the 3D model gets the raised pin');
+    assert.ok(face.querySelector('.cam.up.cur'), 'drawn raised at the top');
+    face.querySelector('[data-face=turn-on]').click(); assert.equal(wheel.dataset.pos, '1');
+    wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true})); assert.equal(wheel.dataset.pos, '2');
+    wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: ' ', bubbles: true})); assert.equal(shown.at(-1).chi1[2], 1);
+    wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); assert.equal(shown.at(-1).chi1[2], 0, 'and down again');
+    face.querySelector('[data-face=turn-back]').click(); face.querySelector('[data-face=turn-back]').click(); face.querySelector('[data-face=turn-back]').click(); assert.equal(wheel.dataset.pos, '40', 'turns right round');
+    face.querySelector('.cam[data-cam="5"]').dispatchEvent(new w.MouseEvent('click', {bubbles: true})); assert.equal(shown.at(-1).chi1[5], 1, 'a cam can be tapped too');
+    face.querySelector('[data-face=next-wheel]').click(); assert.equal(wheel.dataset.wheel, 'chi2'); face.querySelector('[data-face=prev-wheel]').click(); face.querySelector('[data-face=prev-wheel]').click(); assert.equal(wheel.dataset.wheel, 'mu61');
+    // one tap brings a panel back while the face is open, without changing what you saved
+    const book = toggles.find(b => b.getAttribute('aria-controls') === 'panel-book'); book.click(); assert.equal(d.getElementById('panel-book').hidden, false);
+    assert.deepEqual(JSON.parse(w.localStorage.getItem('lorenz:panels')), {wheels: true});
+    wheel.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    assert.equal(face.hidden, true); assert.ok(!stage.classList.contains('face-on'));
+    assert.equal(d.getElementById('panel-wheels').hidden, true, 'still hidden as you left it'); assert.equal(d.getElementById('panel-tape').hidden, false); assert.equal(d.getElementById('panel-pins').hidden, false);
+    assert.deepEqual(shown.at(-1).chi1.slice(0, 6), [1, 0, 0, 0, 0, 1], 'the model shows your pins after Back');
+    // the list view is still there as a fallback, and agrees
+    d.querySelector('#pin-wheels [data-wheel=chi1]').click(); assert.equal(d.querySelector('#pin-grid [data-pin="5"]').getAttribute('aria-pressed'), 'true');
+    d.getElementById('pin-open').click(); assert.equal(face.hidden, false); face.querySelector('[data-face=back]').click(); assert.equal(face.hidden, true);
   });
-  // with every pin copied right, the run punches the true tape, and reading it pays the bonus on the card
-  const save = {v: HD.HARD_SAVE_VERSION, text: h.text, answers: [], hints: [], qepGuesses: [], ran: null, solved: false, score: 0, reply: {tries: []}, wheels: {...h.start}, pins: HD.savePins({on: true, grid: copyPins(h), ranRight: false, earned: false})};
-  await bootPage({'lorenz:difficulty': '"hard"', [key]: save}, async (d, w) => {
-    d.getElementById('play-daily').click(); setWheels(d, w, h.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
-    const want = L.crypt(h.cipherCodes, {patterns: h.patterns, start: h.start, model: h.model}), got = [...d.querySelectorAll('#out-tape button.frame')].map(f => L.codeFromBits([...f.querySelectorAll('i.h')].map(i => i.classList.contains('on') ? 1 : 0)));
-    assert.deepEqual(got, want);
-    d.getElementById('hard-answer').value = h.text; d.getElementById('hard-answer-go').click();
-    assert.equal(d.getElementById('pins-on').disabled, true); assert.match(d.getElementById('pin-state').textContent, /\+250/);
-    sendReplyDOM(d, w, h); await new Promise(r => setTimeout(r, 0));
-    assert.match(d.getElementById('decoded-card').textContent, /Set the wheel patterns too\+250/);
+  // hard mode: the labels are only labels
+  await bootPage({'lorenz:difficulty': '"hard"'}, async d => { d.getElementById('play-daily').click(); const l = d.querySelector('#machine-labels .wheel-label'); assert.equal(l.getAttribute('role'), null); l.click(); assert.equal(d.getElementById('pin-face').hidden, true); });
+  assert.equal(PF.camAngle(3, 3, 41), 0); assert.equal(PF.camAngle(4, 3, 41), 360 / 41); assert.equal(PF.dragSteps(360 / 41 * 2.4, 41), 2); assert.equal(PF.wrap(-1, 41), 40);
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'), base = css.split('/* light theme')[0];
+  assert.match(base, /\.face-back,\.face-controls button\{min-height:44px;min-width:44px\}/); assert.match(base, /\.panel-toggle\{min-height:44px;min-width:44px/); assert.match(base, /\.pin\{min-height:44px;min-width:44px/);
+  assert.match(css, /:root\[data-theme=light\] \.face-svg \.cam\.up\{stroke:#5f7800\}/);
+  const faceRules = base.match(/[^}]*\.(face-|pin-face|panel-)[^{]*\{[^}]*\}/g).join(''); assert.ok(!/animation|transition/.test(faceRules), 'nothing moves by itself, so reduced motion is safe');
+});
+await t('Panels: every info panel can be hidden with a button that says so, and the page remembers', async () => {
+  let stored;
+  await bootPage({'lorenz:difficulty': '"realistic"'}, async (d, w) => {
+    d.getElementById('play-daily').click();
+    const names = [...d.querySelectorAll('[data-panel]')].map(x => x.dataset.panel); assert.deepEqual(names.sort(), ['book', 'hints', 'pins', 'preamble', 'tape', 'teleprinter', 'wheels']);
+    for (const n of names) { const b = d.querySelector(`[data-panel="${n}"] .panel-toggle`); assert.equal(b.getAttribute('aria-expanded'), 'true'); assert.equal(b.getAttribute('aria-controls'), `panel-${n}`); assert.equal(d.getElementById(`panel-${n}`).hidden, false); }
+    const b = d.querySelector('[data-panel=book] .panel-toggle'); b.click();
+    assert.equal(b.getAttribute('aria-expanded'), 'false'); assert.equal(b.textContent, 'Show'); assert.equal(b.getAttribute('aria-label'), 'Show the QEP book'); assert.equal(d.getElementById('panel-book').hidden, true);
+    d.querySelector('[data-panel=hints] .panel-toggle').click(); assert.equal(d.getElementById('panel-hints').hidden, true);
+    stored = w.localStorage.getItem('lorenz:panels'); assert.deepEqual(JSON.parse(stored), {book: true, hints: true});
   });
-  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8'); assert.match(css, /\.pin\{min-height:44px;min-width:44px/); assert.match(css, /\.pin-wheels button\{min-height:44px\}/); assert.match(css, /\.pin-toggle\{[^}]*min-height:44px/);
+  await bootPage({'lorenz:panels': stored}, async d => {
+    d.getElementById('play-daily').click(); assert.equal(d.getElementById('panel-book').hidden, true); assert.equal(d.getElementById('panel-hints').hidden, true); assert.equal(d.getElementById('panel-teleprinter').hidden, false);
+    d.querySelector('[data-panel=book] .panel-toggle').click(); assert.equal(d.getElementById('panel-book').hidden, false);
+  });
 });
 
 for (const r of results) console.log(`${r.pass ? 'PASS' : 'FAIL'} ${r.name}${r.error ? '\n  ' + r.error : ''}`);
