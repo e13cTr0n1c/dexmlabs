@@ -9,7 +9,7 @@ const HD = await import('../js/hard.js'), L = await import('../js/lorenz.js'), h
 const TYPES = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2'};
 const server = http.createServer((q, s) => { let f = path.join(SITE, decodeURIComponent(q.url.split('?')[0])); if (f.endsWith('/')) f += 'index.html';
   fs.readFile(f, (e, b) => { if (e) { s.writeHead(404); s.end(); return; } s.writeHead(200, {'content-type': TYPES[path.extname(f)] || 'application/octet-stream'}); s.end(b); }); });
-await new Promise(r => server.listen(0, '127.0.0.1', r)); const PAGE = `http://127.0.0.1:${server.address().port}/lorenz/`;
+await new Promise(r => server.listen(0, '127.0.0.1', r)); const PAGE = process.env.PAGE || `http://127.0.0.1:${server.address().port}/lorenz/`;
 const b = await chromium.launch({executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']});
 let pass = 0, fail = 0;
 for (const [w, ht, touch] of [[1440, 900, false], [390, 844, true]]) {
