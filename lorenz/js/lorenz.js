@@ -28,9 +28,13 @@ export const POSITION_BASE = 1;
  *  / = all dots (blank), 9 = space, 3 = carriage return, 4 = line feed, 5 = figure shift, 8 = letter shift. */
 export const BP = Object.freeze(['/', 'T', '3', 'O', '9', 'H', 'N', 'M', '4', 'L', 'R', 'G', 'I', 'P', 'C', 'V',
   'E', 'Z', 'D', 'B', 'S', 'Y', 'F', 'X', 'A', 'W', 'J', '5', 'U', 'Q', 'K', '8']);
-/** What each code prints in figure shift (UK teleprinter conventions, national variants aside). */
+/** What each code prints in figure shift: ITA2, with the UK national choices for F, G and H (%, @, £) as in the
+ *  table in the General Report on Tunny. D and J print nothing in figure shift: they're FIGURE_CONTROLS. */
 export const FIGURES = Object.freeze({T:'5',O:'9',H:'£',N:',',M:'.',L:')',R:'4',G:'@',I:'8',P:'0',C:':',V:'=',
   E:'3',Z:'+',D:'',B:'?',S:"'",Y:'6',F:'%',X:'/',A:'-',W:'2',J:'',U:'7',Q:'1',K:'('});
+/** Figure shift D and J are machine functions, not characters: D asks the other end's answerback "Who are you?"
+ *  (WRU) and J rings the bell. Neither prints anything. */
+export const FIGURE_CONTROLS = Object.freeze({D:'Who are you? (WRU)', J:'Bell'});
 export const SHIFT = Object.freeze({FIGS: 27, LTRS: 31, SPACE: 4, CR: 2, LF: 8, NULL: 0});
 const CODE_OF = Object.freeze(Object.fromEntries(BP.map((c, i) => [c, i])));
 const FIG_CODE = Object.freeze(Object.fromEntries(Object.entries(FIGURES).filter(([, f]) => f).map(([l, f]) => [f, CODE_OF[l]])));
@@ -164,6 +168,7 @@ export function createPrinter() {
     if (c === SHIFT.LTRS) { figs = false; return {code:c, bp:n, print:'', control:'LTRS'}; }
     if (c === SHIFT.SPACE) return {code:c, bp:n, print:' ', control:null};
     if (c === SHIFT.CR || c === SHIFT.LF || c === SHIFT.NULL) return {code:c, bp:n, print:'', control:{2:'CR',8:'LF',0:'NULL'}[c]};
+    if (figs && FIGURE_CONTROLS[n]) return {code:c, bp:n, print:'', control: n === 'D' ? 'WRU' : 'BELL'};
     return {code:c, bp:n, print: figs ? (FIGURES[n] || '') : n, control:null};
   };
 }

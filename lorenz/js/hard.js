@@ -1,6 +1,6 @@
 /** Hard mode: the same daily round as normal, plus a dated five page book, the QEP sent in clear on the tape
  *  (the preamble), the answer read off punched tape, and its own score and streak. No DOM. */
-import {BP, FIGURES, SHIFT, WHEEL, encodeText, decodeText, dotsCrosses, fromBP} from './lorenz.js';
+import {BP, FIGURES, FIGURE_CONTROLS, SHIFT, WHEEL, encodeText, decodeText, dotsCrosses, fromBP} from './lorenz.js';
 import {makeRound, randomPositions, makeSmudge, pad2, answerLine, RULES, statsFrom} from './game.js';
 import {mulberry32, hashString, randomInt, shuffle, SEED_VERSION} from './seed.js';
 
@@ -45,7 +45,7 @@ export function makeHardRound(opts = {}) {
 /** The cheat sheet, straight from lorenz.js: holes, letter shift and figure shift for all 32 codes. */
 const CONTROL = {0:'Blank (all dots)', 2:'Carriage return', 4:'Space', 8:'Line feed', 27:'Figure shift', 31:'Letter shift'};
 export const CHEAT_SHEET = Object.freeze(BP.map((bp, code) => Object.freeze({code, bp, holes: dotsCrosses(code),
-  letter: CONTROL[code] ?? bp, figure: CONTROL[code] ?? (FIGURES[bp] || '')})));
+  letter: CONTROL[code] ?? bp, figure: CONTROL[code] ?? (FIGURES[bp] || FIGURE_CONTROLS[bp] || '')})));
 
 /* ---------- Answer matching ---------- */
 const TRAIL = /[\s.,;:?!'"=+%()\/-]+$/;
