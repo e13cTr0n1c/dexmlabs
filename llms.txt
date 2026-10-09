@@ -1,10 +1,10 @@
 # Deus Ex Machina Labs
 
-> Small free browser games and free UK money calculators, plus paid spreadsheet templates for UK tax and money records. Made in a home lab in the UK. Calculators and templates give estimates, not tax or legal advice.
+> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, and 3D print designs for the radio bench.
 
 ## Home
 
-- [Deus Ex Machina Labs](https://dexmlabs.app/): Homepage with the games, the CIS tools and the free calculators.
+- [Deus Ex Machina Labs](https://dexmlabs.app/): Homepage with the games and the makes.
 
 ## Games
 
@@ -12,37 +12,23 @@
 - [How to play Skywave](https://dexmlabs.app/skywave/help.html): The rules of the daily Skywave puzzle.
 - [Who made Skywave](https://dexmlabs.app/skywave/about.html): Who made Skywave and why.
 - [What's changed in Skywave](https://dexmlabs.app/skywave/log.html): The Skywave change log.
-- [Lorenz](https://dexmlabs.app/lorenz/): A daily Lorenz cipher puzzle. Set the twelve wheels of a German teleprinter cipher machine and read the intercept. Free, no account, no cookies.
+- [Lorenz](https://dexmlabs.app/lorenz/): A daily puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Set the twelve wheels and read the intercept. Free, no account, no cookies.
 - [How to play Lorenz](https://dexmlabs.app/lorenz/help.html): The rules of the daily Lorenz puzzle.
 - [Why I built Lorenz](https://dexmlabs.app/lorenz/about.html): Why I built Lorenz.
 - [What's changed in Lorenz](https://dexmlabs.app/lorenz/log.html): The Lorenz change log.
 
-## Tools
+## Makes
 
-- [Free UK money tools](https://dexmlabs.app/tools/): Index of the free calculators. No sign up.
-- [CIS tax refund estimator](https://dexmlabs.app/tools/cis-refund-estimator/): For subcontractors. Estimate your CIS refund or tax bill for 2025/26 or 2026/27, and see which Self Assessment boxes the figures go in.
-- [CIS deduction calculator](https://dexmlabs.app/tools/cis-deduction-calculator/): For contractors and subcontractors. Check what should come off an invoice at 20%, 30% or gross: labour only, with materials and VAT left out.
-- [Probate and Inheritance Tax calculator](https://dexmlabs.app/tools/probate-iht-calculator/): For England and Wales. Estimate the Inheritance Tax on an estate, with the residence allowance, gifts and the probate fee.
-- [Late payment interest calculator](https://dexmlabs.app/tools/late-payment-interest-calculator/): For businesses chasing a late invoice. Work out the statutory interest at 8% plus base rate, and the £40, £70 or £100 compensation.
-- [Gift Inheritance Tax taper checker](https://dexmlabs.app/tools/gift-iht-taper-checker/): For anyone who has given money away. See how far a gift is through the 7 years, its taper rate, and the day it drops out of Inheritance Tax.
-- [VAT threshold checker](https://dexmlabs.app/tools/vat-threshold-checker/): For sole traders and small firms. Enter 12 months of sales and see your rolling total against £90,000, your headroom and any deadline to register.
-
-## Templates
-
-- [Templates](https://dexmlabs.app/templates/): Paid spreadsheet templates for UK tax and money records, sold on Gumroad.
-- [UK CIS Subcontractor Self Assessment Tracker 2026/27](https://dexmlabs.app/templates/cis-subcontractor-tracker/): £14.99. For subcontractors. Log what you are paid, the CIS taken off, expenses and mileage, and see an estimate of your refund or tax bill.
-- [UK CIS Contractor Monthly Return Tracker 2026/27](https://dexmlabs.app/templates/cis-contractor-tracker/): £14.99. For contractors. Subcontractors, verifications, deductions on labour only, monthly return totals and deduction statements.
-- [UK CIS Mileage and Expenses Log Lite 2026/27](https://dexmlabs.app/templates/cis-mileage-lite/): Free, pay what you want (£0+). Log every business mile and receipt, with totals ready for Self Assessment.
-- [Both Sides of CIS Bundle 2026/27](https://dexmlabs.app/templates/cis-bundle/): £21.99. The subcontractor tracker, the contractor tracker and the free mileage log together. £29.98 bought separately.
-- [UK Executor and Probate Tracker 2026/27 (England and Wales)](https://dexmlabs.app/templates/probate-tracker/): £19.99. For executors in England and Wales. Tasks, assets, an IHT estimate, the estate ledger and accounts for beneficiaries.
-- [UK Gifts and Inheritance Tax 7 Year Tracker](https://dexmlabs.app/templates/gifts-iht-tracker/): £12.99. Keep a record of gifts as you make them, with exemptions, the 7 year clock and the taper.
-- [UK Freelancer Time, Invoice and Late Payment Tracker 2026/27](https://dexmlabs.app/templates/freelancer-late-payment-tracker/): £14.99. Time, invoices and who has not paid in one place, with statutory late payment interest worked out.
-- [UK Small Business Sales Dashboard and VAT Threshold Watch](https://dexmlabs.app/templates/sales-dashboard-vat-watch/): £12.99. Sales, margin and targets, plus the rolling 12 month figure HMRC tests against the £90,000 VAT threshold.
+- [Lorenz chi wheel](https://cults3d.com/en/3d-model/gadget/lorenz-cipher-chi-wheel-demonstrator-simplified-sz42-teaching-model): 3D print of a simplified SZ42 chi wheel, for showing how Lorenz works. On Cults3D.
+- [EFHW toroid box](https://cults3d.com/en/3d-model/tool/toroid-box-for-ft240-and-ft140-cores-efhw-49-1-9-1-unun-choke-so-239-n-or): 3D print for FT240 and FT140 cores. On Cults3D.
+- [RF panel drill guide](https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-239-n-4-hole-flange-and-bnc-d-hole-with): 3D print for SO-239, N and BNC holes. On Cults3D.
+- [Band plan desk mat](https://arthurdeusexmachina-shop.fourthwall.com/products/uk-ham-radio-band-plan-desk-mat-160m-to-70cm): UK ham bands, 160m to 70cm. On Fourthwall.
+- [Buy me a coffee](https://buymeacoffee.com/arthurdeusexmachina): Support the lab.
 
 ## Policies
 
 - [Privacy](https://dexmlabs.app/privacy/): What data the site keeps and why.
 - [Cookies and storage](https://dexmlabs.app/cookies/): Cookies and local storage used on the site.
 - [Terms](https://dexmlabs.app/terms/): Terms of use.
-- [Disclaimer](https://dexmlabs.app/disclaimer/): Estimates, not advice. What the figures on this site can and cannot do.
+- [Disclaimer](https://dexmlabs.app/disclaimer/): What the games are and are not.
 - [Contact](https://dexmlabs.app/contact/): How to get in touch.
