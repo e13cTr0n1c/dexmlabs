@@ -2,7 +2,7 @@
  *  (raised cams stick out and glow), a reading pointer at the top of each, and the wheels turning as each
  *  character goes through. Renders only while something is moving. */
 import * as THREE from 'three';
-import {LAYOUT, WIDTH, angleFor} from './layout.js';
+import {LAYOUT, WIDTH, angleFor, frameCamera, LABEL_LIFT} from './layout.js';
 
 const ACID = new THREE.Color('#d6ff00'), DOWN = new THREE.Color('#3a4235'), READ_UP = new THREE.Color('#ffffff'), READ_DOWN = new THREE.Color('#8a9585');
 
@@ -57,11 +57,10 @@ export function createMachine3D(stage, {reducedMotion = () => false, labels} = {
   let width = 1, height = 1, yaw = -0.55, targetYaw = -0.55, idle = false, frame = null, disposed = false, spin = null, onScreen = true;
   const pitch = 0.32;
   function place() {
-    const aspect = width / height; camera.aspect = aspect;
-    const fit = (WIDTH + 3.2) / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / aspect;
-    const dist = Math.max(9, fit * (aspect < 1 ? 1.02 : 1.1));
-    camera.position.set(Math.sin(yaw) * dist, Math.sin(pitch) * dist * 0.9 + 0.4, Math.cos(yaw) * dist);
-    camera.lookAt(0, -0.25, 0); camera.updateProjectionMatrix();
+    camera.aspect = width / height;
+    // back off until every label and the base sit inside the canvas, at this size and this angle
+    const f = frameCamera(width, height, {fov: camera.fov, yaw, pitch});
+    camera.position.set(...f.position); camera.lookAt(...f.target); camera.updateProjectionMatrix();
   }
   function resize() { const r = stage.getBoundingClientRect(), room = parseFloat(getComputedStyle(stage).paddingTop) || 0; width = Math.max(1, r.width); height = Math.max(1, r.height - room); renderer.setSize(width, height, false); place(); request(); }
   const ro = new ResizeObserver(resize); ro.observe(stage);
@@ -73,7 +72,7 @@ export function createMachine3D(stage, {reducedMotion = () => false, labels} = {
     if (!labels) return;
     wheels.forEach((wh, i) => {
       const el = labels[i]; if (!el) return;
-      v.set(wh.x, wh.r + 0.55, 0).applyMatrix4(rack.matrixWorld).project(camera);
+      v.set(wh.x, wh.r + LABEL_LIFT, 0).applyMatrix4(rack.matrixWorld).project(camera);
       el.style.transform = `translate(${((v.x + 1) / 2 * width).toFixed(1)}px,${((1 - v.y) / 2 * height).toFixed(1)}px) translate(-50%,-100%)`;
     });
   }

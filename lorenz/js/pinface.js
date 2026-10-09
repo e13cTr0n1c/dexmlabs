@@ -31,22 +31,25 @@ export function faceSVG(bits, pos) {
 /** The face on view inside `root`. `get()` returns {grid, locked}; `toggle(id, i)` flips a pin; `back()` closes. */
 export function createPinFace(root, {get, toggle, back, onWheel = () => {}, reducedMotion = () => false}) {
   let id = 'chi1', pos = 0, drag = null;
-  root.innerHTML = `<div class="face-top"><p class="face-name" id="face-name" aria-live="polite"></p><button type="button" class="secondary face-back" data-face="back">Back to the machine</button></div>
-<div class="face-strip" role="group" aria-label="The rim unrolled: the pin at the top in the middle, with its neighbours either side"><span class="strip-pointer" aria-hidden="true"></span><div class="strip-track"></div></div>
+  root.innerHTML = `<div class="face-top"><p class="face-name" id="face-name" aria-live="polite"></p><div class="face-extra"></div><button type="button" class="secondary face-back" data-face="back">Back to the machine</button></div>
+<p class="face-caption" id="strip-caption">Pattern sheet</p>
+<div class="face-strip" role="group" aria-describedby="strip-caption" aria-label="The rim unrolled: the pin at the top in the middle, with its neighbours either side"><span class="strip-pointer" aria-hidden="true"></span><div class="strip-track"></div></div>
+<p class="face-caption">Your pins</p>
 <div class="face-wheel" tabindex="0" role="group" aria-roledescription="wheel" aria-describedby="face-help"></div>
 <p class="sr-only" id="face-help">Left and right arrow keys turn the wheel, Space or Enter raises or lowers the pin at the top, Escape goes back to the machine.</p>
-<div class="face-controls"><button type="button" class="secondary" data-face="prev-wheel">Previous wheel</button><button type="button" class="secondary" data-face="turn-back">Turn back</button><button type="button" class="primary face-pin" data-face="pin" aria-pressed="false"></button><button type="button" class="secondary" data-face="turn-on">Turn on</button><button type="button" class="secondary" data-face="next-wheel">Next wheel</button></div>`;
+<div class="face-controls"><button type="button" class="secondary" data-face="prev-wheel">Previous wheel</button><button type="button" class="secondary" data-face="step-back">Step back</button><button type="button" class="primary face-pin" data-face="pin" aria-pressed="false"></button><button type="button" class="secondary" data-face="step-forward">Step forward</button><button type="button" class="secondary" data-face="next-wheel">Next wheel</button></div>`;
   const strip = root.querySelector('.face-strip'), track = root.querySelector('.strip-track'), wheel = root.querySelector('.face-wheel'), pinBtn = root.querySelector('[data-face=pin]');
   /** The rim unrolled into a straight window: the pin at the top sits in the middle under the pointer, with a few
    *  pins either side that wrap past the last pin back to pin 1. One extra pin each side, out of sight, lets it slide. */
   let shownPos = null, shownWheel = null;
-  function drawStrip(bits, locked) {
+  function drawStrip(bits, locked, sheet) {
     const size = bits.length, k = stripReach(root.clientWidth - 20), slots = [];
     for (let o = -k - 1; o <= k + 1; o++) slots.push(wrap(pos + o, size));
     strip.style.setProperty('--reach', String(k));
     track.innerHTML = slots.map((i, n) => {
-      const edge = n === 0 || n === slots.length - 1, up = bits[i] === 1, cur = n === k + 1;
-      return `<button type="button" class="strip-pin${up ? ' up' : ''}${cur ? ' cur' : ''}" data-strip="${i}" aria-pressed="${up}" aria-label="Pin ${i + 1}"${cur ? ' aria-current="true"' : ''}${edge ? ' tabindex="-1" aria-hidden="true"' : ''}${locked ? ' disabled' : ''}><span class="strip-n" aria-hidden="true">${i + 1}</span><span class="strip-line" aria-hidden="true"></span></button>`;
+      // the strip shows the sheet's pin; the button's pressed state is yours, and only the pin at the top says if they differ
+      const edge = n === 0 || n === slots.length - 1, up = sheet[i] === 1, mine = bits[i] === 1, cur = n === k + 1, differs = cur && up !== mine;
+      return `<button type="button" class="strip-pin${up ? ' up' : ''}${cur ? ' cur' : ''}${differs ? ' differs' : ''}" data-strip="${i}" aria-pressed="${mine}" aria-label="Pin ${i + 1}, sheet ${up ? 'raised' : 'lowered'}${differs ? ', yours differs' : ''}"${cur ? ' aria-current="true"' : ''}${edge ? ' tabindex="-1" aria-hidden="true"' : ''}${locked ? ' disabled' : ''}><span class="strip-n" aria-hidden="true">${i + 1}</span><span class="strip-line" aria-hidden="true"></span></button>`;
     }).join('');
     // slide from where it was: a step or a few, the short way round; instant under reduced motion
     let step = shownWheel === id && shownPos !== null ? wrap(pos - shownPos, size) : 0; if (step > size / 2) step -= size;
@@ -58,8 +61,8 @@ export function createPinFace(root, {get, toggle, back, onWheel = () => {}, redu
     track.style.transition = 'transform .18s ease-out'; track.style.transform = '';
   }
   function draw() {
-    const {grid, locked} = get(), bits = grid[id], w = WHEEL[id], up = bits[pos] === 1;
-    drawStrip(bits, locked);
+    const {grid, locked, sheet} = get(), bits = grid[id], w = WHEEL[id], up = bits[pos] === 1;
+    drawStrip(bits, locked, sheet?.[id] || bits);
     wheel.innerHTML = faceSVG(bits, pos); wheel.dataset.wheel = id; wheel.dataset.pos = String(pos);
     wheel.setAttribute('aria-label', `${w.label}, pin ${pos + 1} of ${w.size} at the top, ${up ? 'raised' : 'lowered'}`);
     root.querySelector('#face-name').textContent = `${w.label}: pin ${pos + 1} of ${w.size}, ${bits.filter(Boolean).length} raised`;
@@ -71,7 +74,7 @@ export function createPinFace(root, {get, toggle, back, onWheel = () => {}, redu
   root.addEventListener('click', e => {
     const b = e.target.closest('[data-face]'); if (b) {
       const a = b.dataset.face;
-      if (a === 'back') back(); else if (a === 'pin') flip(); else if (a === 'turn-on') turn(1); else if (a === 'turn-back') turn(-1);
+      if (a === 'back') back(); else if (a === 'pin') flip(); else if (a === 'step-forward') turn(1); else if (a === 'step-back') turn(-1);
       else setWheel(nextWheel(id, a === 'next-wheel' ? 1 : -1));
       return;
     }
