@@ -56,7 +56,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--acid)}
 .header-coffee img{display:block;height:30px;width:auto}
 .header-coffee:hover img{filter:brightness(1.06)}
 
-/* Footer, as Skywave: one line, scrolls sideways on phones */
+/* Footer, as Skywave: one line, wraps on phones */
 .site-footer{height:var(--footer);padding:0 30px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--line);position:fixed;bottom:0;left:0;right:0;z-index:21;background:#080a08;font-size:12px;color:var(--muted)}
 .site-footer a{color:var(--ink)}
 .footer-links{display:flex;gap:16px;white-space:nowrap}
@@ -81,7 +81,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--acid)}
 .arthur-photo-large .photo-frame{width:88px;height:88px}
 .print-slot{max-width:560px;border:1px dashed var(--edge);padding:14px 16px;margin:0 0 18px}
 .print-slot h2{font-size:17px;margin:0 0 6px}.print-slot p{margin:0 0 8px;color:var(--muted)}
-.print-link{display:inline-block;color:var(--muted);border-bottom:1px dotted var(--edge);cursor:default}
+.print-link{display:inline-block;color:var(--acid);border-bottom:1px solid var(--acid)}
 .disclaimer{font-size:12px;line-height:1.7;color:var(--muted);max-width:560px}
 .title-links{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;margin-top:22px}
 .title-links a{color:var(--ink);border-bottom:1px solid var(--edge);padding-bottom:4px}
@@ -278,7 +278,10 @@ body[data-screen]:not([data-screen=title]) .storage-note{display:none}
 }
 /* Guide pages scroll, so their footer sits at the end and can take a third line */
 @media(max-width:760px){body:not([data-screen]){padding-bottom:0}body:not([data-screen]) .site-footer{position:static;height:auto;min-height:var(--footer);padding-top:6px;padding-bottom:6px}}
-@media(max-width:560px){:root{--footer:56px}.site-footer{gap:8px 12px;padding:6px 12px;line-height:17px}}
+/* the header already has Guide, so the title footer drops it on phones to stay on two lines */
+@media(max-width:760px){.site-footer .fl-desk{display:none}}
+@media(max-width:760px){:root{--footer:56px}.site-footer{gap:8px 10px;padding:6px 12px;line-height:17px}}
+@media(min-width:761px) and (max-width:1000px){.site-footer .fl-long{display:none}.site-footer .fl-short{display:inline}.footer-links{gap:12px}}
 @media(max-width:360px){
   .qep-table{font-size:11px}.qep-table th,.qep-table td{padding:5px 2px}
   .teleprinter .section-top{flex-wrap:wrap}

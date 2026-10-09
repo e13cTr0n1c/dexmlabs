@@ -1,6 +1,6 @@
 /** Deterministic, versioned daily seeds. No locale-dependent dates or Math.random. */
 export const SEED_VERSION = 'lorenz-v1';
-/** Day #1 is the day Lorenz was first put up for review. */
+/** Day #1 is 9 October 2026. */
 export const DAY_ONE = Date.UTC(2026, 9, 9);
 export function hashString(text) {
   let h = 2166136261;

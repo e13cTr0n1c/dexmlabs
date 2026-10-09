@@ -1,6 +1,6 @@
 /** Lorenz SZ40/42 cipher core. Pure functions, no DOM, so the tests run in plain Node.
  *
- * CONVENTIONS (all in one place, so they can be lined up with the printable model later)
+ * CONVENTIONS (all in one place; chi only mode and the printable model use the same ones)
  *  BIT_ORDER      Impulse 1 is the most significant bit of a 5 bit code. E (x....) is 16, T (....x) is 1.
  *  MARK / SPACE   A cross (x), a hole in the tape, a raised cam = 1. A dot (.), no hole, a lowered cam = 0.
  *  POSITION_BASE  Wheel positions are numbered from 1, as on the wheel rims (01 to 41 on chi 1 and so on).

@@ -5,6 +5,7 @@ import {utcDateKey, mulberry32} from './seed.js';
 import {Tape} from './tape.js';
 import {ScoreCounter, rewardPlan, scoreBreakdown} from './reward.js';
 import {CHI_EXAMPLE} from './chi-example.js';
+import {applyPrintLink} from './print-link.js';
 
 const $ = id => document.getElementById(id);
 const PREFIX = 'lorenz:';
@@ -399,7 +400,7 @@ function boot() {
   app.settings = {...app.settings, ...read('settings', {})};
   app.stats = statsFrom(read('stats', {history: {}}).history || {}, utcDateKey());
   app.daily = {round: makeRound({mode: 'daily'})};
-  buildDials(); buildChi(); bind(); applySettings(); refreshTitle();
+  buildDials(); buildChi(); bind(); applySettings(); refreshTitle(); applyPrintLink(document);
   if (location.hash) route(); else show('title');
   const later = () => loadView();
   if ('requestIdleCallback' in window) requestIdleCallback(later, {timeout: 1200}); else setTimeout(later, 200);
