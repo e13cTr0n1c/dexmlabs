@@ -1,7 +1,9 @@
 /** Lorenz: page controller. Wires the pure cipher and game modules to the DOM, the tape and the 3D view. */
-import {WHEELS, WHEEL, CHI, PSI, MODELS, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
+import {WHEELS, WHEEL, CHI, PSI, MODELS, crypt, createMachine, createChiMachine, createPrinter, encodeText, toBP, fromBP, parsePattern, patternString, checkPosition, groups, POSITION_BASE} from './lorenz.js';
 import {makeRound, newState, attempt, useHint, shareText, updateStats, statsFrom, msToNextDay, pad2, scoreFor, RULES, makePattern, answerLine, revealText} from './game.js';
-import {bookHeadHTML, bookBodyHTML, smudgeNote} from './book.js';
+import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
+import {makeHardRound, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
+import {tapeHTML, holesHTML, holesText} from './punch.js';
 import {utcDateKey, mulberry32} from './seed.js';
 import {Tape} from './tape.js';
 import {ScoreCounter, rewardPlan, scoreBreakdown} from './reward.js';
@@ -16,7 +18,7 @@ const escapeHTML = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&l
 const fmt = n => Math.round(n).toLocaleString('en-GB');
 const niceDate = key => new Date(key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric', timeZone:'UTC'});
 
-const app = {screen:'title', mode:null, tab:'random', state:null, daily:null, practice:null, wheels:{}, settings:{reducedMotion:false, flat:false}, stats:null, view:null, run:null, io:'plain', chiIo:'plain', labels:[], lastOut:''};
+const app = {difficulty:'normal', page:0, marked:new Set(), screen:'title', mode:null, tab:'random', state:null, daily:null, practice:null, wheels:{}, settings:{reducedMotion:false, flat:false}, stats:null, view:null, run:null, io:'plain', chiIo:'plain', labels:[], lastOut:''};
 export const reducedMotion = () => Boolean(app.settings.reducedMotion || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches));
 let tape, counter;
 
@@ -86,7 +88,7 @@ function showDials() { for (const w of WHEELS) { const i = $(`dial-${w.id}`); if
 function wheelsChanged() {
   if (app.run) stopRun();
   syncView(true);
-  if (app.mode === 'daily' && app.state && !app.state.solved) saveRound();
+  if ((app.mode === 'daily' || app.mode === 'hard') && app.state && !app.state.solved) saveRound();
 }
 
 /* ---------- Screens ---------- */
@@ -101,15 +103,23 @@ function show(screen) {
 function refreshTitle() {
   const s = app.stats, day = app.daily.round;
   $('header-day').textContent = `#${day.number}, ${new Date(day.key + 'T12:00:00Z').toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'UTC'})}`;
-  const saved = read(`round:${day.key}`, null);
-  if (saved?.solved) $('play-daily').firstChild.textContent = "See today's result ";
-  if (s?.rounds) $('title-stats').textContent = `Your streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best score ${fmt(s.best)}. A new intercept every day at 00:00 UTC.`;
+  const hard = app.difficulty === 'hard', saved = read(`${hard ? 'hard:' : ''}round:${day.key}`, null), st = hard ? app.hardStats : s;
+  $('play-daily').firstChild.textContent = saved?.solved ? "See today's result " : "Play today's round ";
+  document.querySelectorAll('[data-difficulty]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.difficulty === app.difficulty)));
+  $('mode-note').textContent = hard ? 'Hard: the same intercept, but the QEP number is on the tape, the book has five dated pages, and the machine only punches tape. You read it yourself.' : 'Normal: the QEP number is given and the teleprinter prints the message.';
+  $('title-stats').textContent = st?.rounds ? `Your ${hard ? 'hard mode ' : ''}streak: ${st.streak} day${st.streak === 1 ? '' : 's'}. Best score ${fmt(st.best)}. A new intercept every day at 00:00 UTC.` : 'Twelve wheels, 501 cams, a new intercept every day at 00:00 UTC.';
 }
 function startDaily() {
   app.mode = 'daily'; app.tab = 'random'; app.daily = {round: makeRound({mode:'daily'})};
   const r = app.daily.round, saved = read(`round:${r.key}`, null);
   app.state = restoreState(r, saved);
   app.wheels = sanitiseWheels(saved?.wheels);
+  enterGame();
+}
+function startHard() {
+  app.mode = 'hard'; app.tab = 'random'; const r = makeHardRound({});
+  const saved = read(`hard:round:${r.key}`, null);
+  app.state = restoreHard(r, saved); app.wheels = sanitiseWheels(saved?.wheels); app.page = r.openIndex; app.marked = new Set();
   enterGame();
 }
 function startPractice(tab = 'random') {
@@ -135,10 +145,11 @@ const sanitiseWheels = w => Object.fromEntries(WHEELS.map(x => [x.id, checkPosit
 function enterGame() {
   show('game'); renderTabs(); renderRound(); showDials(); clearOutput();
   const st = app.state;
-  if (app.tab === 'random' && st.solved) { replaySolved(); showCard(false); }
+  if (app.mode === 'hard') { if (st.ran || st.solved) showHardTape(); if (st.solved) { $('hard-answer').value = st.round.text; showCard(false); } }
+  else if (app.tab === 'random' && st.solved) { replaySolved(); showCard(false); }
   syncView(false);
   const h = {random:'game-heading', encipher:'encipher-heading', chi:'chi-heading'}[app.tab]; $(h)?.focus({preventScroll: true});
-  location.hash = app.mode === 'daily' ? 'daily' : ({random:'practice', encipher:'encipher', chi:'chi'}[app.tab]);
+  location.hash = app.mode === 'daily' ? 'daily' : app.mode === 'hard' ? 'hard' : ({random:'practice', encipher:'encipher', chi:'chi'}[app.tab]);
 }
 function renderTabs() {
   const practice = app.mode === 'practice';
@@ -147,17 +158,27 @@ function renderTabs() {
   $('panel-round').hidden = app.tab !== 'random'; $('panel-encipher').hidden = app.tab !== 'encipher'; $('panel-chi').hidden = app.tab !== 'chi';
   $('wheels-panel').hidden = app.tab === 'chi'; $('hint-row').hidden = app.tab !== 'random';
   $('score-display').hidden = app.tab !== 'random';
-  $('run-button').firstChild.textContent = app.tab === 'random' ? 'Decode the tape ' : 'Run the tape ';
+  $('run-button').firstChild.textContent = app.tab === 'random' && app.mode !== 'hard' ? 'Decode the tape ' : 'Run the tape ';
   $('decoded-card').hidden = true;
-  setFeedback(app.tab === 'random' ? (app.state?.solved ? 'good' : '') : '', app.tab === 'random' ? (app.state?.solved ? 'Decoded. That message is done.' : 'Set the wheels, then run the tape.') : app.tab === 'chi' ? 'Set the five chi wheels, then run the tape.' : 'Type a message, then run the tape.');
+  setFeedback(app.tab === 'random' ? (app.state?.solved ? 'good' : '') : '', app.tab === 'random' ? (app.state?.solved ? 'Decoded. That message is done.' : app.mode === 'hard' ? "Read the preamble, find today's page in the book, set the wheels, then run the tape." : 'Set the wheels, then run the tape.') : app.tab === 'chi' ? 'Set the five chi wheels, then run the tape.' : 'Type a message, then run the tape.');
   if (app.tab === 'chi') { chiValidate(); }
 }
+function showModeParts() {
+  const hard = app.mode === 'hard';
+  for (const id of ['today-line', 'preamble-box', 'book-pager', 'hard-out']) $(id).hidden = !hard;
+  $('printed-box').hidden = hard;
+  document.querySelectorAll('[data-hint=qep],[data-hint=char]').forEach(b => { b.hidden = !hard; });
+  $('tape-legend').textContent = hard ? 'Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. In hard mode nothing is printed under it.' : 'Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.';
+}
 function renderRound() {
+  showModeParts();
+  if (app.mode === 'hard') return renderHard();
   const st = app.state, r = st.round, daily = r.mode === 'daily';
   $('round-label').textContent = daily ? `Lorenz #${r.number}, ${niceDate(r.key)}` : 'Practice, random settings';
   $('qep-number').textContent = pad2(r.qep);
   $('model-name').textContent = r.model === MODELS.SZ42A ? 'SZ42A, with the chi 2 one back limitation' : 'SZ40, basic motor';
   $('model-name').hidden = !daily; $('practice-model').hidden = daily; $('practice-new').hidden = daily;
+  $('round-intro').textContent = 'The operator sent this QEP number in clear before the message. Find it in the book below and set the wheels to match.';
   document.querySelectorAll('#practice-model [data-model]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.model === r.model)));
   $('cipher-text').textContent = groups(r.cipher);
   $('cipher-count').textContent = `${r.cipher.length} characters`;
@@ -170,11 +191,22 @@ function renderRound() {
 }
 function updateHintButtons() {
   const st = app.state, solved = st?.solved;
+  if (app.mode === 'hard') {
+    const off = {reveal: st.hints.some(h => h.type === 'smudge') || !answerLine(st.round)?.smudge, qep: qepKnown(st), char: revealedChars(st).length >= messageChars(st.round).length, check: false};
+    document.querySelectorAll('[data-hint]').forEach(b => { b.disabled = Boolean(solved) || off[b.dataset.hint]; });
+    return;
+  }
   document.querySelectorAll('[data-hint]').forEach(b => { b.disabled = Boolean(solved) || (b.dataset.hint === 'reveal' && (st.hints.some(h => h.type === 'reveal') || !answerLine(st.round)?.smudge)); });
 }
-function updateScore() { if (!app.state) return; counter.show(app.state.solved ? app.state.score : scoreFor(app.state)); $('score-display').title = app.state.solved ? 'Your score' : 'What a correct decode is worth now'; }
+function updateScore() { if (!app.state) return; counter.show(app.state.solved ? app.state.score : app.mode === 'hard' ? hardScoreFor(app.state) : scoreFor(app.state)); $('score-display').title = app.state.solved ? 'Your score' : 'What a correct decode is worth now'; }
 function saveRound() {
-  const st = app.state; if (st.round.mode !== 'daily') { app.practiceWheels = {...app.wheels}; return; }
+  const st = app.state;
+  if (app.mode === 'hard') {
+    write(`hard:round:${st.round.key}`, {answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, wheels: app.wheels});
+    try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'hard:round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+    return;
+  }
+  if (st.round.mode !== 'daily') { app.practiceWheels = {...app.wheels}; return; }
   write(`round:${st.round.key}`, {attempts: st.attempts, hints: st.hints, solved: st.solved, score: st.score, wheels: app.wheels});
   try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + 'round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
 }
@@ -192,6 +224,7 @@ function runTape({codes, machine, label, onDone, outputAs = 'print'}) {
   const one = () => {
     const c = codes[run.i++], s = machine.step(), o = c ^ s.key; out.push(o);
     const p = printer(o), shown = outputAs === 'bp' ? {print: toBP([o]), control: null} : p;
+    if (outputAs === 'tape') { tape.push({code: o, print: '', control: null}); text.push(''); return s; }
     tape.push({code: c, print: shown.print, control: shown.control});
     text.push(outputAs === 'bp' ? toBP([o]) : p.print);
     return s;
@@ -230,6 +263,7 @@ function onRun() {
   if (app.tab === 'chi') return runChi();
 }
 function runDecode() {
+  if (app.mode === 'hard') return runHard();
   const st = app.state, r = st.round, settings = {...app.wheels};
   if (st.solved) { replaySolved(true); return; }
   setFeedback('', 'Running the tape...'); revealTeleprinter();
@@ -261,9 +295,11 @@ function success() {
   if (plan.delay) setTimeout(() => showCard(true), plan.delay); else showCard(false);
 }
 function showCard(animate) {
+  if (app.mode === 'hard') return showHardCard(animate);
   const st = app.state, r = st.round, b = scoreBreakdown(st), s = app.stats, card = $('decoded-card');
   const streak = r.mode === 'daily' && s ? `<p class="tiny">Streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best: ${fmt(s.best)} pts.</p>` : '';
   const next = r.mode === 'daily' ? `<p class="countdown">Next intercept in ${countdown()}.</p>` : '';
+  card.className = 'decoded-card';
   card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Message decoded</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button><button type="button" data-card="practice">${r.mode === 'daily' ? 'Practice' : 'Next round'}</button></div>${next}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
   applyPrintLink(card);
   card.hidden = false;
@@ -334,10 +370,149 @@ function runChi() {
   }});
 }
 
+
+/* ---------- Hard mode ---------- */
+function renderHard() {
+  const st = app.state, r = st.round;
+  $('round-label').textContent = `Lorenz #${r.number}, hard, ${niceDate(r.key)}`;
+  $('qep-number').textContent = qepKnown(st) || st.solved ? pad2(r.qep) : '??';
+  $('round-intro').textContent = "The QEP number came on the tape, sent in clear before the message. Read it with the cheat sheet, find today's page in the book, set the wheels and run the tape. Then read what the machine punched.";
+  $('model-name').textContent = r.model === MODELS.SZ42A ? 'SZ42A, with the chi 2 one back limitation' : 'SZ40, basic motor';
+  $('model-name').hidden = false; $('practice-model').hidden = true; $('practice-new').hidden = true;
+  $('today-date').textContent = pageDate(r.key);
+  $('cipher-text').textContent = groups(r.cipher); $('cipher-count').textContent = `${r.cipher.length} characters`;
+  const pre = $('preamble-tape'); pre.innerHTML = tapeHTML(r.preamble);
+  pre.setAttribute('aria-label', `Preamble tape, ${r.preamble.length} rows, impulse 1 first: ${r.preamble.map(c => holesText(c)).join('; ')}`);
+  $('qep-table').tHead.innerHTML = bookHeadHTML();
+  renderBookPage(0);
+  renderRevealed(); updateHintButtons(); updateScore();
+}
+function renderBookPage(dir) {
+  const st = app.state, r = st.round, page = r.pages[app.page], smudgeRead = st.hints.some(h => h.type === 'smudge');
+  $('book-page').textContent = `${app.page + 1} of ${r.pages.length}`;
+  $('book-date').textContent = pageDate(page.key);
+  $('qep-table').tBodies[0].innerHTML = bookBodyHTML(pageRound(r, page), smudgeRead && page.today, {highlight: false});
+  $('smudge-note').textContent = smudgeRead ? `${SMUDGE_NOTE} ${hardSmudgeText(r)}` : SMUDGE_NOTE;
+  $('page-prev').disabled = app.page === 0; $('page-next').disabled = app.page === r.pages.length - 1;
+  const sheet = $('book-scroll'); sheet.classList.remove('turn-next', 'turn-prev');
+  if (dir && !reducedMotion()) { void sheet.offsetWidth; sheet.classList.add(dir > 0 ? 'turn-next' : 'turn-prev'); }
+}
+function turnPage(dir) {
+  if (app.mode !== 'hard' || !app.state) return;
+  const n = Math.min(app.state.round.pages.length - 1, Math.max(0, app.page + dir)); if (n === app.page) return;
+  app.page = n; renderBookPage(dir);
+}
+function hardOutput(settings) { const r = app.state.round; return crypt(r.cipherCodes, {patterns: r.patterns, start: settings, model: r.model}); }
+function showHardTape() {
+  const st = app.state, settings = sanitiseWheels(st.ran || st.round.start), codes = hardOutput(settings);
+  tape.setRows(codes.map(code => ({code, print: '', control: null})));
+  $('out-tape').innerHTML = tapeHTML(codes, {buttons: true, marked: app.marked});
+}
+function renderRevealed() {
+  const st = app.state, chars = revealedChars(st), el = $('revealed-chars');
+  el.hidden = !chars.length; el.textContent = chars.length ? `The message starts: ${chars.replace(/ /g, '\u2423')}` : '';
+}
+function runHard() {
+  const st = app.state, r = st.round, settings = {...app.wheels};
+  setFeedback('', 'Punching the tape...'); revealTeleprinter(); app.marked = new Set();
+  runTape({codes: r.cipherCodes, machine: createMachine({patterns: r.patterns, start: settings, model: r.model}), outputAs: 'tape', onDone: () => {
+    if (!app.state.solved) { app.state = {...app.state, ran: settings}; saveRound(); }
+    showHardTape();
+    setFeedback('', app.state.solved ? 'That is the tape you read.' : "The tape's punched. Read it with the cheat sheet and type what it says. If it reads as nonsense, a wheel is off.");
+  }});
+}
+function checkReading() {
+  if (app.mode !== 'hard' || app.run) return;
+  const st = app.state; if (st.solved) { showCard(false); return; }
+  const {state, result} = submitAnswer(st, $('hard-answer').value);
+  if (result.empty) { setFeedback('bad', 'Type what the tape says first.'); return; }
+  app.state = state; saveRound(); updateScore(); updateHintButtons();
+  if (result.ok) return hardSuccess();
+  setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : `Not right yet. ${result.right} of ${result.of} characters are right where they should be. That cost ${HARD_RULES.wrong} points.`);
+}
+function checkQep() {
+  const st = app.state, {state, result} = guessQep(st, $('qep-guess').value);
+  if (!result.valid) { $('qep-guess').setAttribute('aria-invalid', 'true'); setFeedback('bad', 'Type a number from 1 to 99.'); return; }
+  $('qep-guess').removeAttribute('aria-invalid'); app.state = state; saveRound(); updateScore(); updateHintButtons();
+  $('qep-number').textContent = qepKnown(app.state) || app.state.solved ? pad2(st.round.qep) : '??';
+  setFeedback(result.ok ? 'good' : 'bad', result.ok ? `That's it, QEP ${pad2(st.round.qep)}. Now find today's page.` : "That's not what the preamble says. Have another look at the figure shift.");
+}
+function hardHint(type) {
+  const kind = type === 'reveal' ? 'smudge' : type, st = app.state, {state, answer} = useHardHint(st, kind, {settings: app.wheels});
+  if (!answer) { setFeedback('', kind === 'smudge' ? "Every figure on today's line is readable." : 'Nothing more to reveal.'); return; }
+  app.state = state; saveRound(); updateScore(); updateHintButtons();
+  if (kind === 'qep') { $('qep-number').textContent = pad2(answer.qep); setFeedback('', `The preamble reads QEP ${pad2(answer.qep)}. That cost ${HARD_RULES.hint.qep} points.`); }
+  if (kind === 'char') { renderRevealed(); setFeedback('', `Character ${answer.index + 1} of the message is ${answer.char === ' ' ? 'a space' : answer.char}. That cost ${HARD_RULES.hint.char} points.`); }
+  if (kind === 'smudge') { renderBookPage(0); setFeedback('', hardSmudgeText(st.round)); }
+}
+function hardSuccess() {
+  const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
+  app.hardStats = updateHardStats(app.hardStats, st); write('hard:stats', app.hardStats);
+  $('qep-number').textContent = pad2(st.round.qep);
+  setFeedback('good', 'Message read!! Wheels, book and tape, all by hand.');
+  if (plan.fly) {
+    const tp = $('screen-game').querySelector('.teleprinter'); tape.fly(); tp.classList.add('tape-fly', 'hard-win'); setTimeout(() => tp.classList.remove('tape-fly', 'hard-win'), 1700);
+    const burst = document.createElement('div'); burst.className = 'hard-burst'; burst.setAttribute('aria-hidden', 'true'); document.body.append(burst); setTimeout(() => burst.remove(), 1700);
+  }
+  if (plan.spin) app.view?.celebrate();
+  counter.animateTo(st.score, {from: 0, reducedMotion: !plan.countUp, delay: plan.delay});
+  if (plan.delay) setTimeout(() => showCard(true), plan.delay); else showCard(false);
+}
+function showHardCard(animate) {
+  const st = app.state, r = st.round, b = hardBreakdown(st), s = app.hardStats, card = $('decoded-card');
+  const streak = s ? `<p class="tiny">Hard mode streak: ${s.streak} day${s.streak === 1 ? '' : 's'}. Best: ${fmt(s.best)} pts.</p>` : '';
+  card.className = 'decoded-card hard-card';
+  card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button><button type="button" data-card="normal">Normal mode</button></div><p class="countdown">Next intercept in ${countdown()}.</p><p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
+  applyPrintLink(card);
+  card.hidden = false;
+  card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
+  card.querySelector('[data-card=share]').addEventListener('click', () => share(true));
+  card.querySelector('[data-card=copy]').addEventListener('click', () => share(false));
+  card.querySelector('[data-card=normal]').addEventListener('click', () => { app.difficulty = 'normal'; write('difficulty', 'normal'); startDaily(); });
+  if (animate && !reducedMotion()) new ScoreCounter($('card-total')).animateTo(st.score, {from: 0});
+  $('decoded-heading').focus({preventScroll: true});
+}
+function buildCheatSheet() {
+  $('cheat-body').innerHTML = CHEAT_SHEET.map(c => `<tr><td><span class="frame mini" aria-hidden="true">${holesHTML(c.code)}</span><span class="sr-only">${holesText(c.code)}</span><code class="dc" aria-hidden="true">${c.holes}</code></td><td>${escapeHTML(c.letter)}</td><td>${escapeHTML(c.figure || 'none')}</td><td><code>${escapeHTML(c.bp)}</code></td></tr>`).join('');
+}
+/** Keep Tab inside an open dialog, and put focus back where it was when it closes. */
+function trapFocus(dialog) {
+  dialog.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const f = [...dialog.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.hidden);
+    if (!f.length) return; const first = f[0], last = f.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+}
+function openCheat(opener) {
+  const d = $('cheat-dialog'); d.showModal(); d.querySelector('[data-close]').focus();
+  d.addEventListener('close', () => opener?.focus?.(), {once: true});
+}
+function bindHard() {
+  buildCheatSheet(); trapFocus($('cheat-dialog'));
+  document.querySelectorAll('[data-cheat]').forEach(b => b.addEventListener('click', () => openCheat(b)));
+  $('page-prev').addEventListener('click', () => turnPage(-1)); $('page-next').addEventListener('click', () => turnPage(1));
+  $('qep-guess-go').addEventListener('click', checkQep);
+  $('qep-guess').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkQep(); } });
+  $('hard-answer-go').addEventListener('click', checkReading);
+  $('out-tape').addEventListener('click', e => { const f = e.target.closest('[data-frame]'); if (!f) return; const i = Number(f.dataset.frame), on = !app.marked.has(i); if (on) app.marked.add(i); else app.marked.delete(i); f.classList.toggle('read', on); f.setAttribute('aria-pressed', String(on)); });
+  // Swipe the book to turn the page, unless the swipe is scrolling a wide table sideways.
+  let touch = null; const book = document.querySelector('.qep-book');
+  book.addEventListener('touchstart', e => { if (app.mode !== 'hard' || e.touches.length !== 1) return; touch = {x: e.touches[0].clientX, y: e.touches[0].clientY, inTable: Boolean(e.target.closest('#book-scroll'))}; }, {passive: true});
+  book.addEventListener('touchend', e => {
+    if (!touch) return; const t = e.changedTouches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y, sc = $('book-scroll'), from = touch; touch = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const dir = dx < 0 ? 1 : -1;
+    if (from.inTable && sc.scrollWidth > sc.clientWidth + 1) { const atEnd = dir > 0 ? sc.scrollLeft + sc.clientWidth >= sc.scrollWidth - 2 : sc.scrollLeft <= 1; if (!atEnd) return; }
+    turnPage(dir);
+  }, {passive: true});
+}
+
 /* ---------- Hints, sharing, settings ---------- */
 function hint(type) {
   const st = app.state; if (!st || st.solved) return;
   if (type === 'check') { $('check-dialog').showModal(); return; }
+  if (app.mode === 'hard') return hardHint(type);
   const {state, answer} = useHint(st, 'reveal', app.wheels);
   if (!answer) { setFeedback('', `Every figure on QEP ${pad2(st.round.qep)} is readable.`); return; }
   app.state = state; if (st.round.mode === 'practice') app.practice = state;
@@ -345,7 +520,7 @@ function hint(type) {
   setFeedback('', revealText(st.round));
 }
 function doCheck() {
-  const wheel = $('check-select').value, {state, answer} = useHint(app.state, 'check', app.wheels, wheel);
+  const wheel = $('check-select').value, {state, answer} = app.mode === 'hard' ? useHardHint(app.state, 'check', {settings: app.wheels, wheel}) : useHint(app.state, 'check', app.wheels, wheel);
   app.state = state; if (state.round.mode === 'practice') app.practice = state; saveRound(); updateScore();
   $('check-dialog').close();
   setFeedback(answer.right ? 'good' : 'bad', `${WHEEL[wheel].label} is ${answer.right ? 'set right' : 'not right yet'}. That check cost ${RULES.hint.check} points.`);
@@ -353,7 +528,7 @@ function doCheck() {
 }
 async function copyText(text) { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } }
 async function share(native) {
-  const text = shareText(app.state, new URL('./', location.href).href.replace(/#.*$/, ''));
+  const url = new URL('./', location.href).href.replace(/#.*$/, ''), text = app.mode === 'hard' ? hardShareText(app.state, url) : shareText(app.state, url);
   if (native && navigator.share) { try { await navigator.share({title: 'Lorenz', text}); return; } catch (e) { if (e.name === 'AbortError') return; } }
   if (await copyText(text)) { toast('Result copied.'); return; }
   $('share-text').value = text; $('share-dialog').showModal(); $('share-text').select();
@@ -367,7 +542,9 @@ function applySettings() {
 
 function bind() {
   document.querySelectorAll('[data-action=title]').forEach(b => b.addEventListener('click', () => { history.replaceState(null, '', location.pathname); show('title'); }));
-  $('play-daily').addEventListener('click', startDaily);
+  $('play-daily').addEventListener('click', () => (app.difficulty === 'hard' ? startHard() : startDaily()));
+  document.querySelectorAll('[data-difficulty]').forEach(b => b.addEventListener('click', () => { app.difficulty = b.dataset.difficulty; write('difficulty', app.difficulty); refreshTitle(); }));
+  bindHard();
   $('play-practice').addEventListener('click', () => startPractice('random'));
   document.querySelectorAll('#practice-tabs [data-tab]').forEach(b => b.addEventListener('click', () => { if (app.tab === b.dataset.tab) return; stopRun(); app.tab = b.dataset.tab; if (app.tab === 'random') app.state = app.practice; renderTabs(); clearOutput(); syncView(false); location.hash = {random:'practice', encipher:'encipher', chi:'chi'}[app.tab]; }));
   $('practice-tabs').addEventListener('keydown', e => { if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return; const tabs = [...document.querySelectorAll('#practice-tabs [data-tab]')], i = tabs.findIndex(t => t.dataset.tab === app.tab), n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.click(); n.focus(); });
@@ -394,19 +571,23 @@ function bind() {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
     if (e.target.closest?.('input,textarea,select,[contenteditable]')) return;
     if ((e.key === 'd' || e.key === 'D') && app.screen === 'game') { e.preventDefault(); onRun(); }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && app.screen === 'game' && app.mode === 'hard') { e.preventDefault(); turnPage(e.key === 'ArrowRight' ? 1 : -1); }
   });
   window.addEventListener('hashchange', route);
 }
 function route() {
   const h = location.hash.slice(1);
   if (h === 'daily' && !(app.screen === 'game' && app.mode === 'daily')) startDaily();
+  else if (h === 'hard' && !(app.screen === 'game' && app.mode === 'hard')) { app.difficulty = 'hard'; startHard(); }
   else if (['practice', 'encipher', 'chi'].includes(h)) { const tab = h === 'practice' ? 'random' : h; if (!(app.screen === 'game' && app.mode === 'practice' && app.tab === tab)) startPractice(tab); }
   else if (!h && app.screen !== 'title') show('title');
 }
 function boot() {
   tape = new Tape($('tape-canvas'), {reducedMotion}); counter = new ScoreCounter($('score-display'));
   app.settings = {...app.settings, ...read('settings', {})};
-  app.stats = statsFrom(read('stats', {history: {}}).history || {}, utcDateKey());
+  app.stats = statsFrom(read('stats', null)?.history || {}, utcDateKey());
+  const hs = read('hard:stats', null); app.hardStats = statsFrom(hs && typeof hs.history === 'object' && hs.history ? hs.history : {}, utcDateKey());
+  app.difficulty = read('difficulty', 'normal') === 'hard' ? 'hard' : 'normal';
   app.daily = {round: makeRound({mode: 'daily'})};
   buildDials(); buildChi(); bind(); applySettings(); refreshTitle(); applyPrintLink(document);
   if (location.hash) route(); else show('title');
