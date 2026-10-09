@@ -168,9 +168,10 @@ function startHard() {
   app.state = restoreHard(r, saved); app.wheels = sanitiseWheels(saved?.wheels); app.page = r.openIndex; app.marked = new Set();
   const {refunded, solvedNow} = app.state;
   if (refunded || solvedNow || saved?.v !== HARD_SAVE_VERSION) saveRound();
-  if (solvedNow) recordHardStats();
+  if (solvedNow || (refunded && app.state.solved)) recordHardStats();
   enterGame();
-  if (refunded || solvedNow) setFeedback('good', solvedNow
+  if (refunded && app.state.refundFor === 'pins') setFeedback('good', `Sorry, after you fixed your pins the old tape stayed on screen, so readings of it counted against you. I've given back the ${fmt(refunded * HARD_RULES.wrong)} points they took.`);
+  else if (refunded || solvedNow) setFeedback('good', solvedNow
     ? `Sorry, my answer check was wrong earlier. Your reading was right, so the round's solved and I've given back the ${fmt(refunded * HARD_RULES.wrong)} points it took.`
     : `Sorry, my answer check was wrong earlier. I've given back the ${fmt(refunded * HARD_RULES.wrong)} points it took for your readings.`);
 }
@@ -420,7 +421,7 @@ function success() {
   const st = app.state, plan = rewardPlan(true, {reducedMotion: reducedMotion()});
   if (st.round.mode === 'daily') { app.stats = updateStats(app.stats, st); write('stats', app.stats); }
   else { const P = Points(), r = P?.earnPractice('lorenz', utcDateKey()); earned(r, `+${P?.EARN?.practice ?? 20} points for a practice round`); }
-  setFeedback('good', 'Message decoded!! The wheels were right.');
+  setFeedback('good', 'Message decoded. The wheels were right.');
   if (plan.fly) { tape.fly(); $('screen-game').querySelector('.teleprinter').classList.add('tape-fly'); setTimeout(() => $('screen-game').querySelector('.teleprinter').classList.remove('tape-fly'), 1300); }
   if (plan.spin) app.view?.celebrate();
   counter.animateTo(st.score, {from: 0, reducedMotion: !plan.countUp, delay: plan.delay});
@@ -577,11 +578,17 @@ function renderPins() {
 }
 function setPin(id, i) {
   if (!isPins() || app.run) return;
-  const was = app.state.pins.auto; app.state = togglePin(app.state, id, i); saveRound(); renderPins(); syncView(false);
-  if (!was && app.state.pins.auto) flickPins();
+  const was = app.state.pins.auto, ran = app.state.ran; app.state = togglePin(app.state, id, i); saveRound(); renderPins(); syncView(false);
+  if (ran && !app.state.ran) dropTape();
+  if (!was && app.state.pins.auto) { flickPins(); renderGuide(); }
 }
 /** Hard mode: your wheels are right, so the rest flick up from the sheet one wheel at a time (all at once under
  *  reduced motion). The pins are already saved; this only shows them going in. */
+/** The pins changed after a run: the punched tape is from the old pins, so take it down and say so. */
+function dropTape() {
+  clearOutput(); app.outCodes = null; app.aid = null; $('read-aid').hidden = true; $('out-tape').innerHTML = '<p class="tiny">Run the tape and the machine punches its output here.</p>';
+  setFeedback('', 'Your pins have changed since the tape was punched, so I took that tape down. Run the tape again once the pins are set.');
+}
 function flickPins() {
   const st = app.state, filled = st.pins.filled || [], mine = PIN_SCOPES[st.pins.scope].map(id => WHEEL[id].label).join(', ');
   setFeedback('good', `${mine} ${PIN_SCOPES[st.pins.scope].length > 1 ? 'match' : 'matches'} the sheet, so the other wheels are set for you.`);
@@ -646,7 +653,7 @@ function renderGuide() {
   const g = $('guide'), st = app.state, on = isPins() && Boolean(st) && !st.solved; g.hidden = !on;
   const extra = $('pin-face').querySelector('.face-extra'); if (extra) extra.innerHTML = on && st.step !== 'qep' ? '<button type="button" class="primary" data-step="start">Set start positions</button>' : '';
   if (!on) return;
-  $('guide-step').textContent = st.step === 'pins' && isHelped() && !st.pins.auto ? STEP_PINS[st.pins.scope] : STEP_TEXT[st.step];
+  $('guide-step').textContent = st.step === 'pins' && isHelped() ? (st.pins.auto ? 'Step 2 of 4: your pins are all set. Go on to the start positions.' : STEP_PINS[st.pins.scope]) : STEP_TEXT[st.step];
   $('guide-nav').innerHTML = STEP_NAV[st.step].map(([to, text]) => `<button type="button" class="${STEP_NEXT[st.step] === to ? 'primary' : 'secondary'}" data-step="${to}">${text}</button>`).join('');
 }
 function goStep(want, {scroll = true} = {}) {
@@ -690,7 +697,7 @@ function bindPins() {
   $('pin-wheels').innerHTML = WHEELS.map(w => `<button type="button" data-wheel="${w.id}" aria-pressed="false">${w.label}</button>`).join('');
   $('pin-wheels').addEventListener('click', e => { const b = e.target.closest('[data-wheel]'); if (!b) return; app.pinWheel = b.dataset.wheel; renderPins(); });
   $('pin-grid').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (!b) return; const i = Number(b.dataset.pin); setPin(app.pinWheel || 'chi1', i); $('pin-grid').querySelector(`[data-pin="${i}"]`)?.focus(); });
-  $('pin-clear').addEventListener('click', () => { if (app.run || !isPins()) return; app.state = clearPins(app.state, app.pinWheel || 'chi1'); saveRound(); renderPins(); syncView(false); });
+  $('pin-clear').addEventListener('click', () => { if (app.run || !isPins()) return; const ran = app.state.ran; app.state = clearPins(app.state, app.pinWheel || 'chi1'); saveRound(); renderPins(); syncView(false); if (ran && !app.state.ran) dropTape(); });
 }
 /* ---------- Reading aid: you punch a copy of one row, the cheat sheet lights up the line, you read it ---------- */
 function renderAid() {
@@ -752,7 +759,8 @@ function runHard() {
   runTape({codes: r.cipherCodes, machine: createMachine({patterns: runPatterns(st), start: settings, model: r.model}), outputAs: 'tape', onDone: () => {
     if (!app.state.solved) { app.state = notePinRun({...app.state, ran: settings}); saveRound(); }
     showHardTape();
-    setFeedback('', app.state.solved ? 'That is the tape you read.' : "The tape's punched. Read it with the cheat sheet and type what it says. If it reads as nonsense, a wheel is off.");
+    const blank = isHelped() && !app.state.solved && !app.state.pins.auto;
+    setFeedback(blank ? 'bad' : '', app.state.solved ? 'That is the tape you read.' : blank ? `The tape's punched, but ${PIN_SCOPES[app.state.pins.scope].length > 1 ? 'the chi and motor wheels don\'t' : 'χ1 doesn\'t'} match the pattern sheet yet, so the other wheels are still blank and this tape won't read. Set them and run it again.` : "The tape's punched. Read it with the cheat sheet and type what it says. If it reads as nonsense, a wheel is off.");
   }});
 }
 function checkReading() {
@@ -761,9 +769,10 @@ function checkReading() {
   const {state, result} = submitAnswer(st, $('hard-answer').value);
   if (result.empty) { setFeedback('bad', 'Type what the tape says first.'); return; }
   if (result.free) { setFeedback('bad', "That's not the message. This one didn't cost anything."); return; }
-  if (result.needPins) { setFeedback('bad', "The reading has to come off your own pins. Set every wheel from the pattern sheet, run the tape again and read that. This one didn't cost anything."); return; }
+  if (result.needPins || result.offPins) { const what = !app.state.ran ? "There's no tape off your current pins yet." : result.pinsRight ? 'Your pins are right now, but this tape was punched before they were.' : "Your pins don't match the pattern sheet yet, so this tape is off them.";
+    setFeedback('bad', `${what} ${result.pinsRight ? 'Run the tape again and read the new one.' : `Set ${PIN_SCOPES[app.state.pins.scope].length > 1 ? 'the chi and motor wheels' : 'χ1'} from the sheet and run the tape again.`} This one didn't cost anything.`); return; }
   app.state = state; saveRound(); updateScore(); updateHintButtons();
-  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read!! One letter was off, but that counts. Now send the reply below to finish the round.'); return; }
+  if (result.ok) { hardSuccess(); if (result.near) setFeedback('good', 'Message read. One letter was off, but that counts. Now send the reply below to finish the round.'); return; }
   setFeedback('bad', result.repeat ? "That's the same reading as before, so it's free. Still not right." : (result.quiet ? `That's not the message. That cost ${HARD_RULES.wrong} points.` : `Not right yet. ${result.right} of ${result.of} words are right. That cost ${HARD_RULES.wrong} points.`));
 }
 function checkQep() {
@@ -786,7 +795,7 @@ function hardHint(type) {
 function hardSuccess() {
   const st = app.state; $('qep-number').textContent = pad2(st.round.qep);
   counter.animateTo(st.score, {from: 0, reducedMotion: reducedMotion()});
-  setFeedback('good', 'Message read!! Now send the reply below to finish the round.');
+  setFeedback('good', 'Message read. Now send the reply below to finish the round.');
   renderPins(); renderGuide(); renderReply(); const box = $('hard-reply'); box.scrollIntoView?.({block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth'}); $('reply-input').focus({preventScroll: true});
 }
 function replySuccess() {

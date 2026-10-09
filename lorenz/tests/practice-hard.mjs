@@ -142,7 +142,7 @@ for (const seed of [42, 7, 31337, 4000000000, (Math.random() * 2 ** 32) >>> 0]) 
       assert.equal(d.querySelectorAll('#out-tape [data-frame]').length, h.cipherCodes.length); assert.equal(d.getElementById('printed-text').textContent, '', 'tape only, nothing printed');
       d.getElementById('hard-answer').value = 'XQZ VVK PLOM'; d.getElementById('hard-answer-go').click(); assert.match(d.getElementById('feedback').textContent, /Not right yet\. 0 of \d+ words/);
       d.getElementById('hard-answer').value = h.text.toLowerCase().replace(/\. /g, ' '); d.getElementById('hard-answer-go').click();
-      assert.match(d.getElementById('feedback').textContent, /Message read!!/); assert.equal(d.getElementById('decoded-card').hidden, true);
+      assert.match(d.getElementById('feedback').textContent, /Message read\./); assert.equal(d.getElementById('decoded-card').hidden, true);
       assert.equal(d.getElementById('reply-plain').textContent, HD.replyFor(h));
       d.getElementById('reply-input').value = HD.replyFor(h); d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
       assert.match(d.getElementById('feedback').textContent, /Reply sent\./);
@@ -185,7 +185,7 @@ for (const seed of [3, 77, 2 ** 31 + 5]) {
       assert.equal(d.getElementById('practice-tabs').hidden, false); assert.equal(d.getElementById('preamble-box').hidden, true); assert.equal(d.getElementById('printed-box').hidden, false);
       assert.equal(d.getElementById('qep-number').textContent, G.pad2(r.qep)); assert.equal(d.querySelector('#qep-table tr.today-line').dataset.qep, G.pad2(r.qep));
       setWheels(d, w, r.start); runAndSkip(d);
-      assert.equal(d.getElementById('printed-text').textContent, r.text); assert.match(d.getElementById('feedback').textContent, /Message decoded!!/);
+      assert.equal(d.getElementById('printed-text').textContent, r.text); assert.match(d.getElementById('feedback').textContent, /Message decoded\./);
       assert.ok(d.querySelector('#decoded-card [data-card=practice]')); assert.equal(w.localStorage.getItem('lorenz:stats'), null); assert.equal(w.localStorage.getItem('lorenz:hard:stats'), JSON.stringify(hardStats));
       d.querySelector('#practice-tabs [data-tab=encipher]').click(); assert.equal(d.getElementById('panel-encipher').hidden, false);
     });

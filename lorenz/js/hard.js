@@ -168,9 +168,12 @@ export const runPatterns = st => st.round.pins && !st.pins.legacy ? st.pins.grid
 export function togglePin(st, id, i) {
   if (st.solved || !st.round.pins || !WHEEL[id] || !(i >= 0 && i < WHEEL[id].size)) return st;
   const grid = {...st.pins.grid, [id]: st.pins.grid[id].slice()}; grid[id][i] = grid[id][i] ? 0 : 1;
-  return autoPins({...st, pins:{...st.pins, grid, ranRight:false}});
+  return autoPins(staleRun({...st, pins:{...st.pins, grid, ranRight:false}}));
 }
-export const clearPins = (st, id) => st.solved || !st.round.pins || !WHEEL[id] ? st : {...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}};
+export const clearPins = (st, id) => st.solved || !st.round.pins || !WHEEL[id] ? st : staleRun({...st, pins:{...st.pins, grid:{...st.pins.grid, [id]: new Array(WHEEL[id].size).fill(0)}, ranRight:false}});
+/** The tape you punched came off the pins as they were. Once a pin changes it no longer matches them, so it goes,
+ *  and you run the tape again. (Leaving it up is what made fixed pins look wrong on 9 October.) */
+const staleRun = st => st.ran && !st.solved ? {...st, ran:null} : st;
 /** Note a run of the tape: the bonus needs the last run before the answer to be on your own, correct patterns. */
 export const notePinRun = st => ({...st, pins:{...st.pins, ranRight: Boolean(st.round.pins && pinsMatch(st.round, st.pins.grid))}});
 const packPins = grid => Object.fromEntries(Object.entries(grid).map(([k, v]) => [k, v.join('')]));
@@ -241,7 +244,9 @@ export function submitAnswer(st, input) {
   if (!key) return {state:st, result:{ok:false, empty:true, right:0, of:m.of}};
   // The reading has to come off a run on your own, correct pins. Not counted as a wrong reading. Realistic doesn't
   // say why, or how close you were: you only learn it's right when it is.
-  if (m.ok && st.round.pins && !st.pins?.ranRight) return {state:st, result: st.round.realistic ? {ok:false, quiet:true, free:true} : {ok:false, needPins:true, right:m.right, of:m.of}};
+  if (m.ok && st.round.pins && !st.pins?.ranRight) return {state:st, result: st.round.realistic ? {ok:false, quiet:true, free:true} : {ok:false, needPins:true, pinsRight: pinsMatch(st.round, st.pins.grid), right:m.right, of:m.of}};
+  // Hard: a wrong reading of a tape that didn't come off the right pins is free. You're told the pins are off instead.
+  if (!m.ok && assisted(st) && !st.pins?.ranRight) return {state:st, result:{ok:false, offPins:true, pinsRight: pinsMatch(st.round, st.pins.grid), ran: Boolean(st.ran), right:m.right, of:m.of}};
   const repeat = !m.ok && st.answers.some(a => a.key === key);
   const answers = repeat ? st.answers : [...st.answers, {key, ok:m.ok}];
   const next = {...st, answers, solved:m.ok};
@@ -273,7 +278,7 @@ export function hardSmudgeText(round) {
 
 /** Saves made with this answer check carry this version. Anything older was checked against the wrong message or
  *  with the old character by character check, so its wrong readings are refunded on load. */
-export const HARD_SAVE_VERSION = 3;  // 3: hard sets pins too, with help
+export const HARD_SAVE_VERSION = 4;  // 3: hard sets pins too, with help; 4: no charge for reading a tape from before the pins were right
 /** Saved hard progress, checked field by field. Never throws: a damaged save just gives a fresh round. */
 export function restoreHard(round, saved) {
   try {
@@ -283,17 +288,23 @@ export function restoreHard(round, saved) {
     const qepGuesses = Array.isArray(s.qepGuesses) ? s.qepGuesses.filter(n => Number.isInteger(n) && n >= 1 && n <= 99) : [];
     const ran = s.ran && typeof s.ran === 'object' ? s.ran : null;
     let refunded = 0, solvedNow = false;
-    if (s.v !== HARD_SAVE_VERSION && s.v !== 2 && answers.length) {
+    if (!(s.v >= 2) && answers.length) {
       // Old save: check every stored reading again with the fixed check, keep only the ones that pass, refund the rest.
       const texts = acceptedTexts(round), passing = answers.filter(a => (a.ok && s.solved === true) || matchAnswer(a.key, texts).ok);
       refunded = answers.filter(a => !a.ok).length;
       solvedNow = passing.length > 0 && s.solved !== true;
       answers = passing.length ? [{key: passing[0].key, ok: true}] : [];
     }
+    // Hard saves from 9 October (version 3): after you fixed your pins, the tape punched on the old ones stayed up, so
+    // readings of it were charged as wrong. Give all of those back, once; the save is rewritten as version 4.
+    if (!round.realistic && s.v === 3) {
+      const wrong = answers.filter(a => !a.ok).length;
+      if (wrong) { answers = answers.filter(a => a.ok); refunded += wrong; }
+    }
     // Rounds read before replies existed count as finished, so nobody loses a streak.
     const r = s.reply && typeof s.reply === 'object' ? s.reply : null, tries = Array.isArray(r?.tries) ? r.tries.filter(t => t && typeof t.key === 'string').map(t => ({key:t.key, ok:Boolean(t.ok)})) : [];
     const legacy = s.solved === true && (!r || r.legacy === true);
-    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || (s.v !== HARD_SAVE_VERSION && s.v !== 2)), refunded, solvedNow, pins:readPins(s.pins)};
+    const st = {...newHardState(round), answers, hints, qepGuesses, ran, solved: answers.some(a => a.ok) && (s.solved === true || solvedNow || !(s.v >= 2)), refunded, solvedNow, refundFor: refunded ? (s.v === 3 ? 'pins' : 'check') : null, pins:readPins(s.pins)};
     if (!st.solved) st.pins.earned = false;
     // Hard rounds from before version 3 ran on the day's patterns. Read ones keep their score (and the old optional
     // pin bonus, if they earned it); unfinished ones carry on in the new hard mode with their QEP, hints and readings,
