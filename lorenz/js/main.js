@@ -294,6 +294,19 @@ function success() {
   counter.animateTo(st.score, {from: 0, reducedMotion: !plan.countUp, delay: plan.delay});
   if (plan.delay) setTimeout(() => showCard(true), plan.delay); else showCard(false);
 }
+/** On wide screens the game view is sticky, so a tall card would run under the footer with no way to scroll to
+ *  its foot (the STL button). Cap it to the room that's there and let it scroll inside. */
+function fitCard() {
+  const card = $('decoded-card'); if (!card || card.hidden) return;
+  card.style.maxHeight = ''; card.style.overflowY = '';
+  const view = card.closest('.game-view');
+  const gcs = window.getComputedStyle?.bind(window); const vs = view && gcs?.(view); if (!vs || vs.position !== 'sticky' || vs.display === 'contents') return;
+  const css = gcs(document.documentElement), px = v => parseFloat(css.getPropertyValue(v)) || 0;
+  let offset = 0; for (let e = card; e && e !== view; e = e.offsetParent) offset += e.offsetTop;
+  const room = Math.floor(window.innerHeight - px('--footer') - px('--header') - 16 - offset - 12);
+  if (card.scrollHeight > room) { card.style.maxHeight = `${Math.max(room, 220)}px`; card.style.overflowY = 'auto'; }
+}
+window.addEventListener('resize', () => fitCard());
 function showCard(animate) {
   if (app.mode === 'hard') return showHardCard(animate);
   const st = app.state, r = st.round, b = scoreBreakdown(st), s = app.stats, card = $('decoded-card');
@@ -302,7 +315,7 @@ function showCard(animate) {
   card.className = 'decoded-card';
   card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Message decoded</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button><button type="button" data-card="practice">${r.mode === 'daily' ? 'Practice' : 'Next round'}</button></div>${next}<p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
   applyPrintLink(card);
-  card.hidden = false;
+  card.hidden = false; fitCard();
   card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
   card.querySelector('[data-card=share]').addEventListener('click', () => share(true));
   card.querySelector('[data-card=copy]').addEventListener('click', () => share(false));
@@ -464,7 +477,7 @@ function showHardCard(animate) {
   card.className = 'decoded-card hard-card';
   card.innerHTML = `<button type="button" class="card-close" aria-label="Close">&#215;</button><span class="eyebrow">&#10003; Read by hand, hard mode</span><h2 id="decoded-heading" tabindex="-1">QEP ${pad2(r.qep)}</h2><blockquote>${escapeHTML(r.text)}</blockquote><dl>${b.lines.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p class="decoded-total"><span>Total</span><span id="card-total">${fmt(st.score)} pts</span></p>${streak}<div class="card-actions"><button type="button" class="primary" data-card="share">Share result</button><button type="button" data-card="copy">Copy</button><button type="button" data-card="normal">Normal mode</button></div><p class="countdown">Next intercept in ${countdown()}.</p><p class="tiny">These messages are made up for the game.</p>${stlSlotHTML('card')}`;
   applyPrintLink(card);
-  card.hidden = false;
+  card.hidden = false; fitCard();
   card.querySelector('.card-close').addEventListener('click', () => { card.hidden = true; });
   card.querySelector('[data-card=share]').addEventListener('click', () => share(true));
   card.querySelector('[data-card=copy]').addEventListener('click', () => share(false));
