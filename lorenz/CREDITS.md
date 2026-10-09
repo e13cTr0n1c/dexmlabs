@@ -10,7 +10,7 @@
 
 ## What's real and what's made up
 
-- Real: the twelve wheels and their cam counts (chi 41, 31, 29, 26, 23; psi 43, 47, 51, 53, 59; motors 37 and 61),
+- From the sources: the twelve wheels and their cam counts (chi 41, 31, 29, 26, 23; psi 43, 47, 51, 53, 59; motors 37 and 61),
   their order on the machine, the SZ40 motor logic and the SZ42A chi 2 one back limitation as described in the
   General Report on Tunny, the ITA2 teleprinter alphabet in Bletchley notation, the 5 hole tape layout with the
   sprocket between holes 2 and 3, and the QEP system of pointing to a line of start positions.
