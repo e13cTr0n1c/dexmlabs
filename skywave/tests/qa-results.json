@@ -1,0 +1,266 @@
+{
+  "method": "In-memory Chromium DOM fixture. Frozen 2026-10-07; Blob modules; in-memory storage; embedded local 2k textures; deliberately failed three.js import. No navigation or WebGL testing.",
+  "results": [
+    {
+      "viewport": "desktop",
+      "size": {
+        "width": 1440,
+        "height": 1000
+      },
+      "phase": 2,
+      "date": "2026-10-07",
+      "qsos": 10,
+      "score": 2652,
+      "steps": [
+        {
+          "target": "t3",
+          "minute": 60,
+          "ok": true
+        },
+        {
+          "target": "t5",
+          "minute": 70,
+          "ok": true
+        },
+        {
+          "target": "t0",
+          "minute": 120,
+          "ok": true
+        },
+        {
+          "target": "t2",
+          "minute": 130,
+          "ok": true
+        },
+        {
+          "target": "t1",
+          "minute": 240,
+          "ok": true
+        },
+        {
+          "target": "t4",
+          "minute": 250,
+          "ok": true
+        },
+        {
+          "target": "t7",
+          "minute": 260,
+          "ok": true
+        },
+        {
+          "target": "t9",
+          "minute": 540,
+          "ok": true
+        },
+        {
+          "target": "t8",
+          "minute": 600,
+          "ok": true
+        },
+        {
+          "target": "t6",
+          "minute": 840,
+          "ok": true
+        }
+      ],
+      "resultsDiagnostics": {
+        "phase": 2,
+        "screen": "results",
+        "busy": false,
+        "renderer": "fallback",
+        "fps": null,
+        "adEvents": []
+      },
+      "lastDiagnostics": {
+        "phase": 2,
+        "screen": "results",
+        "busy": false,
+        "renderer": "fallback",
+        "fps": null,
+        "adEvents": [
+          "return-title",
+          "practice-next"
+        ]
+      },
+      "horizontalOverflow": false,
+      "errors": [],
+      "console": [],
+      "outgoingHttpRequests": [],
+      "share": "SKYWAVE #280 10/10 2,652pts\n\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\nhttps://skywave.test/skywave/"
+    },
+    {
+      "viewport": "portrait",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "phase": 2,
+      "date": "2026-10-07",
+      "qsos": 10,
+      "score": 2652,
+      "steps": [
+        {
+          "target": "t3",
+          "minute": 60,
+          "ok": true
+        },
+        {
+          "target": "t5",
+          "minute": 70,
+          "ok": true
+        },
+        {
+          "target": "t0",
+          "minute": 120,
+          "ok": true
+        },
+        {
+          "target": "t2",
+          "minute": 130,
+          "ok": true
+        },
+        {
+          "target": "t1",
+          "minute": 240,
+          "ok": true
+        },
+        {
+          "target": "t4",
+          "minute": 250,
+          "ok": true
+        },
+        {
+          "target": "t7",
+          "minute": 260,
+          "ok": true
+        },
+        {
+          "target": "t9",
+          "minute": 540,
+          "ok": true
+        },
+        {
+          "target": "t8",
+          "minute": 600,
+          "ok": true
+        },
+        {
+          "target": "t6",
+          "minute": 840,
+          "ok": true
+        }
+      ],
+      "resultsDiagnostics": {
+        "phase": 2,
+        "screen": "results",
+        "busy": false,
+        "renderer": "fallback",
+        "fps": null,
+        "adEvents": []
+      },
+      "lastDiagnostics": {
+        "phase": 2,
+        "screen": "results",
+        "busy": false,
+        "renderer": "fallback",
+        "fps": null,
+        "adEvents": [
+          "return-title",
+          "practice-next"
+        ]
+      },
+      "horizontalOverflow": false,
+      "errors": [],
+      "console": [],
+      "outgoingHttpRequests": [],
+      "share": "SKYWAVE #280 10/10 2,652pts\n\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\nhttps://skywave.test/skywave/"
+    },
+    {
+      "viewport": "landscape",
+      "size": {
+        "width": 844,
+        "height": 390
+      },
+      "phase": 2,
+      "date": "2026-10-07",
+      "qsos": 10,
+      "score": 2652,
+      "steps": [
+        {
+          "target": "t3",
+          "minute": 60,
+          "ok": true
+        },
+        {
+          "target": "t5",
+          "minute": 70,
+          "ok": true
+        },
+        {
+          "target": "t0",
+          "minute": 120,
+          "ok": true
+        },
+        {
+          "target": "t2",
+          "minute": 130,
+          "ok": true
+        },
+        {
+          "target": "t1",
+          "minute": 240,
+          "ok": true
+        },
+        {
+          "target": "t4",
+          "minute": 250,
+          "ok": true
+        },
+        {
+          "target": "t7",
+          "minute": 260,
+          "ok": true
+        },
+        {
+          "target": "t9",
+          "minute": 540,
+          "ok": true
+        },
+        {
+          "target": "t8",
+          "minute": 600,
+          "ok": true
+        },
+        {
+          "target": "t6",
+          "minute": 840,
+          "ok": true
+        }
+      ],
+      "resultsDiagnostics": {
+        "phase": 2,
+        "screen": "results",
+        "busy": false,
+        "renderer": "fallback",
+        "fps": null,
+        "adEvents": []
+      },
+      "lastDiagnostics": {
+        "phase": 2,
+        "screen": "results",
+        "busy": false,
+        "renderer": "fallback",
+        "fps": null,
+        "adEvents": [
+          "return-title",
+          "practice-next"
+        ]
+      },
+      "horizontalOverflow": false,
+      "errors": [],
+      "console": [],
+      "outgoingHttpRequests": [],
+      "share": "SKYWAVE #280 10/10 2,652pts\n\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\ud83d\udfe9\nhttps://skywave.test/skywave/"
+    }
+  ]
+}

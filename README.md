@@ -26,6 +26,16 @@ npm install --no-save jsdom
 node build/tests/run.js
 ```
 
+The games have their own tests, next to their code:
+
+```
+node lorenz/tests/run.mjs
+node lorenz/tests/practice-hard.mjs
+node skywave/tests/run.mjs
+```
+
+After any change to a game stylesheet, run `python3 build/light.py` to refresh the light mode rules (the site test checks they are up to date). `build/chrome.py` adds the shared header tools and theme script to the game pages, and `build/og-image.html` is the source of `assets/og-image.png`.
+
 Preview with any static server from the repo root, e.g. `python3 -m http.server`.
 
 Content and code (c) 2026 DEXM Labs (Arthur Jones). All rights reserved, unless credited otherwise. Third-party credits: `skywave/CREDITS.md`, `skywave/THIRD_PARTY_LICENSES.txt`.

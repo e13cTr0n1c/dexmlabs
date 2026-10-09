@@ -1,0 +1,22 @@
+{
+  "units": "bytes, decimal MB = 1000000 bytes",
+  "textureBytes": {
+    "earth_day_2k.jpg": 242227,
+    "earth_day_4k.jpg": 940665,
+    "earth_night_2k.jpg": 98840,
+    "earth_night_4k.jpg": 301883
+  },
+  "lowTexturesBytes": 341067,
+  "highTexturesBytes": 1242548,
+  "allTexturesBytes": 1583615,
+  "firstPartyRuntimeCodeBytesConservative": 132078,
+  "lowFirstPartyBytesConservative": 473145,
+  "highFirstPartyBytesConservative": 1374626,
+  "autoLowToHighFirstPartyBytesConservative": 1715693,
+  "measurementNotes": [
+    "Includes all local js modules even if some are not fetched.",
+    "Excludes CDN modules, transport compression, headers, later help/about/QA navigation and GPU memory.",
+    "Current night assets are procedural fallback; remeasure after installing authentic Black Marble.",
+    "Actual total-network low/high acceptance and real-device fps are not certified."
+  ]
+}

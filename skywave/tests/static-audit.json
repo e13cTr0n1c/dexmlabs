@@ -1,0 +1,10 @@
+{
+  "profile": "skywave",
+  "javascriptSyntax": "pass",
+  "pythonSyntax": "pass",
+  "htmlDuplicateIds": "none",
+  "referencesAndHTTPResourcesChecked": 69,
+  "localHttpSubpath": "/skywave/",
+  "issues": [],
+  "browserNavigation": "Not tested; managed browser navigation policy blocks it. Static checks use local HTTP requests, not browser navigation."
+}
