@@ -5,7 +5,8 @@ Run from anywhere:  python3 build/gen.py
 Writes: index.html, the policy pages (privacy, cookies, terms, disclaimer, contact), 404.html,
 robots.txt, sitemap.xml, llms.txt, the IndexNow key file, and the redirect pages under tools/ and
 templates/ (those pages moved to https://e13ctr0n1c.github.io/).
-Not written here: skywave/, lorenz/, assets/, CNAME, README.md.
+Not written here: skywave/, lorenz/, assets/, CNAME, README.md, except the new game signup block in
+skywave/index.html and lorenz/index.html, in the section marked data-signup.
 Every page carries the Cloudflare Web Analytics beacon (CFWA) once, just before </body>.
 skywave/*.html and lorenz/*.html carry it by hand.
 """
@@ -18,6 +19,18 @@ EFHW='https://cults3d.com/en/3d-model/tool/toroid-box-for-ft240-and-ft140-cores-
 DRILL='https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-239-n-4-hole-flange-and-bnc-d-hole-with'
 CHI='https://cults3d.com/en/3d-model/gadget/lorenz-cipher-chi-wheel-demonstrator-simplified-sz42-teaching-model'
 EMAIL='hello@dexmlabs.app'
+# Buttondown username for the 'new game' email list. While it's the placeholder, the signup form is built but hidden.
+BUTTONDOWN_USER='BUTTONDOWN_USER_TBD'
+SIGNUP_LIVE=BUTTONDOWN_USER!='BUTTONDOWN_USER_TBD'
+def signup(where):
+  """A plain form that posts to Buttondown in a new tab. No script, no pixel."""
+  return (f'<section class="dexm-signup" data-signup aria-labelledby="signup-h-{where}"{"" if SIGNUP_LIVE else " hidden"}>'
+    f'<h2 id="signup-h-{where}">Email me when a new game comes out</h2><p>One email when a new game is out. Nothing else.</p>'
+    f'<form action="https://buttondown.com/api/emails/embed-subscribe/{BUTTONDOWN_USER}" method="post" target="_blank" rel="noopener">'
+    f'<label for="signup-email-{where}">Your email address</label><span class="dexm-signup-row">'
+    f'<input type="email" name="email" id="signup-email-{where}" required autocomplete="email" spellcheck="false">'
+    f'<button type="submit">Email me</button></span>'
+    f'<small>You confirm by email first. Unsubscribe any time. Your address is held by Buttondown, never sold.</small></form></section>')
 # IndexNow key (public by design). Search engines fetch <key>.txt to check pings for dexmlabs.app.
 INDEXNOW_KEY='deec04819134d490fb0bce54af34ef6d'
 # Cloudflare Web Analytics beacon (cookieless), exactly as Cloudflare gave it. The token is public.
@@ -111,6 +124,7 @@ home=head('DEXM Labs / Games and makes','Small free browser games and makes from
 <div class="card-body"><h3>Next game</h3><p>In development. Nothing to see yet.</p></div>
 </article>
 </div>
+'''+signup('home')+f'''
 </div></section>
 
 <section class="block" id="makes" aria-labelledby="makes-h"><div class="wrap">
@@ -129,6 +143,13 @@ home=head('DEXM Labs / Games and makes','Small free browser games and makes from
 </main>
 '''+foot('')
 (S/'index.html').write_text(home)
+# the same block on the game title screens
+import re as _re
+for game,before in (('skywave','<div class="signed-note">'),('lorenz','<p class="disclaimer">')):
+  f=S/game/'index.html'; t=f.read_text()
+  t=_re.sub(r'<section class="dexm-signup" data-signup.*?</form></section>','',t,flags=_re.S)
+  assert before in t, game
+  f.write_text(t.replace(before,signup(game)+before,1))
 
 # ---------- policies ----------
 GH='<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub\'s privacy statement</a>'
@@ -140,7 +161,7 @@ doc('privacy','Privacy notice','PRIVACY','How dexmlabs.app handles personal data
 <h2>Who I am</h2>
 <p>DEXM Labs is the trading name of Arthur Jones, an individual based in the UK. I run dexmlabs.app and I am the controller of any personal data handled through it under the UK GDPR and the Data Protection Act 2018. You can reach me at {ML}.</p>
 <h2>The short version</h2>
-<p>There are no accounts, no sign-up and no ads, and no cookies are set. I count visits with Cloudflare Web Analytics, which gives me totals, not a record of you. Nothing you do in the games is sent to me.</p>
+<p>There are no accounts and no ads, and no cookies are set. The only sign-up is an optional email for when a new game comes out. I count visits with Cloudflare Web Analytics, which gives me totals, not a record of you. Nothing you do in the games is sent to me.</p>
 <h2>What stays in your browser</h2>
 <p>Skywave and Lorenz save your progress, settings, best scores and streak in your browser's localStorage, so you can pick up where you left off. Your <a href="../points/">points</a> are kept there too, and so is light or dark mode if you pick one. The site also remembers that you closed the storage notice. This data stays on your device and is never sent to me. See <a href="../cookies/">cookies and storage</a> for the details and how to clear it.</p>
 <h2>Hosting: GitHub Pages</h2>
@@ -150,17 +171,19 @@ doc('privacy','Privacy notice','PRIVACY','How dexmlabs.app handles personal data
 <p>All I see are totals: page views, referring sites, country and browser or device type. Cloudflare, Inc. handles the request data, including your IP address, as my processor. The lawful basis is legitimate interests: knowing which pages get used so I can improve them. If your browser or an ad blocker stops the script, the site works the same. See {CF}.</p>
 <h2>three.js from jsDelivr</h2>
 <p>Skywave and Lorenz load the three.js 3D library from the jsDelivr public CDN (cdn.jsdelivr.net). Your browser connects to it directly, so the CDN provider sees your IP address and request details in the normal way, as any website you load files from would. See {JD}.</p>
+<h2>New game emails: Buttondown</h2>
+<p>If you ask to be emailed when a new game comes out, the form sends your email address straight to Buttondown, which runs the list for me as my processor. You confirm by email before anything else is sent, and every email has an unsubscribe link. I use the list only to send one email when a new game is out, and the address is never sold or shared for anything else. The lawful basis is your consent, which you can withdraw at any time by unsubscribing or by writing to {ML}. Buttondown's own <a href="https://buttondown.com/legal/privacy">privacy policy</a> covers how it holds the list. The form is a plain web form: no Buttondown script runs on this site.</p>
 <h2>If you email me</h2>
 <p>If you write to {ML}, I use your email address and message only to reply to you, and I delete them once they're no longer needed for that. The lawful basis is legitimate interests: answering the message you sent.</p>
 <h2>Links to other sites</h2>
 <p>Support and makes links go to Buy Me a Coffee, Fourthwall and Cults3D. These links only open when you click them, and once you're there their own privacy policies apply.</p>
 <h2>Transfers outside the UK</h2>
-<p>GitHub, jsDelivr and Cloudflare may process request data outside the UK, including in the United States, under their own safeguards.</p>
+<p>GitHub, jsDelivr, Cloudflare and Buttondown may process request data outside the UK, including in the United States, under their own safeguards.</p>
 <h2>Your rights</h2>
-<p>You have the right to ask for access to, correction of or deletion of your personal data, and to object to or restrict how it's used. As I hold almost nothing, the main case is email. Write to {ML}. If you're unhappy with how I've handled your data, you can complain to the Information Commissioner's Office at {ICO}.</p>
+<p>You have the right to ask for access to, correction of or deletion of your personal data, and to object to or restrict how it's used. As I hold almost nothing, the main cases are email and the new game list. Write to {ML}. If you're unhappy with how I've handled your data, you can complain to the Information Commissioner's Office at {ICO}.</p>
 <h2>Changes</h2>
 <p>If the site starts handling data in a new way, I'll update this notice and the cookies page first.</p>
-''',updated='9 October 2026')
+''',updated='13 October 2026')
 doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets no cookies. Skywave and Lorenz keep progress and settings in your browser\'s localStorage. Here is what is stored and how to clear it.',f'''
 <h2>No cookies</h2>
 <p>No cookies are set on dexmlabs.app, by me or anyone else. There are no ad or tracking cookies. The visit counter, Cloudflare Web Analytics, works without cookies or browser storage.</p>
