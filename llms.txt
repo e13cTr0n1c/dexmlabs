@@ -7,6 +7,7 @@
 - [DEXM Labs](https://dexmlabs.app/): Homepage with the games and the makes.
 
 ## Games
+- FORGE: /forge/ — interactive 3D physics sandbox and engineering challenges with rigid bodies, joints and tunable materials.
 
 - [Skywave](https://dexmlabs.app/skywave/): A daily HF propagation puzzle on a 3D globe. Work ten made up stations in one UTC day. Free, no account, no cookies.
 - [How to play Skywave](https://dexmlabs.app/skywave/help.html): The rules of the daily Skywave puzzle.

@@ -89,17 +89,17 @@ MAKES=[(CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for sho
  (DRILL,'RF panel drill guide','3D print for SO-239, N and BNC holes.','Cults3D'),
  (MAT,'Band plan desk mat','UK ham bands, 160m to 70cm.','Fourthwall')]
 LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Find the settings in the key book, set twelve wheels and decode the tape.'
-home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector air traffic control and Orbit satellite missions, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
+home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector air traffic control and Orbit satellite missions and FORGE physics experiments, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>
 <h1><span>DEXM</span><span>Labs</span></h1>
 <p class="tagline">Deus ex machina</p>
 <p class="lead">Small free games that run in your browser, and things I design for the radio bench and the 3D printer. I build them in my home lab, one at a time, and put them here when they work.</p>
-<div class="meta"><div><strong>5</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
+<div class="meta"><div><strong>6</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
 </div>
 <div class="side">
-<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">5</div></div>
+<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">6</div></div>
 <div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="currentColor"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="currentColor"/></svg><p><strong>Work in progress</strong>Things here change. If something breaks, <a href="contact/">tell me</a>.</p></div>
 </div>
 </div></section>
@@ -134,6 +134,11 @@ home=head('DEXM Labs / Games and makes','Free browser games from a home lab in t
 <div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">ORBITAL FLIGHT</span></div>
 <a class="thumb" href="orbit/" tabindex="-1" aria-hidden="true"><img src="assets/orbit-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>Orbit</h3><p>Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.</p><a class="btn" href="orbit/">Play Orbit</a></div>
+</article>
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">PHYSICS SANDBOX</span></div>
+<a class="thumb" href="forge/" tabindex="-1" aria-hidden="true"><img src="assets/forge-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
+<div class="card-body"><h3>FORGE</h3><p>A 3D physics workbench. Build machines, join parts, tune materials and solve hands-on engineering challenges.</p><a class="btn" href="forge/">Open FORGE</a></div>
 </article>
 <article class="card sealed">
 <div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
@@ -294,9 +299,10 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Complete the five-minute daily Vector shift with at least five aircraft cleared</td><td>{PTS['vector']}</td></tr>
 <tr><td>Complete the five-minute daily Orbit shift with at least three satellites deployed</td><td>{PTS['orbit']}</td></tr>
 <tr><td>Clear five aircraft in one endless Vector run, or deploy three satellites in one endless Orbit run</td><td>{PTS['practice']}, up to {PTS['per_day']} qualifying runs a day per game</td></tr>
+<tr><td>Complete a FORGE challenge</td><td>20–45, once per challenge</td></tr>
 <tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
 </tbody></table>
-<p>Vector and Orbit sandbox modes do not award points or record scores. Their daily seeds and point limits use UTC days. You can replay a daily shift, but its points are awarded only once.</p>
+<p>Vector, Orbit and FORGE sandbox modes do not award points. FORGE challenge rewards are awarded once per challenge. Vector and Orbit daily seeds and point limits use UTC days. You can replay a daily shift, but its points are awarded only once.</p>
 <p>Each daily round pays once. If you'd already finished today's round before points arrived, you get them the next time you open that game.</p>
 <h2>Spending</h2>
 <table><thead><tr><th>Hint</th><th>Points</th></tr></thead><tbody>
@@ -364,14 +370,14 @@ GAME_PAGES=[('skywave/','Skywave','A daily HF propagation puzzle on a 3D globe. 
  ('lorenz/about.html','Why I built Lorenz','Why I built Lorenz.'),
  ('lorenz/log.html',"What's changed in Lorenz",'The Lorenz change log.'),
  ('tolerance/','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.')]
-GAME_PAGES += [('vector/','Vector','Endless air traffic control, a seeded daily shift and a sandbox. Route arrivals, avoid conflicts and earn local best scores.'), ('orbit/','Orbit','Fuel-limited orbital manoeuvres and procedural satellite deployments. Endless, daily and sandbox modes.')]
+GAME_PAGES += [('forge/','FORGE','Interactive Three.js physics sandbox and engineering challenges with rigid bodies, joints and tunable materials.'), ('vector/','Vector','Endless air traffic control, a seeded daily shift and a sandbox. Route arrivals, avoid conflicts and earn local best scores.'), ('orbit/','Orbit','Fuel-limited orbital manoeuvres and procedural satellite deployments. Endless, daily and sandbox modes.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 urls=['']+[u for u,_,_ in GAME_PAGES]+['points/']+[f'{p}/' for p,_ in POL]
 (S/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'  <url><loc>https://dexmlabs.app/{u}</loc><lastmod>2026-10-13</lastmod></url>\n' for u in urls)+'</urlset>\n')
 print('sitemap',len(urls))
 (S/'robots.txt').write_text('User-agent: *\nAllow: /\n\nSitemap: https://dexmlabs.app/sitemap.xml\n')
 A='https://dexmlabs.app/'
-L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, and 3D print designs for the radio bench.','',
+L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, FORGE physics experiments, and 3D print designs for the radio bench.','',
  '## Home','',f'- [DEXM Labs]({A}): Homepage with the games and the makes.','',
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
  '## Makes','']+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',
