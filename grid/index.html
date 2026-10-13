@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script>
+<title>GRID — City power | DEXM Labs</title>
+<meta name="description" content="Keep a city lit. Wind, sun, a slow nuclear core and a coal bunker share one exchange. The city stays in this browser.">
+<link rel="canonical" href="https://dexmlabs.app/grid/">
+<meta name="theme-color" content="#0a0b09">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DEXM Labs">
+<meta property="og:title" content="GRID — City power | DEXM Labs">
+<meta property="og:description" content="Keep a city lit. Wind, sun, a slow nuclear core and a coal bunker share one exchange.">
+<meta property="og:url" content="https://dexmlabs.app/grid/">
+<meta property="og:image" content="https://dexmlabs.app/assets/grid-thumb.webp">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GRID — City power | DEXM Labs">
+<meta name="twitter:description" content="Keep a city lit. Wind, sun, a slow nuclear core and a coal bunker share one exchange.">
+<meta name="twitter:image" content="https://dexmlabs.app/assets/grid-thumb.webp">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/dexm-ui.css">
+<link rel="stylesheet" href="grid.css">
+<script src="../assets/points.js" defer></script>
+<script src="../assets/theme.js" defer></script>
+</head>
+<body class="grid-body">
+<a class="skip" href="#main">Skip to GRID</a>
+<header class="top"><div class="wrap"><a class="brand" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><circle cx="16" cy="16" r="8" fill="#d6ff00"/><path d="M6 16h20M16 5v5" stroke="#0a0b09" stroke-width="2.4"/></svg><span>DEXM LABS</span></a><nav aria-label="Main"><a href="../#games">ALL GAMES</a></nav><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div></div></header>
+<div class="stripe" aria-hidden="true"></div>
+<main id="main" class="grid-page">
+<div class="g-status">
+<div>
+<p class="g-kicker">GRID</p>
+<h1 id="g-name">City</h1>
+<p class="g-sub" id="g-sub">Opening the desk…</p>
+</div>
+<button type="button" class="g-icon" id="g-mute" aria-label="Mute"></button>
+</div>
+<div class="g-stage">
+<div class="g-map" id="g-map"></div>
+<nav class="g-tools" id="g-tools" aria-label="Controls"></nav>
+<aside class="g-panel" id="g-panel" hidden></aside>
+</div>
+<footer class="g-foot">
+<p class="g-legend"><span><i class="g-swatch tone-gale"></i>Gale · wind</span><span><i class="g-swatch tone-glass"></i>Glass · sun</span><span><i class="g-swatch" style="background:var(--g-nucleus)"></i>Nucleus · baseload</span><span><i class="g-swatch tone-cinder"></i>Cinder · burn</span></p>
+<p class="g-note" id="g-note"></p>
+<div class="g-watches" id="g-watches">
+<button type="button" data-watch="0"></button>
+<button type="button" data-watch="1"></button>
+<button type="button" data-watch="2"></button>
+<button type="button" data-watch="3"></button>
+</div>
+<div class="g-runrow">
+<p class="g-metrics" id="g-metrics"></p>
+<button type="button" class="g-run" id="g-run">Run day</button>
+</div>
+</footer>
+</main>
+<script type="module" src="js/ui.mjs"></script>
+</body>
+</html>

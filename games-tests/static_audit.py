@@ -70,7 +70,7 @@ for game in ['vector','orbit']:
     check(f'{game}: 100' in (ROOT/'assets/points.js').read_text(),f'points: {game} daily reward configured')
     check(f'/{game}/' in (ROOT/'llms.txt').read_text(),f'llms: {game} discovery entry present')
 locs=[e.text for e in ET.parse(ROOT/'sitemap.xml').iter() if e.tag.endswith('loc')]
-check(len(locs)==18 and all(f'https://dexmlabs.app/{g}/' in locs for g in ['vector','orbit']),'sitemap: both games included in 18 canonical pages')
+check(len(locs)==20 and all(f'https://dexmlabs.app/{g}/' in locs for g in ['vector','orbit','grid']),'sitemap: vector, orbit and grid included in 20 canonical pages')
 # Run the real generator twice-equivalent: output before/after must be identical.
 paths=[p for p in ROOT.rglob('*') if p.is_file() and p.suffix in ['.html','.txt','.xml','.css','.js','.mjs']]
 before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}

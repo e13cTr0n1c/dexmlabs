@@ -1,6 +1,6 @@
 <p>Under the Privacy and Electronic Communications Regulations (PECR), storage that is strictly necessary to give you a service you've asked for doesn't need consent. Saving your game and settings is part of the game you chose to play, so I just tell you about it here instead of asking. Cloudflare Web Analytics sets no cookies and stores nothing on your device, so it doesn't need a banner either.</p>
 <h2>How to clear it</h2>
-<p>In your browser's settings, look for site data (often under Privacy, or "Cookies and site data"), find dexmlabs.app and delete it. This resets game progress, streaks, settings, points and best scores, including Vector, Orbit and FORGE records. Private or incognito windows clear it when you close them.</p>
+<p>In your browser's settings, look for site data (often under Privacy, or "Cookies and site data"), find dexmlabs.app and delete it. This resets game progress, streaks, settings, points and best scores, including Vector, Orbit, FORGE and GRID records. Private or incognito windows clear it when you close them.</p>
 <h2>Third parties</h2>
 <p>GitHub Pages (hosting), jsDelivr (which serves three.js and matter.js) and Cloudflare (which counts visits) see your IP address when your browser fetches files from them or sends them data. See the <a href="../privacy/">privacy notice</a>. Sites you visit through the support and makes links set their own cookies under their own policies.</p>
 ''',updated='9 October 2026')
@@ -21,7 +21,7 @@ doc('terms','Terms of use','TERMS','Terms for using dexmlabs.app and its games.'
 <p>These terms are governed by the law of England and Wales, and its courts have jurisdiction.</p>
 <p>Questions: {ML}.</p>
 ''',updated='9 October 2026')
-doc('disclaimer','Disclaimer','DISCLAIMER','Skywave, Lorenz, Tolerance, Vector, Orbit and FORGE are games, not tools for real-world prediction, navigation, training or design.',f'''
+doc('disclaimer','Disclaimer','DISCLAIMER','Skywave, Lorenz, Tolerance, Vector, Orbit, FORGE and GRID are games, not tools for real-world prediction, navigation, training or design.',f'''
 <h2>Skywave is a game</h2>
 <p>Skywave's radio propagation model is deliberately simplified to make a fair, playable puzzle. It is not a prediction or planning tool. Don't use it to plan real contacts, emergency communications or anything that matters. For real conditions, use VOACAP or live propagation data.</p>
 <p>All stations and callsigns in the game are fictional. Any match with a real station is a coincidence.</p>
@@ -34,6 +34,8 @@ doc('disclaimer','Disclaimer','DISCLAIMER','Skywave, Lorenz, Tolerance, Vector, 
 <p>Tolerance uses ideal textbook mechanisms: no friction, no slip, no losses. Real machines need real margins. Don't use it to size or check anything that will carry a load. I'm not an engineer by profession.</p>
 <h2>FORGE is a game</h2>
 <p>FORGE is a side-view textbook model: slopes, friction, projectiles, levers and the rest, with the awkward bits of a real workshop left out. The numbers are there to teach the rule, not to size a real part.</p>
+<h2>GRID is a game</h2>
+<p>GRID is a made up city with four feeders and five streets. The numbers are there so you can see why a line fills up. It is not a model of a real power network, and it will not tell you how to run one.</p>
 <h2>No warranty</h2>
 <p>Everything on this site is provided as is, with no warranty that it is accurate, complete or available. See the <a href="../terms/">terms</a>.</p>
 <h2>Makes</h2>
@@ -63,6 +65,7 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Complete the five-minute daily Orbit shift with at least three satellites deployed</td><td>{PTS['orbit']}</td></tr>
 <tr><td>Clear five aircraft in one endless Vector run, or deploy three satellites in one endless Orbit run</td><td>{PTS['practice']}, up to {PTS['per_day']} qualifying runs a day per game</td></tr>
 <tr><td>Finish a FORGE contract</td><td>No site points. Stars stay in the game.</td></tr>
+<tr><td>Keep a GRID day at least 97 percent lit</td><td>{PTS['practice']}, up to {PTS['per_day']} a UTC day</td></tr>
 <tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
 </tbody></table>
 <p>Vector and Orbit sandbox modes do not award points. FORGE keeps its own stars in this browser and does not pay site points. Vector and Orbit daily seeds and point limits use UTC days. You can replay a daily shift, but its points are awarded only once.</p>

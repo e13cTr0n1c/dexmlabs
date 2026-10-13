@@ -6,6 +6,12 @@
 <a class="thumb" href="forge/" tabindex="-1" aria-hidden="true"><img src="assets/forge-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>FORGE</h3><p>Twelve short contracts. Set the ramp, the grit, the bumper or the sail, then run it. Stars for a clean result.</p><a class="btn" href="forge/">Open FORGE</a></div>
 </article>
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">CITY POWER</span></div>
+<a class="thumb" href="grid/" tabindex="-1" aria-hidden="true"><img src="assets/grid-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
+<div class="card-body"><h3>GRID</h3><p>Keep a city lit. Wind, sun, a slow nuclear core and a coal bunker share one exchange. Run the day, then feed whatever went dark.</p>
+<a class="btn" href="grid/">Play GRID</a></div>
+</article>
 <article class="card sealed">
 <div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
 <div class="thumb" aria-hidden="true"><span>SEALED</span></div>
@@ -52,7 +58,7 @@ doc('privacy','Privacy notice','PRIVACY','How dexmlabs.app handles personal data
 <p>There are no accounts and no ads, and no cookies are set. The only sign-up is an optional email for when a new game comes out. I count visits with Cloudflare Web Analytics, which gives me totals, not a record of you. Nothing you do in the games is sent to me.</p>
 <h2>What stays in your browser</h2>
 <p>Skywave, Lorenz and Tolerance save your progress, settings, best scores and streak in your browser's localStorage, so you can pick up where you left off. Your <a href="../points/">points</a> are kept there too, and so is light or dark mode if you pick one. The site also remembers that you closed the storage notice. This data stays on your device and is never sent to me. See <a href="../cookies/">cookies and storage</a> for the details and how to clear it.</p>
-<p>Vector and Orbit store completed-run best scores, the selected mode and sound settings in your browser. They do not save unfinished runs. No game requires an account.</p>
+<p>Vector and Orbit store completed-run best scores, the selected mode and sound settings in your browser. They do not save unfinished runs. GRID stores the city you are running, and whether its sound is on. No game requires an account.</p>
 <h2>Hosting: GitHub Pages</h2>
 <p>The site is hosted on GitHub Pages, run by GitHub, Inc. When your browser asks for a page, GitHub receives your IP address and standard request details (such as browser type and the page requested), and may log them for security and to keep the service running. I don't get access to those logs. See {GH}.</p>
 <h2>Visit counts: Cloudflare Web Analytics</h2>
@@ -99,6 +105,8 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>orbit:settings</code></td><td>Your selected game mode and sound setting</td><td>Until you clear it</td></tr>
 <tr><td><code>orbit:stats</code></td><td>Completed-run best scores by mode, the most recent daily score and the number of completed runs</td><td>Until you clear it</td></tr>
 <tr><td><code>forge-shift-v1</code></td><td>FORGE stars, daily result, sound and proving-ground records</td><td>Until you clear it</td></tr>
+<tr><td><code>grid:power:v2</code></td><td>The city you are running in GRID: seed, day, policy and trust</td><td>Until you clear it</td></tr>
+<tr><td><code>grid:sound</code></td><td>Whether GRID sound is on</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>
 <tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>

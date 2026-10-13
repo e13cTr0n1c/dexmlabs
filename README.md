@@ -9,6 +9,7 @@ Static site for DEXM Labs: small free browser games and makes from a home lab in
 - `/vector/` Vector, endless air traffic control with daily and sandbox modes
 - `/orbit/` Orbit, orbital manoeuvres and procedural satellite deployments
 - `/forge/` FORGE, twelve short physics contracts, a daily spring shot and a proving-ground bench (matter.js via jsDelivr)
+- `/grid/` GRID, a city power desk: wind, sun, a slow nuclear core and coal, saved in the browser
 - `/privacy/`, `/cookies/`, `/terms/`, `/disclaimer/`, `/contact/` policy pages
 - `/tools/` and `/templates/` only hold redirect pages now. The UK tax calculators and spreadsheet templates moved to https://e13ctr0n1c.github.io/, and each old URL sends visitors to the matching page there (noindex, not in the sitemap)
 - Visits are counted with Cloudflare Web Analytics (cookieless, aggregate only). The beacon is on every generated page; the Skywave and Lorenz pages carry it by hand

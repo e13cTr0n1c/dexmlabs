@@ -118,7 +118,7 @@
       '<p class="dexm-pop-bal">You have <b data-points-balance>' + fmt(Points.balance()) + '</b> points.</p>' +
       (note ? '<p class="dexm-pop-note">' + note + '</p>' : '') +
       '<ul><li>Finish today\'s Skywave: <b>' + EARN.skywave + '</b></li><li>Decode today\'s Lorenz: <b>' + EARN.lorenz + '</b>, or <b>' + EARN.lorenzHard + '</b> in hard mode or <b>' + EARN.lorenzReal + '</b> in realistic mode, plus <b>' + EARN.lorenzReply + '</b> for the reply</li><li>Solve today\'s Tolerance: <b>' + EARN.tolerance + '</b></li><li>Practice rounds: <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a day in each game</li></ul>' +
-      '<p>Vector: clear five aircraft in an endless run. Orbit: deploy three satellites. Each earns <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' qualifying runs a UTC day per game. Complete the daily shift with those minimums for <b>100</b> once that day. FORGE challenges award the points shown on each test once; Sandbox earns no points.</p>' +
+      '<p>Vector: clear five aircraft in an endless run. Orbit: deploy three satellites. Each earns <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' qualifying runs a UTC day per game. Complete the daily shift with those minimums for <b>100</b> once that day. FORGE challenges award the points shown on each test once; Sandbox earns no points. GRID: a day that stays lit earns <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a UTC day.</p>' +
       '<p>Hints in Skywave and Lorenz are paid for with points, and each button shows its price. Your game score is just how you played.</p>' +
       '<p class="dexm-pop-small">Points live in this browser. There\'s no account and nothing to buy. <a href="' + page + '">More about points</a></p>';
   }
@@ -158,7 +158,7 @@
     if (/^vector:daily:/.test(r)) return 'Vector daily, ' + r.slice(13);
     if (/^orbit:daily:/.test(r)) return 'Orbit daily, ' + r.slice(12);
     if (/^forge:challenge:/.test(r)) return 'FORGE challenge: ' + r.slice(16).replace(/-/g, ' ');
-    if (/:practice:/.test(r)) { var names = {skywave:'Skywave',lorenz:'Lorenz',tolerance:'Tolerance',vector:'Vector',orbit:'Orbit'}; return (names[e.source] || 'Game') + (e.source === 'vector' || e.source === 'orbit' ? ' endless' : ' practice'); }
+    if (/:practice:/.test(r)) { var names = {skywave:'Skywave',lorenz:'Lorenz',tolerance:'Tolerance',vector:'Vector',orbit:'Orbit',grid:'GRID'}; return (names[e.source] || 'Game') + (e.source === 'vector' || e.source === 'orbit' ? ' endless' : ' practice'); }
     if (e.kind === 'spend') return (e.source.indexOf('skywave') === 0 ? 'Skywave' : 'Lorenz') + ' hint';
     return e.source;
   }
