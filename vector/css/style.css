@@ -1,0 +1,2 @@
+/* VECTOR-specific controls. Shared layout is in assets/flight-ui.css. */
+#heading-form{display:grid;grid-template-columns:1fr auto;gap:6px}#heading-input{width:100%;min-width:0}#selected-name{font:800 23px/1.2 var(--mono);margin-bottom:4px}#selected-destination{font-size:10px;color:var(--muted);margin-bottom:13px}#approach-btn[aria-pressed=true]{background:var(--signal);border-color:var(--signal);color:#132000}#add-traffic{margin-top:9px}.traffic-warning{color:var(--danger)!important}.flight-strip .priority-label{color:var(--warn)}
