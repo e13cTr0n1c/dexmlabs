@@ -1,30 +1,15 @@
-# FORGE — DEXM Labs Physics Facility
+# FORGE — night shift
 
-FORGE is a Three.js + cannon-es interactive physics construction laboratory.
+Twelve short physics contracts, a daily spring shot, and a proving-ground bench. Each contract asks for one result and names the rule that produces it.
 
-## Modes
+Stars stay in this browser (`forge-shift-v1`). They are not site points.
 
-- **Sandbox / Proving Ground** — unlimited building plus wind tunnel, shake table, drop and speed tests.
-- **Challenges** — constrained engineering objectives with one-time DEXM point rewards.
-- **Walkthrough** — interactive introduction to parts, magnetic snap nodes, physical properties, joints and simulation.
+## Run
 
-## Building
+No build step. Serve the repository root over HTTP and open `/forge/`. The page is static ES modules. `js/matter.mjs` is matter.js 0.20.0 (MIT), bundled so the game does not call a CDN.
 
-Parts expose small red connection nodes in BUILD mode. With **Magnetic snap** enabled, nearby nodes pull together. **Auto-fix on snap** optionally creates a rigid fixed joint when the part is released. Disable Auto-fix when assembling mechanisms that need hinges, springs or motors.
+Space runs the contract. R resets the build. `[` and `]` turn a selected part.
 
-The right inspector exposes mass, friction, restitution, damping, transforms and static locking. Velocity and gravity vectors can be displayed for the selected body.
+## Contracts
 
-## Facility tests
-
-Sandbox includes four repeatable test rigs:
-
-- Wind tunnel
-- Shake table
-- Drop test
-- Speed run
-
-FORGE tracks local records for top speed, height, peak kinetic energy and test survival time. Sandbox records do not award DEXM points.
-
-## Runtime
-
-FORGE loads browser ESM builds of Three.js 0.180.0 and cannon-es 0.20.0 from jsDelivr. It requires network access to those modules and has no npm/build dependency for deployment.
+Drop, grit, flight, bank, lever, swing, spring, span, stack, relay, hoist, sail. A sketch of the answer caps the stars at two.
