@@ -73,7 +73,7 @@ await t('Hard practice: a correct answer solves it, is scored like hard mode, an
     assert.equal(HD.updateHardStats(prev, state), prev, 'practice never counts in hard stats');
     assert.match(HD.hardShareText(state, 'u'), /^Lorenz practice HARD/);
   }
-  const d = ready(HD.newHardState(HD.makeHardRound({}))), read = HD.submitAnswer(d, d.round.text).state, solved = HD.submitReply(read, HD.replyTape(d.round, HD.replyFor(d.round), d.round.start)).state;
+  const d = ready(HD.newHardState(HD.makeHardRound({}))), read = HD.submitAnswer(d, d.round.text).state, line = HD.replyLines(d.round)[0], solved = HD.submitReply(read, HD.replyTape(d.round, HD.replyFor(d.round), line.start), line.qep, line.start).state;
   assert.equal(HD.updateHardStats(prev, read), prev, 'read but not answered does not count yet');
   assert.ok(HD.updateHardStats(prev, solved).history[todayKey], 'the daily still counts'); assert.match(HD.hardShareText(solved, 'u'), /^Lorenz #\d+ HARD/);
 });
@@ -144,7 +144,7 @@ for (const seed of [42, 7, 31337, 4000000000, (Math.random() * 2 ** 32) >>> 0]) 
       d.getElementById('hard-answer').value = h.text.toLowerCase().replace(/\. /g, ' '); d.getElementById('hard-answer-go').click();
       assert.match(d.getElementById('feedback').textContent, /Message read\./); assert.equal(d.getElementById('decoded-card').hidden, true);
       assert.equal(d.getElementById('reply-plain').textContent, HD.replyFor(h));
-      d.getElementById('reply-input').value = HD.replyFor(h); d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
+      const line = HD.replyLines(h)[0]; d.getElementById('reply-qep').value = String(line.qep); setWheels(d, w, line.start); d.getElementById('reply-input').value = HD.replyFor(h); d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
       assert.match(d.getElementById('feedback').textContent, /Reply sent\./);
       const card = d.getElementById('decoded-card'); assert.equal(card.hidden, false); assert.match(card.textContent, /Read by hand and answered, hard mode/); assert.ok(card.textContent.includes(h.text));
       assert.ok(card.querySelector('[data-card=next]')); assert.equal(card.querySelector('[data-card=normal]'), null); assert.doesNotMatch(card.textContent, /streak|Next intercept/i);

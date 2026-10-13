@@ -437,7 +437,9 @@ let bootCount = 0;
 /* The shared points script lives at the site root (../assets/points.js). In this mirror, read it from the site clone. */
 const POINTS_JS = [path.join(ROOT, '../assets/points.js'), path.join(process.env.DEXM_SITE || '/workspace/dexmlabs/site', 'assets/points.js')].find(f => fs.existsSync(f));
 /** Set the dials to `start`, type the reply and punch it, finishing the tape at once with Skip. */
-function sendReplyDOM(d, w, round, {text = HD.replyFor(round), start = round.start} = {}) {
+const fresh = h => HD.replyLines(h)[0];
+function sendReplyDOM(d, w, round, {text = HD.replyFor(round), qep = fresh(round).qep, start = (HD.replyLine(round, qep) || round).start} = {}) {
+  d.getElementById('reply-qep').value = String(qep);
   for (const [id, v] of Object.entries(start)) { const el = d.getElementById(`dial-${id}`); el.value = String(v); el.dispatchEvent(new w.Event('change', {bubbles: true})); }
   d.getElementById('reply-input').value = text; d.getElementById('reply-go').click(); d.getElementById('skip-button').click();
 }
@@ -588,7 +590,7 @@ await t('Hard: scoring, QEP bonus, hints and wrong readings', () => {
   assert.throws(() => HD.useHardHint(ready(HD.newHardState(h)), 'check', {settings: h.start, wheel: 'nope'}));
 });
 await t('Hard: own stats and streak, apart from normal, and the share text says HARD', () => {
-  const solve = key => { const h = {...HD.makeHardRound({date: new Date(key + 'T09:00:00Z')})}, read = HD.submitAnswer(ready(HD.newHardState(h)), h.text).state; return HD.submitReply(read, HD.replyTape(h, HD.replyFor(h), h.start)).state; };
+  const solve = key => { const h = {...HD.makeHardRound({date: new Date(key + 'T09:00:00Z')})}, read = HD.submitAnswer(ready(HD.newHardState(h)), h.text).state; return HD.submitReply(read, HD.replyTape(h, HD.replyFor(h), fresh(h).start), fresh(h).qep, fresh(h).start).state; };
   let s = HD.updateHardStats(null, solve('2026-10-09')); s = HD.updateHardStats(s, solve('2026-10-10')); assert.equal(s.streak, 2); assert.equal(s.best, 1000);
   s = HD.updateHardStats(s, solve('2026-10-12')); assert.equal(s.streak, 1); assert.equal(s.bestStreak, 2);
   const st = solve('2026-10-09'), txt = HD.hardShareText(st, 'https://dexmlabs.app/lorenz/');
@@ -889,7 +891,8 @@ await t('Demo: the speed menu offers it, and a run shows the panel, then Skip fi
 
 /* ---------- Hard mode reply ---------- */
 const readRound = h => HD.submitAnswer(ready(HD.newHardState(h)), h.text).state;
-const tapeOf = (h, text = HD.replyFor(h), start = h.start) => HD.replyTape(h, text, start);
+const tapeOf = (h, text = HD.replyFor(h), start = fresh(h).start) => HD.replyTape(h, text, start);
+const sendOn = (st, tape) => HD.submitReply(st, tape, fresh(st.round).qep, fresh(st.round).start);
 await t('Reply: fixed for the day like the message, named after it, and fixed per practice seed', () => {
   const a = HD.makeHardRound({date: new Date('2026-10-12T00:05:00Z')}), b = HD.makeHardRound({date: new Date('2026-10-12T23:55:00Z')});
   assert.equal(HD.replyFor(a), HD.replyFor(b));
@@ -903,24 +906,71 @@ await t('Reply: fixed for the day like the message, named after it, and fixed pe
 await t('Reply: the right tape passes, with the same answer check as the message; wrong wheels or words fail', () => {
   for (const h of [HD.makeHardRound({}), HD.makeHardRound({mode: 'practice', seed: 7, model: L.MODELS.SZ42A})]) {
     const r = HD.replyFor(h);
-    assert.ok(HD.replyReads(h, tapeOf(h))); assert.ok(HD.replyReads(h, tapeOf(h, r.toLowerCase().replace(/\./g, ' ') + '  ')), 'case, spacing and punctuation');
-    assert.ok(HD.replyReads(h, tapeOf(h, r.replace('RECEIVED', 'RECEIVEX'))), 'one wrong letter in one word still counts, as with the message');
-    assert.equal(HD.replyReads(h, tapeOf(h, r, {...h.start, chi1: h.start.chi1 % 41 + 1})), false, 'wrong wheel');
-    assert.equal(HD.replyReads(h, tapeOf(h, h.text)), false, 'the message is not the reply');
-    assert.equal(HD.replyReads(h, tapeOf(h, 'YOUR SIGNAL RECEIVED. ACKNOWLEDGED.')), false);
+    assert.ok(HD.replyReads(h, tapeOf(h), fresh(h).qep)); assert.ok(HD.replyReads(h, tapeOf(h, r.toLowerCase().replace(/\./g, ' ') + '  '), fresh(h).qep), 'case, spacing and punctuation');
+    assert.ok(HD.replyReads(h, tapeOf(h, r.replace('RECEIVED', 'RECEIVEX')), fresh(h).qep), 'one wrong letter in one word still counts, as with the message');
+    assert.equal(HD.replyReads(h, tapeOf(h, r, {...fresh(h).start, chi1: fresh(h).start.chi1 % 41 + 1}), fresh(h).qep), false, 'wrong wheel');
+    assert.equal(HD.replyReads(h, tapeOf(h, h.text), fresh(h).qep), false, 'the message is not the reply');
+    assert.equal(HD.replyReads(h, tapeOf(h, 'YOUR SIGNAL RECEIVED. ACKNOWLEDGED.'), fresh(h).qep), false);
+  }
+});
+await t('Reply QEP: a fresh line of today\'s page, never the incoming one; a depth is flagged, not accepted and not charged', () => {
+  for (const realistic of [false, true]) for (const h of [HD.makeHardRound({realistic}), HD.makeHardRound({mode: 'practice', seed: 4242, realistic})]) {
+    const read = HD.submitAnswer(ready(HD.newHardState(h)), h.text).state, line = fresh(h);
+    assert.ok(HD.replyLines(h).length >= 1 && HD.replyLines(h).every(l => l.qep !== h.qep) && HD.replyLines(h).every(l => h.book.includes(l)));
+    const same = HD.submitReply(read, HD.replyTape(h, HD.replyFor(h), h.start), h.qep, h.start);
+    assert.equal(same.result.depth, true); assert.equal(same.state, read, 'nothing recorded or charged');
+    const sameSettings = HD.submitReply(read, HD.replyTape(h, HD.replyFor(h), h.start), line.qep, {...h.start});
+    assert.equal(sameSettings.result.depth, true, 'the incoming settings under a new QEP are still a depth');
+    const nowhere = [...Array(99).keys()].map(i => i + 1).find(q => !h.book.some(l => l.qep === q));
+    assert.equal(HD.submitReply(read, [1, 2], nowhere, line.start).result.noLine, true);
+    assert.equal(HD.replyReads(h, HD.replyTape(h, HD.replyFor(h), h.start), line.qep), false, 'a reply on the incoming settings does not read on the new line');
+    const off = {...line.start, chi2: line.start.chi2 % 31 + 1}, bad = HD.submitReply(read, HD.replyTape(h, HD.replyFor(h), off), line.qep, off);
+    assert.equal(bad.result.ok, false); assert.deepEqual(bad.result.off, ['chi2']); assert.equal(bad.state.reply.tries.length, 1);
+    const good = HD.submitReply(bad.state, HD.replyTape(h, HD.replyFor(h), line.start), line.qep, line.start);
+    assert.equal(good.result.ok, true); assert.equal(good.state.reply.qep, line.qep); assert.equal(good.state.reply.score, 200);
+    const back = HD.restoreHard(h, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: good.state.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: good.state.reply.tries, qep: line.qep}})));
+    assert.equal(back.reply.qep, line.qep); assert.equal(HD.hardComplete(back), true);
+    const old = HD.restoreHard(h, {v: HD.HARD_SAVE_VERSION, answers: [{key: h.text, ok: true}], hints: [], qepGuesses: [], solved: true, reply: {tries: [{key: '1,2', ok: true}]}});
+    assert.equal(old.reply.qep, null); assert.equal(HD.hardComplete(old), true, 'replies sent before this change still count');
+  }
+  assert.match(HD.DEPTH_NOTE, /depth/); assert.match(HD.DEPTH_NOTE, /August 1941/); assert.ok(!/[\u2013\u2014]|!/.test(HD.DEPTH_NOTE));
+});
+await t('DOM: the reply asks for a QEP line, flags a depth, names the line, and only Hard says which wheels are off', async () => {
+  for (const difficulty of ['hard', 'realistic']) {
+    const h = HD.makeHardRound({realistic: difficulty === 'realistic'}), line = fresh(h);
+    const save = realSave(h, copyPins(h), {answers: [{key: HD.canon(h.text), ok: true}], qepGuesses: [h.qep], ran: {...h.start}, solved: true, score: 1000});
+    await bootPage({'lorenz:difficulty': JSON.stringify(difficulty), [`lorenz:${difficulty === 'realistic' ? 'real' : 'hard'}:round:${h.key}`]: save}, async (d, w) => {
+      d.getElementById('play-daily').click();
+      assert.equal(d.getElementById('hard-reply').hidden, false, difficulty);
+      assert.ok(d.querySelector('label[for="reply-qep"]')); assert.match(d.getElementById('hard-reply').textContent, /depth/);
+      assert.equal(d.getElementById('reply-used').textContent, String(h.qep).padStart(2, '0'));
+      d.getElementById('reply-input').value = HD.replyFor(h); d.getElementById('reply-qep').value = ''; d.getElementById('reply-go').click();
+      assert.match(d.getElementById('feedback').textContent, /Pick a fresh QEP line/);
+      sendReplyDOM(d, w, h, {qep: h.qep, start: h.start});
+      assert.match(d.getElementById('feedback').textContent, /That's a depth.*August 1941.*Nothing was charged/); assert.equal(d.getElementById('reply-tape').hidden, true);
+      sendReplyDOM(d, w, h, {qep: line.qep, start: h.start}); assert.match(d.getElementById('feedback').textContent, /depth/);
+      sendReplyDOM(d, w, h, {qep: line.qep, start: {...line.start, psi1: line.start.psi1 % 43 + 1}});
+      const fb = d.getElementById('feedback').textContent;
+      assert.ok(!/Check the wheels are still on the settings you read the message with/.test(fb));
+      assert.ok(fb.includes(`QEP ${String(line.qep).padStart(2, '0')}'s line`), fb);
+      if (difficulty === 'hard') assert.match(fb, /\u03c81 doesn't yet|psi ?1 doesn't yet|doesn't yet/); else assert.ok(!/doesn't yet/.test(fb), 'realistic gives no partial feedback');
+      sendReplyDOM(d, w, h, {qep: line.qep}); await new Promise(r => setTimeout(r, 0));
+      assert.match(d.getElementById('feedback').textContent, /Reply sent\./);
+      const stored = JSON.parse(w.localStorage.getItem(`lorenz:${difficulty === 'realistic' ? 'real' : 'hard'}:round:${h.key}`)); assert.equal(stored.reply.qep, line.qep);
+    });
   }
 });
 await t('Reply: a hard round only finishes with the reply, scored on its own; stats wait for it', () => {
   const h = HD.makeHardRound({}), fresh = ready(HD.newHardState(h));
-  assert.equal(HD.submitReply(fresh, tapeOf(h)).result.notReady, true, 'no reply before the message is read');
+  assert.equal(sendOn(fresh, tapeOf(h)).result.notReady, true, 'no reply before the message is read');
   const read = readRound(h); assert.equal(read.solved, true); assert.equal(HD.hardComplete(read), false);
   assert.equal(HD.updateHardStats(null, read).rounds, 0, 'not counted yet');
-  const bad = tapeOf(h, h.text); let st = HD.submitReply(read, bad).state; assert.equal(st.reply.done, false); assert.equal(st.reply.tries.length, 1);
-  st = HD.submitReply(st, bad).state; assert.equal(st.reply.tries.length, 1, 'the same wrong tape twice is free');
-  const {state, result} = HD.submitReply(st, tapeOf(h)); assert.equal(result.ok, true); assert.equal(HD.hardComplete(state), true);
+  const bad = tapeOf(h, h.text); let st = sendOn(read, bad).state; assert.equal(st.reply.done, false); assert.equal(st.reply.tries.length, 1);
+  st = sendOn(st, bad).state; assert.equal(st.reply.tries.length, 1, 'the same wrong tape twice is free');
+  const {state, result} = sendOn(st, tapeOf(h)); assert.equal(result.ok, true); assert.equal(HD.hardComplete(state), true);
   assert.equal(state.reply.score, HD.HARD_RULES.reply.base - HD.HARD_RULES.reply.wrong); assert.equal(state.score, read.score, 'the message score is untouched');
   const stats = HD.updateHardStats(null, state); assert.equal(stats.history[h.key].reply, 200); assert.equal(stats.replies, 1); assert.equal(stats.bestReply, 200);
-  let low = read; for (let i = 0; i < 6; i++) low = HD.submitReply(low, tapeOf(h, `WRONG ${i}`)).state; assert.equal(HD.submitReply(low, tapeOf(h)).state.reply.score, HD.HARD_RULES.reply.floor);
+  let low = read; for (let i = 0; i < 6; i++) low = sendOn(low, tapeOf(h, `WRONG ${i}`)).state; assert.equal(sendOn(low, tapeOf(h)).state.reply.score, HD.HARD_RULES.reply.floor);
   const b = HD.hardBreakdown(state); assert.equal(b.replyTotal, 200); assert.match(HD.hardShareText(state, 'u'), /Reply sent: 200 pts/);
   const back = HD.restoreHard(h, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: state.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: state.reply.tries}})));
   assert.equal(HD.hardComplete(back), true); assert.equal(back.reply.score, 200);
@@ -1016,7 +1066,7 @@ await t('Modes: hard and realistic both run on your own pins; realistic says not
     for (const k of ['char', 'check']) { assert.equal(HD.useHardHint(rs, k, {settings: r.start, wheel: 'chi1'}).answer, null, k); assert.ok(HD.useHardHint(hs, k, {settings: h.start, wheel: 'chi1'}).answer, k); }
     assert.ok(HD.useHardHint(rs, 'qep').answer, 'the QEP can still be revealed'); assert.ok(HD.useHardHint(rs, 'smudge').answer || !G.answerLine(r).smudge);
     if (!opts.mode) { assert.match(HD.hardShareText(real, 'u'), /REALISTIC/); assert.match(HD.hardShareText(hard, 'u'), /HARD/); }
-    const done = HD.submitReply(real, HD.replyTape(r, HD.replyFor(r), r.start)).state; assert.ok(HD.hardComplete(done)); assert.equal(done.reply.score, 300);
+    const done = sendOn(real, HD.replyTape(r, HD.replyFor(r), fresh(r).start)).state; assert.ok(HD.hardComplete(done)); assert.equal(done.reply.score, 300);
     const back = HD.restoreHard(r, JSON.parse(JSON.stringify({v: HD.HARD_SAVE_VERSION, answers: done.answers, hints: [], qepGuesses: [], solved: true, reply: {tries: done.reply.tries}, pins: HD.savePins(done.pins)})));
     assert.equal(back.score, real.score); assert.ok(HD.pinsMatch(r, back.pins.grid)); assert.ok(HD.hardComplete(back));
   }
@@ -1263,6 +1313,7 @@ await t('Hard help in the page: one wheel right and the rest flick in on the mod
     ans.value = 'x' + t5.slice(1); ans.dispatchEvent(new w.Event('input')); assert.equal(ans.value, 'x' + t5.slice(1), 'a wrong one fills nothing');
     ans.value = t5; ans.dispatchEvent(new w.Event('input')); assert.equal(ans.value, HD.canon(h.text));
     d.getElementById('hard-answer-go').click(); assert.match(d.getElementById('feedback').textContent, /Message read\./);
+    d.getElementById('reply-qep').value = String(fresh(h).qep); setWheels(d, w, fresh(h).start);
     const rep = d.getElementById('reply-input'), reply = HD.replyFor(h); rep.value = reply.slice(0, 5); rep.dispatchEvent(new w.Event('input')); assert.equal(rep.value, HD.canon(reply));
     d.getElementById('reply-go').click(); d.getElementById('skip-button').click(); await new Promise(x => setTimeout(x, 0));
     assert.match(d.getElementById('feedback').textContent, /Reply sent\./);

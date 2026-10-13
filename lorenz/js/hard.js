@@ -117,7 +117,7 @@ export function matchAnswer(input, targets) {
 }
 
 /* ---------- State, scoring, hints ---------- */
-export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0}, pins:{...newPins(), on: Boolean(round.pins)}, step: round.pins ? 'qep' : null});
+export const newHardState = round => ({round, answers:[], hints:[], qepGuesses:[], ran:null, solved:false, score:0, reply:{tries:[], done:false, score:0, qep:null}, pins:{...newPins(), on: Boolean(round.pins)}, step: round.pins ? 'qep' : null});
 
 /* ---------- Realistic mode's guided steps ---------- */
 /** Read the QEP, set the pins, set the start positions, run the tape and read it. You can go back to any step you've
@@ -198,21 +198,35 @@ export function replyFor(round) {
 /** What the machine punches when you encipher `text` with your wheel `settings`. Throws on characters the
  *  teleprinter can't send. */
 export const replyTape = (round, text, settings) => crypt(encodeText(canon(text)), {patterns: round.patterns, start: settings, model: round.model});
-/** A punched reply passes if it reads as the reply on the round's real start positions, using the same answer
- *  check as the message (case, spacing, punctuation and one wrong letter in one word don't matter). */
-export function replyReads(round, codes) {
-  const back = decodeText(crypt(codes, {patterns: round.patterns, start: round.start, model: round.model}));
+/** The reply goes out on a fresh line of today's page, never on the incoming message's settings. Two messages on
+ *  one setting are a depth, which is how Tunny was broken in August 1941. These are the lines you may use. */
+export const replyLines = round => round.book.filter(l => l.qep !== round.qep);
+export const replyLine = (round, qep) => replyLines(round).find(l => l.qep === qep) || null;
+export const DEPTH_NOTE = "That's a depth: two messages on the same settings. On 30 August 1941 an operator resent a long message on the same settings, and from that pair John Tiltman recovered the key and Bill Tutte worked out the whole machine. Pick a different line from today's page.";
+const sameStart = (a, b) => Boolean(a && b) && Object.keys(b).every(k => a[k] === b[k]);
+/** A punched reply passes if it reads as the reply on the start positions of the QEP line you sent in the preamble,
+ *  using the same answer check as the message (case, spacing, punctuation and one wrong letter in one word don't matter). */
+export function replyReads(round, codes, qep) {
+  const line = replyLine(round, qep); if (!line) return false;
+  const back = decodeText(crypt(codes, {patterns: round.patterns, start: line.start, model: round.model}));
   return matchAnswer(back, [replyFor(round)]).ok;
 }
 export const replyScoreFor = st => Math.max(HARD_RULES.reply.floor, HARD_RULES.reply.base - st.reply.tries.filter(t => !t.ok).length * HARD_RULES.reply.wrong);
-/** Send a punched reply. Only once the message is read; the same wrong tape twice is free. */
-export function submitReply(st, codes) {
+/** Send a punched reply on QEP line `qep` of today's page, with the wheels on `settings`. Only once the message is
+ *  read. Reusing the incoming QEP or its settings is a depth: flagged, not accepted and not charged. A QEP that isn't
+ *  on today's page is free too. The same wrong tape twice is free. */
+export function submitReply(st, codes, qep, settings) {
   if (!st.solved) return {state:st, result:{ok:false, notReady:true}};
   if (st.reply.done) return {state:st, result:{ok:true, repeat:true}};
-  const key = codes.join(','), ok = replyReads(st.round, codes), repeat = !ok && st.reply.tries.some(t => t.key === key);
+  const r = st.round;
+  if (qep === r.qep || sameStart(settings, r.start)) return {state:st, result:{ok:false, depth:true}};
+  const line = replyLine(r, qep); if (!line) return {state:st, result:{ok:false, noLine:true}};
+  const key = `${qep}:${codes.join(',')}`, ok = replyReads(r, codes, qep), repeat = !ok && st.reply.tries.some(t => t.key === key);
   const tries = repeat ? st.reply.tries : [...st.reply.tries, {key, ok}];
-  const reply = {tries, done: ok, score: 0}; const next = {...st, reply}; reply.score = ok ? replyScoreFor(next) : 0;
-  return {state:next, result:{ok, repeat}};
+  const reply = {...st.reply, tries, done: ok, qep, score: 0}; const next = {...st, reply}; reply.score = ok ? replyScoreFor(next) : 0;
+  // which wheels are off the chosen line (Hard says so; Realistic doesn't)
+  const off = ok || !settings ? [] : Object.keys(line.start).filter(k => settings[k] !== line.start[k]);
+  return {state:next, result:{ok, repeat, line, off}};
 }
 /** A hard round is finished when the message is read and the reply has gone back. */
 export const hardComplete = st => Boolean(st.solved && st.reply?.done);
@@ -316,7 +330,7 @@ export function restoreHard(round, saved) {
     st.pins.on = true;
     st.score = st.solved ? hardScoreFor(st) : 0;
     st.step = guideStep(st, s.step);
-    st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0};
+    st.reply = {tries, done: st.solved && (legacy || tries.some(t => t.ok)), legacy, score: 0, qep: Number.isInteger(r?.qep) && r.qep >= 1 && r.qep <= 99 ? r.qep : null};
     if (st.reply.done && !legacy) st.reply.score = replyScoreFor(st);
     return st;
   } catch {

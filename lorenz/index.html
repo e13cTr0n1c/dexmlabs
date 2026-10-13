@@ -139,7 +139,8 @@
 <p class="tiny" id="revealed-chars" hidden></p>
 <button type="button" id="hard-answer-go" class="primary wide">Check my reading</button>
 <div id="hard-reply" class="hard-reply" hidden><div class="section-top"><span class="eyebrow">Your reply</span><span class="tiny" id="reply-state">Not sent yet</span></div>
-<p class="tiny">Now send a reply back. Leave the wheels on the settings you read the message with, type the reply, and the machine enciphers it and punches the tape.</p>
+<p class="tiny">Now send a reply back, but never on the settings you read the message with: two messages on one setting are a depth, and that's how Tunny was broken. Pick a different line from the <span id="reply-day">today's</span> page (not QEP <span id="reply-used">00</span>), set the wheels to it, and put its number below. It goes out in clear in the preamble.</p>
+<label for="reply-qep" class="field-label">QEP line for the reply</label><input id="reply-qep" class="reply-qep" type="text" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false">
 <p class="reply-plain"><code id="reply-plain"></code></p>
 <p class="tiny prove-note" id="reply-note" hidden>Get the first 5 characters right and the rest fills in for you.</p>
 <label for="reply-input" class="field-label">Reply to send</label><textarea id="reply-input" rows="2" maxlength="200" spellcheck="false" autocomplete="off"></textarea>
