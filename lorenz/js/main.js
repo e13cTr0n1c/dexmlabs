@@ -5,7 +5,7 @@ import {makeRound, acceptedTexts, newState, attempt, useHint, shareText, updateS
 import {bookHeadHTML, bookBodyHTML, smudgeNote, SMUDGE_NOTE} from './book.js';
 import {createPinFace} from './pinface.js';
 import {setStep} from './hard.js';
-import {replyFor, submitReply, hardComplete, canon, runPatterns, togglePin, clearPins, notePinRun, savePins, proveFill, setPinScope, PIN_SCOPES, PROVE, REAL_NO_HINTS} from './hard.js';
+import {replyFor, submitReply, replyLines, DEPTH_NOTE, preambleCodes, hardComplete, canon, runPatterns, togglePin, clearPins, notePinRun, savePins, proveFill, setPinScope, PIN_SCOPES, PROVE, REAL_NO_HINTS} from './hard.js';
 import {makeHardRound, newHardState, HARD_SAVE_VERSION, pageRound, pageDate, CHEAT_SHEET, HARD_RULES, restoreHard, hardScoreFor, hardBreakdown, guessQep, submitAnswer, useHardHint, revealedChars, messageChars, hardSmudgeText, updateHardStats, hardShareText, qepKnown} from './hard.js';
 import {tapeHTML, holesHTML, holesText} from './punch.js';
 import {utcDateKey, mulberry32} from './seed.js';
@@ -300,7 +300,7 @@ function saveRound() {
   const st = app.state;
   if (app.mode === 'hard') {
     if (st.round.mode === 'practice') { const slot = st.round.realistic ? 'realPractice' : 'hardPractice'; app[slot] = st; app[slot + 'Wheels'] = {...app.wheels}; return; }
-    write(`${kp()}round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy)}, pins: savePins(st.pins), step: st.step, wheels: app.wheels});
+    write(`${kp()}round:${st.round.key}`, {v: HARD_SAVE_VERSION, text: st.round.text, answers: st.answers, hints: st.hints, qepGuesses: st.qepGuesses, ran: st.ran, solved: st.solved, score: st.score, reply: {tries: st.reply.tries, legacy: Boolean(st.reply.legacy), qep: st.reply.qep ?? null}, pins: savePins(st.pins), step: st.step, wheels: app.wheels});
     try { const keys = Object.keys(localStorage).filter(k => k.startsWith(PREFIX + kp() + 'round:')).sort(); keys.slice(0, Math.max(0, keys.length - 7)).forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
     return;
   }
@@ -559,7 +559,7 @@ function showHardTape() {
   app.outCodes = codes; if (!app.aid || app.aid.length !== codes.length) app.aid = {index: 0, bits: [0, 0, 0, 0, 0], figs: false, length: codes.length};
   renderAid();
 }
-function resetHardExtras() { clearTimeout(app.flickTimer); app.viewGrid = null; ['hard-answer', 'reply-input'].forEach(id => delete $(id).dataset.filling); app.aid = null; app.outCodes = null; $('read-aid').hidden = true; $('reply-input').value = ''; $('reply-tape').hidden = true; $('reply-tape').innerHTML = ''; document.querySelectorAll('#cheat-body tr').forEach(tr => { tr.classList.remove('aid-match'); tr.removeAttribute('aria-current'); [...tr.cells].forEach(c => c.classList.remove('aid-col')); }); }
+function resetHardExtras() { clearTimeout(app.flickTimer); app.viewGrid = null; ['hard-answer', 'reply-input'].forEach(id => delete $(id).dataset.filling); app.aid = null; app.outCodes = null; $('read-aid').hidden = true; $('reply-input').value = ''; $('reply-qep').value = ''; $('reply-tape').hidden = true; $('reply-tape').innerHTML = ''; document.querySelectorAll('#cheat-body tr').forEach(tr => { tr.classList.remove('aid-match'); tr.removeAttribute('aria-current'); [...tr.cells].forEach(c => c.classList.remove('aid-col')); }); }
 /* ---------- Wheel pattern sheet and setting pins face on (realistic mode) ---------- */
 const patternRow = bits => bits.map(b => b ? 'x' : '.').join('').replace(/(.{5})/g, '$1 ').trim();
 function renderPins() {
@@ -730,6 +730,8 @@ function renderReply() {
   $('reply-plain').textContent = replyFor(st.round);
   const done = st.reply.done, wrong = st.reply.tries.filter(t => !t.ok).length;
   $('reply-state').textContent = done ? (st.reply.legacy ? 'Read before replies existed' : `Sent, ${fmt(st.reply.score)} pts`) : wrong ? `Not through yet, ${wrong} wrong ${wrong > 1 ? 'tapes' : 'tape'}` : 'Not sent yet';
+  $('reply-qep').disabled = done; if (st.reply.qep && !$('reply-qep').value) $('reply-qep').value = st.reply.qep;
+  $('reply-day').textContent = pageDate(st.round.key); $('reply-used').textContent = pad2(st.round.qep);
   box.classList.toggle('sent', done); $('reply-go').textContent = done ? 'Reply sent' : 'Encipher and punch the reply'; $('reply-go').disabled = done; $('reply-input').disabled = done;
   if (done && !$('reply-input').value) $('reply-input').value = replyFor(st.round);
 }
@@ -739,13 +741,23 @@ function sendReply() {
   if (st.reply.done) { showCard(false); return; }
   const text = canon($('reply-input').value); if (!text) { setFeedback('bad', 'Type the reply first.'); return; }
   const codes = encodeText(text); if (codes.dropped.length) { setFeedback('bad', `The teleprinter can't send ${[...new Set(codes.dropped)].join(' ')}. Stick to letters, figures and the punctuation in the reply.`); return; }
-  const settings = {...app.wheels}; setFeedback('', 'Punching the reply...');
+  const qep = Number($('reply-qep').value), day = pageDate(r.key);
+  if (!Number.isInteger(qep) || qep < 1 || qep > 99) { setFeedback('bad', `Pick a fresh QEP line for the reply from the ${day} page first, set the wheels to it, and put its number here.`); $('reply-qep').focus(); return; }
+  const settings = {...app.wheels};
+  const pre = submitReply(app.state, [], qep, settings);
+  if (pre.result.depth) { setFeedback('bad', `${DEPTH_NOTE} Nothing was charged.`); $('reply-qep').focus(); return; }
+  if (pre.result.noLine) { setFeedback('bad', `QEP ${pad2(qep)} isn't on the ${day} page. Use one of its lines other than QEP ${pad2(r.qep)}. Nothing was charged.`); $('reply-qep').focus(); return; }
+  setFeedback('', 'Punching the reply...');
   runTape({codes, machine: createMachine({patterns: r.patterns, start: settings, model: r.model}), outputAs: 'tape', label: 'Reply', onDone: out => {
-    const rt = $('reply-tape'); rt.hidden = false; rt.innerHTML = tapeHTML(out);
-    const {state, result} = submitReply(app.state, out); app.state = state; saveRound(); renderReply();
+    const rt = $('reply-tape'); rt.hidden = false; rt.innerHTML = tapeHTML([...preambleCodes(qep), ...out]);
+    const {state, result} = submitReply(app.state, out, qep, settings); app.state = state; saveRound(); renderReply();
     if (result.ok) return replySuccess();
-    setFeedback('bad', result.repeat ? "That's the same tape as before, so it's free. It still doesn't read as the reply at the other end."
-      : `That tape doesn't read as the reply at the other end. Check the wheels are still on the settings you read the message with, and the words match. That cost ${HARD_RULES.reply.wrong} reply points.`);
+    const line = `QEP ${pad2(qep)}'s line on the ${day} page`, names = (result.off || []).map(k => WHEELS.find(w => w.id === k)?.label || k);
+    const why = r.realistic ? `The wheels must be on the start positions from ${line}, the QEP you sent in the preamble, and the words must match.`
+      : names.length ? `The wheels should match ${line}, the QEP you sent in the preamble. ${names.join(', ')} ${names.length > 1 ? "don't" : "doesn't"} yet.`
+      : `The wheels match ${line}, so check the words.`;
+    setFeedback('bad', result.repeat ? `That's the same tape as before, so it's free. It still doesn't read as the reply at the other end. ${why}`
+      : `That tape doesn't read as the reply at the other end. ${why} That cost ${HARD_RULES.reply.wrong} reply points.`);
   }});
 }
 function renderRevealed() {
