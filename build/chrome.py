@@ -1,4 +1,4 @@
-"""Puts the shared header bits into the hand written game pages (skywave/*.html and lorenz/*.html).
+"""Puts the shared header bits into the hand written game pages (skywave/, lorenz/ and tolerance/).
 
 Run from anywhere:  python3 build/chrome.py   (safe to run again; it replaces what it added before)
 
@@ -37,5 +37,5 @@ def page(path):
     return f'<meta http-equiv="Content-Security-Policy" content="{sources}">'
   s = re.sub(r'<meta http-equiv="Content-Security-Policy" content="([^"]*)">', csp, s)
   path.write_text(s)
-for d in ('skywave', 'lorenz'):
+for d in (sys.argv[1:] or ('skywave', 'lorenz', 'tolerance')):
   for f in sorted((S / d).glob('*.html')): page(f); print(f.relative_to(S))

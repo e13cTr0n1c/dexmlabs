@@ -1,6 +1,6 @@
 # DEXM Labs
 
-> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, and 3D print designs for the radio bench.
+> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, and 3D print designs for the radio bench.
 
 ## Home
 
@@ -16,6 +16,7 @@
 - [How to play Lorenz](https://dexmlabs.app/lorenz/help.html): The rules of the daily Lorenz puzzle.
 - [Why I built Lorenz](https://dexmlabs.app/lorenz/about.html): Why I built Lorenz.
 - [What's changed in Lorenz](https://dexmlabs.app/lorenz/log.html): The Lorenz change log.
+- [Tolerance](https://dexmlabs.app/tolerance/): A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.
 
 ## Makes
 
