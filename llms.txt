@@ -1,13 +1,12 @@
 # DEXM Labs
 
-> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, and 3D print designs for the radio bench.
+> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, FORGE physics experiments, and 3D print designs for the radio bench.
 
 ## Home
 
 - [DEXM Labs](https://dexmlabs.app/): Homepage with the games and the makes.
 
 ## Games
-- FORGE: /forge/ — interactive 3D physics sandbox and engineering challenges with rigid bodies, joints and tunable materials.
 
 - [Skywave](https://dexmlabs.app/skywave/): A daily HF propagation puzzle on a 3D globe. Work ten made up stations in one UTC day. Free, no account, no cookies.
 - [How to play Skywave](https://dexmlabs.app/skywave/help.html): The rules of the daily Skywave puzzle.
@@ -18,6 +17,7 @@
 - [Why I built Lorenz](https://dexmlabs.app/lorenz/about.html): Why I built Lorenz.
 - [What's changed in Lorenz](https://dexmlabs.app/lorenz/log.html): The Lorenz change log.
 - [Tolerance](https://dexmlabs.app/tolerance/): A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.
+- [FORGE](https://dexmlabs.app/forge/): Twelve short physics contracts, a daily spring shot and a proving-ground bench. Stars stay in the browser. Free, no account, no cookies.
 - [Vector](https://dexmlabs.app/vector/): Endless air traffic control, a seeded daily shift and a sandbox. Route arrivals, avoid conflicts and earn local best scores.
 - [Orbit](https://dexmlabs.app/orbit/): Fuel-limited orbital manoeuvres and procedural satellite deployments. Endless, daily and sandbox modes.
 

@@ -6,7 +6,7 @@ Stars stay in this browser (`forge-shift-v1`). They are not site points.
 
 ## Run
 
-No build step. Serve the repository root over HTTP and open `/forge/`. The page is static ES modules. `js/matter.mjs` is matter.js 0.20.0 (MIT), bundled so the game does not call a CDN.
+No build step. Serve the repository root over HTTP and open `/forge/`. The page is static ES modules. `js/matter.mjs` re-exports matter.js 0.20.0 (MIT) from jsDelivr.
 
 Space runs the contract. R resets the build. `[` and `]` turn a selected part.
 
