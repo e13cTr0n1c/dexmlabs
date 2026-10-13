@@ -1,22 +1,30 @@
-# FORGE
+# FORGE — DEXM Labs Physics Facility
 
-A static Three.js + cannon-es physics sandbox for DEXM Labs.
+FORGE is a Three.js + cannon-es interactive physics construction laboratory.
 
 ## Modes
-- **Sandbox**: unlimited parts, no DEXM points.
-- **Challenges**: eight objective-driven engineering tests with limited inventories. Rewards are one-time and use the shared `DexmPoints.earn()` ledger.
-- **Walkthrough**: interactive guided build covering placement, movement, mass/material properties, hinges and running the simulation.
 
-## Controls
-- Click a part to select it.
-- Drag a part to move it on its current horizontal plane.
-- Shift-drag a part to raise/lower it.
-- Drag empty space to orbit the camera; mouse wheel zooms.
-- Delete removes the selected player-created part.
-- Space toggles the simulation; R resets the current scene.
-- Choose Fixed, Hinge, Spring or Motor, then click the desired connection point on two parts. Rigid/hinge/motor joints snap the second part so the chosen points meet.
+- **Sandbox / Proving Ground** — unlimited building plus wind tunnel, shake table, drop and speed tests.
+- **Challenges** — constrained engineering objectives with one-time DEXM point rewards.
+- **Walkthrough** — interactive introduction to parts, magnetic snap nodes, physical properties, joints and simulation.
 
-## Physics
-Mass, friction, restitution (bounce), linear damping and gravity are simulated. Parts can be static or dynamic. The inspector shows velocity, angular speed and translational kinetic energy. Optional arrows show selected-body velocity and gravity.
+## Building
 
-The browser imports Three.js 0.180.0 and cannon-es 0.20.0 from jsDelivr as ES modules; no local build step is required.
+Parts expose small red connection nodes in BUILD mode. With **Magnetic snap** enabled, nearby nodes pull together. **Auto-fix on snap** optionally creates a rigid fixed joint when the part is released. Disable Auto-fix when assembling mechanisms that need hinges, springs or motors.
+
+The right inspector exposes mass, friction, restitution, damping, transforms and static locking. Velocity and gravity vectors can be displayed for the selected body.
+
+## Facility tests
+
+Sandbox includes four repeatable test rigs:
+
+- Wind tunnel
+- Shake table
+- Drop test
+- Speed run
+
+FORGE tracks local records for top speed, height, peak kinetic energy and test survival time. Sandbox records do not award DEXM points.
+
+## Runtime
+
+FORGE loads browser ESM builds of Three.js 0.180.0 and cannon-es 0.20.0 from jsDelivr. It requires network access to those modules and has no npm/build dependency for deployment.
