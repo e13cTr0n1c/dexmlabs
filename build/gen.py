@@ -5,7 +5,7 @@ Run from anywhere:  python3 build/gen.py
 Writes: index.html, the policy pages (privacy, cookies, terms, disclaimer, contact), 404.html,
 robots.txt, sitemap.xml, llms.txt, the IndexNow key file, and the redirect pages under tools/ and
 templates/ (those pages moved to https://e13ctr0n1c.github.io/).
-Not written here: skywave/, lorenz/, assets/, CNAME, README.md, except the new game signup block in
+Not written here: skywave/, lorenz/, tolerance/, assets/, CNAME, README.md, except the new game signup block in
 skywave/index.html and lorenz/index.html, in the section marked data-signup.
 Every page carries the Cloudflare Web Analytics beacon (CFWA) once, just before </body>.
 skywave/*.html and lorenz/*.html carry it by hand.
@@ -95,10 +95,10 @@ home=head('DEXM Labs / Games and makes','Small free browser games and makes from
 <h1><span>DEXM</span><span>Labs</span></h1>
 <p class="tagline">Deus ex machina</p>
 <p class="lead">Small free games that run in your browser, and things I design for the radio bench and the 3D printer. I build them in my home lab, one at a time, and put them here when they work.</p>
-<div class="meta"><div><strong>2</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
+<div class="meta"><div><strong>3</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
 </div>
 <div class="side">
-<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">2</div></div>
+<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">3</div></div>
 <div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="currentColor"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="currentColor"/></svg><p><strong>Work in progress</strong>Things here change. If something breaks, <a href="contact/">tell me</a>.</p></div>
 </div>
 </div></section>
@@ -117,6 +117,12 @@ home=head('DEXM Labs / Games and makes','Small free browser games and makes from
 <a class="thumb" href="lorenz/" tabindex="-1" aria-hidden="true"><img src="assets/lorenz-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>Lorenz</h3><p>{LORENZ_LINE}</p>
 <a class="btn" href="lorenz/">Play Lorenz</a></div>
+</article>
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">ENGINEERING</span></div>
+<a class="thumb" href="tolerance/" tabindex="-1" aria-hidden="true"><img src="assets/tolerance-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
+<div class="card-body"><h3>Tolerance</h3><p>A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.</p>
+<a class="btn" href="tolerance/">Play Tolerance</a></div>
 </article>
 <article class="card sealed">
 <div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
@@ -163,7 +169,7 @@ doc('privacy','Privacy notice','PRIVACY','How dexmlabs.app handles personal data
 <h2>The short version</h2>
 <p>There are no accounts and no ads, and no cookies are set. The only sign-up is an optional email for when a new game comes out. I count visits with Cloudflare Web Analytics, which gives me totals, not a record of you. Nothing you do in the games is sent to me.</p>
 <h2>What stays in your browser</h2>
-<p>Skywave and Lorenz save your progress, settings, best scores and streak in your browser's localStorage, so you can pick up where you left off. Your <a href="../points/">points</a> are kept there too, and so is light or dark mode if you pick one. The site also remembers that you closed the storage notice. This data stays on your device and is never sent to me. See <a href="../cookies/">cookies and storage</a> for the details and how to clear it.</p>
+<p>Skywave, Lorenz and Tolerance save your progress, settings, best scores and streak in your browser's localStorage, so you can pick up where you left off. Your <a href="../points/">points</a> are kept there too, and so is light or dark mode if you pick one. The site also remembers that you closed the storage notice. This data stays on your device and is never sent to me. See <a href="../cookies/">cookies and storage</a> for the details and how to clear it.</p>
 <h2>Hosting: GitHub Pages</h2>
 <p>The site is hosted on GitHub Pages, run by GitHub, Inc. When your browser asks for a page, GitHub receives your IP address and standard request details (such as browser type and the page requested), and may log them for security and to keep the service running. I don't get access to those logs. See {GH}.</p>
 <h2>Visit counts: Cloudflare Web Analytics</h2>
@@ -203,14 +209,16 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>lorenz:real:round:&lt;date&gt;</code></td><td>Your progress in a daily Lorenz realistic mode round, with your pins</td><td>The last 7 days are kept</td></tr>
 <tr><td><code>lorenz:real:stats</code></td><td>Lorenz realistic mode best score and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>lorenz:panels</code></td><td>Which Lorenz panels you've hidden</td><td>Until you clear it</td></tr>
+<tr><td><code>tolerance:round:&lt;date&gt;</code></td><td>Your guesses in a daily Tolerance puzzle</td><td>Until you clear it</td></tr>
+<tr><td><code>tolerance:stats</code></td><td>Your Tolerance results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
-<tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by both games</td><td>Until you clear it, last 200 lines</td></tr>
+<tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>
 <tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>
 </tbody></table>
 <h2>Why there's no consent banner</h2>
 <p>Under the Privacy and Electronic Communications Regulations (PECR), storage that is strictly necessary to give you a service you've asked for doesn't need consent. Saving your game and settings is part of the game you chose to play, so I just tell you about it here instead of asking. Cloudflare Web Analytics sets no cookies and stores nothing on your device, so it doesn't need a banner either.</p>
 <h2>How to clear it</h2>
-<p>In your browser's settings, look for site data (often under Privacy, or "Cookies and site data"), find dexmlabs.app and delete it. This resets your Skywave and Lorenz progress, streaks, settings and points. Private or incognito windows clear it when you close them.</p>
+<p>In your browser's settings, look for site data (often under Privacy, or "Cookies and site data"), find dexmlabs.app and delete it. This resets your Skywave, Lorenz and Tolerance progress, streaks, settings and points. Private or incognito windows clear it when you close them.</p>
 <h2>Third parties</h2>
 <p>GitHub Pages (hosting), jsDelivr (which serves three.js) and Cloudflare (which counts visits) see your IP address when your browser fetches files from them or sends them data. See the <a href="../privacy/">privacy notice</a>. Sites you visit through the support and makes links set their own cookies under their own policies.</p>
 ''',updated='9 October 2026')
@@ -231,12 +239,14 @@ doc('terms','Terms of use','TERMS','Terms for using dexmlabs.app and its games.'
 <p>These terms are governed by the law of England and Wales, and its courts have jurisdiction.</p>
 <p>Questions: {ML}.</p>
 ''',updated='9 October 2026')
-doc('disclaimer','Disclaimer','DISCLAIMER','Skywave and Lorenz are games. Skywave is not a propagation prediction tool, and the Lorenz messages are made up.',f'''
+doc('disclaimer','Disclaimer','DISCLAIMER','Skywave, Lorenz and Tolerance are games. Skywave is not a propagation prediction tool, and the Lorenz messages are made up.',f'''
 <h2>Skywave is a game</h2>
 <p>Skywave's radio propagation model is deliberately simplified to make a fair, playable puzzle. It is not a prediction or planning tool. Don't use it to plan real contacts, emergency communications or anything that matters. For real conditions, use VOACAP or live propagation data.</p>
 <p>All stations and callsigns in the game are fictional. Any match with a real station is a coincidence.</p>
 <h2>Lorenz is a game</h2>
 <p>Lorenz follows how the Lorenz SZ40/42 cipher machine worked, but the wheel patterns and messages are made up for the game. Nothing in it is a real intercept.</p>
+<h2>Tolerance is a game</h2>
+<p>Tolerance uses ideal textbook mechanisms: no friction, no slip, no losses. Real machines need real margins. Don't use it to size or check anything that will carry a load. I'm not an engineer by profession.</p>
 <h2>No warranty</h2>
 <p>Everything on this site is provided as is, with no warranty that it is accurate, complete or available. See the <a href="../terms/">terms</a>.</p>
 <h2>Makes</h2>
@@ -249,7 +259,7 @@ doc('contact','Contact','CONTACT','How to contact DEXM Labs.',f'''
 ''')
 
 # ---------- points ----------
-PTS={'skywave':100,'lorenz':100,'hard':250,'real':400,'reply':100,'practice':20,'per_day':3,'welcome':150}
+PTS={'tolerance':100,'skywave':100,'lorenz':100,'hard':250,'real':400,'reply':100,'practice':20,'per_day':3,'welcome':150}
 doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them by finishing the daily games and spend them on hints. They stay in your browser.',f'''
 <p>Points are shared by every game on the site. You earn them by playing and spend them on hints. They live in this browser, so there's no account and nothing to buy.</p>
 <div class="points-now" data-points-ledger><p>Your points show here when JavaScript is on.</p></div>
@@ -257,10 +267,11 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <table><thead><tr><th>What</th><th>Points</th></tr></thead><tbody>
 <tr><td>Finish today's Skywave round with at least one contact</td><td>{PTS['skywave']}</td></tr>
 <tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
+<tr><td>Solve today's Tolerance</td><td>{PTS['tolerance']}</td></tr>
 <tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>
 <tr><td>Read today's Lorenz in realistic mode</td><td>{PTS['real']}</td></tr>
 <tr><td>Send the hard or realistic mode reply back</td><td>{PTS['reply']}</td></tr>
-<tr><td>Finish a practice round in either game</td><td>{PTS['practice']}, up to {PTS['per_day']} a day in each game</td></tr>
+<tr><td>Finish a practice round in any game</td><td>{PTS['practice']}, up to {PTS['per_day']} a day in each game</td></tr>
 <tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
 </tbody></table>
 <p>Each daily round pays once. If you'd already finished today's round before points arrived, you get them the next time you open that game.</p>
@@ -328,14 +339,15 @@ GAME_PAGES=[('skywave/','Skywave','A daily HF propagation puzzle on a 3D globe. 
  ('lorenz/','Lorenz','A daily puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Set the twelve wheels and read the intercept. Free, no account, no cookies.'),
  ('lorenz/help.html','How to play Lorenz','The rules of the daily Lorenz puzzle.'),
  ('lorenz/about.html','Why I built Lorenz','Why I built Lorenz.'),
- ('lorenz/log.html',"What's changed in Lorenz",'The Lorenz change log.')]
+ ('lorenz/log.html',"What's changed in Lorenz",'The Lorenz change log.'),
+ ('tolerance/','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 urls=['']+[u for u,_,_ in GAME_PAGES]+['points/']+[f'{p}/' for p,_ in POL]
 (S/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'  <url><loc>https://dexmlabs.app/{u}</loc><lastmod>2026-10-09</lastmod></url>\n' for u in urls)+'</urlset>\n')
 print('sitemap',len(urls))
 (S/'robots.txt').write_text('User-agent: *\nAllow: /\n\nSitemap: https://dexmlabs.app/sitemap.xml\n')
 A='https://dexmlabs.app/'
-L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, and 3D print designs for the radio bench.','',
+L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, and 3D print designs for the radio bench.','',
  '## Home','',f'- [DEXM Labs]({A}): Homepage with the games and the makes.','',
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
  '## Makes','']+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',

@@ -16,7 +16,7 @@ var TAX = /tools\/|templates\/|gumroad|LAUNCH25|\bCIS\b|calculator|Inheritance T
 t("homepage: games first, then makes, then support", function () {
   var d = dom("index.html");
   assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["hero", "games", "makes", "support"]);
-  assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); }), ["skywave/", "lorenz/"]);
+  assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); }), ["skywave/", "lorenz/", "tolerance/"]);
   var makes = [].map.call(d.querySelectorAll("#makes a"), function (a) { return a.getAttribute("href"); });
   assert.strictEqual(makes.length, 4);
   assert.ok(makes.some(function (h) { return /cults3d\.com\/.*lorenz-cipher-chi-wheel/.test(h); }), "Lorenz STL on Cults3D");
@@ -76,7 +76,7 @@ t("Cloudflare beacon once on every generated page, never on redirects", function
 });
 t("cookies table lists every storage key, hard and realistic rows after lorenz:stats", function () {
   var keys = [].map.call(dom("cookies/index.html").querySelectorAll("tbody tr td:first-child"), function (td) { return td.textContent; });
-  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
+  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
 });
 t("old tool and template URLs are bare redirects to the new site", function () {
   MOVED.forEach(function (u) {
@@ -95,8 +95,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 15);
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 16);
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");

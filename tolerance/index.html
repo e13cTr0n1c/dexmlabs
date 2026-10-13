@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-GB"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script><meta name="theme-color" content="#080a08">
+<meta name="description" content="A daily engineering puzzle. One mechanism, six guesses at the output, and each guess tells you higher, lower or within 5%. Free, no account, no cookies.">
+<link rel="canonical" href="https://dexmlabs.app/tolerance/"><meta property="og:type" content="website"><meta property="og:site_name" content="DEXM Labs"><meta property="og:title" content="Tolerance, a daily engineering puzzle"><meta property="og:description" content="One mechanism a day. Six guesses at the output: higher, lower or within 5%."><meta property="og:url" content="https://dexmlabs.app/tolerance/"><meta property="og:image" content="https://dexmlabs.app/tolerance/img/og.png"><meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kE1co0z749oaTiQdaivkHEhVq9XX5NAlLv+Izxpx4G4=' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<title>Tolerance, a daily engineering puzzle</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/theme.js" defer></script>
+<script type="module" src="./js/main.js"></script>
+</head><body data-screen="title">
+<a class="skip-link" href="#main">Skip to the puzzle</a>
+<header class="site-header"><button class="wordmark" id="home" aria-label="Tolerance home"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="9" cy="16" r="6"/><circle cx="20" cy="11" r="4"/><path d="M3 25h22"/></svg>Tolerance<span class="header-sub">Engineering puzzle</span></button><nav aria-label="Main"><span id="header-day" class="header-day"></span><a class="header-feedback" href="mailto:hello@dexmlabs.app?subject=Tolerance%20feedback"><span class="fb-long">Spot a wrong formula? Tell me.</span><span class="fb-short">Feedback</span></a><a class="header-coffee" href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="107" height="30"></a><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div></nav></header>
+<main id="main">
+<section id="screen-title" class="screen" aria-labelledby="title-heading">
+<p class="eyebrow">Daily engineering puzzle</p>
+<h1 id="title-heading">Tolerance</h1>
+<p class="lead">One mechanism a day: a gear train, a lever, a pulley block, a screw jack and more, drawn with its numbers. You get six guesses at the output. Each one comes back Higher, Lower or Within 5%.</p>
+<div class="buttons"><button class="primary" id="play-daily">Play today's puzzle</button><button class="secondary" id="play-practice">Practice</button></div>
+<div id="stats" class="stats" aria-label="Your stats"></div>
+<p class="note">A new puzzle every day at midnight, London time. Everything is ideal: no friction, no slip, g is 9.81. Practice gives you a random one whenever you like.</p>
+<div class="signed"><p>I'm Arthur. I'm not an engineer by trade, I just like working out how things move. I check every formula with tests, but if one looks wrong to you, <a href="mailto:hello@dexmlabs.app?subject=Tolerance%20feedback">email me</a> and I'll fix it.</p></div>
+<div class="links"><a href="../skywave/">Skywave</a><a href="../lorenz/">Lorenz</a><a href="../">More from DEXM Labs</a><span>It's free. There's no account, and nothing's stored except your progress in this browser.</span></div>
+</section>
+<section id="screen-game" class="screen" hidden aria-labelledby="game-heading">
+<p class="eyebrow" id="game-label"></p>
+<h2 id="game-heading" tabindex="-1"></h2>
+<figure class="board"><div id="drawing"></div><figcaption id="givens"></figcaption></figure>
+<p class="question" id="question"></p>
+<form id="guess-form" class="guess-form" novalidate><label for="guess-input">Your guess</label><span class="row"><input id="guess-input" inputmode="decimal" autocomplete="off" spellcheck="false"><span id="guess-unit" class="unit"></span><button type="submit" class="primary">Guess</button></span><small id="left"></small></form>
+<p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+<ol id="guesses" class="guesses" aria-label="Your guesses"></ol>
+<section id="result" class="result" hidden aria-labelledby="result-head">
+<h3 id="result-head" tabindex="-1"></h3><p id="result-answer" class="answer"></p>
+<h4>The working</h4><ol id="working" class="working"></ol>
+<div class="buttons"><button class="primary" id="share">Copy result</button><button class="secondary" id="again">Practice puzzle</button><button class="secondary" id="back">Back</button></div>
+<textarea id="share-text" hidden readonly rows="4" aria-label="Your result to copy"></textarea>
+</section>
+</section>
+</main>
+<footer class="site-footer"><a class="footer-home" href="../">DEXM Labs</a><span class="footer-links"><a href="../skywave/">Skywave</a><a href="../lorenz/">Lorenz</a><a href="../privacy/">Privacy</a><a href="../cookies/">Cookies</a><a href="../terms/">Terms</a><a href="../disclaimer/">Disclaimer</a><a href="../contact/">Contact</a><a href="mailto:hello@dexmlabs.app?subject=Tolerance%20feedback">Feedback</a></span></footer>
+<noscript><div class="noscript">Tolerance needs JavaScript to run the puzzle.</div></noscript>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics --></body></html>
