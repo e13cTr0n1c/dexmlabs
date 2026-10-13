@@ -119,6 +119,30 @@ t("game pages carry no links to the moved pages", function () {
     });
   });
 });
+t("new game signup: one config constant, plain form, hidden while placeholder", function () {
+  var gen = read("build/gen.py");
+  assert.strictEqual((gen.match(/^BUTTONDOWN_USER=/mg) || []).length, 1);
+  var user = /^BUTTONDOWN_USER='([^']+)'/m.exec(gen)[1];
+  ["index.html", "skywave/index.html", "lorenz/index.html"].forEach(function (f) {
+    var html = read(f), d = dom(f);
+    assert.strictEqual((html.match(/data-signup/g) || []).length, 1, f);
+    var box = d.querySelector(".dexm-signup"), form = box.querySelector("form"), input = form.querySelector("input[type=email]");
+    assert.strictEqual(form.getAttribute("action"), "https://buttondown.com/api/emails/embed-subscribe/" + user, f);
+    assert.strictEqual(form.getAttribute("method"), "post");
+    assert.strictEqual(form.getAttribute("target"), "_blank");
+    assert.strictEqual(input.getAttribute("name"), "email");
+    assert.ok(input.required && d.querySelector('label[for="' + input.id + '"]'), f + " label");
+    assert.strictEqual(box.hasAttribute("hidden"), user === "BUTTONDOWN_USER_TBD", f + " hidden");
+    assert.ok(/One email when a new game is out\. Nothing else\./.test(box.textContent));
+    assert.ok(/You confirm by email first\. Unsubscribe any time\. Your address is held by Buttondown, never sold\./.test(box.textContent));
+    assert.ok(!box.querySelector("script,img,iframe"), f + " no script or pixel");
+    assert.ok(!/buttondown\.com\/[^"]*\.js|<img[^>]+buttondown/.test(html), f);
+  });
+  assert.ok(/Buttondown[^<]*processor|processor[^<]*Buttondown/.test(read("privacy/index.html")) || /Buttondown, which runs the list for me as my processor/.test(read("privacy/index.html")));
+  var css = read("assets/dexm-ui.css");
+  assert.ok(/\.dexm-signup-row input\{[^}]*min-height:44px/.test(css) && /button\[type=submit\]\{[^}]*min-height:44px/.test(css));
+  assert.ok(!/[\u2013\u2014]/.test(css.slice(css.indexOf(".dexm-signup"))) );
+});
 require("./points-theme.js")(t, {ROOT: ROOT, read: read, dom: dom, GENERATED: GENERATED});
 (async function () {
   for (var i = 0; i < queue.length; i++) {
