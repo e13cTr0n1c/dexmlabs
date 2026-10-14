@@ -99,3 +99,4 @@ body[data-screen=game] .article,body[data-screen=game] .dexm-signup{display:none
 @media(max-width:760px){.game-controls>.card-box:first-child{order:0}.game-stage{order:1}.game-controls>.card-box:nth-child(2){order:2}#feedback{order:1}.hud b{font-size:15px}.hud div{padding:4px 8px}#site-note{display:none}}
 #feedback:empty{display:none}
 @media(max-width:760px){.hud{grid-template-columns:repeat(4,1fr)!important;gap:4px}.hud b{font-size:13px}.hud span{font-size:10px;line-height:1.3;display:block}.hud div{padding:4px 5px}#flight-h{font-size:20px}}
+#back{min-height:44px;padding:0 4px}
