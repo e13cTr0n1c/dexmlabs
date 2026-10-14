@@ -1,6 +1,11 @@
 <a class="thumb" href="orbit/" tabindex="-1" aria-hidden="true"><img src="assets/orbit-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>Orbit</h3><p>Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.</p><a class="btn" href="orbit/">Play Orbit</a></div>
 </article>
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">CIPHER</span></div>
+<a class="thumb" href="enigma-machine/" tabindex="-1" aria-hidden="true"><img src="assets/enigma-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
+<div class="card-body"><h3>Enigma</h3><p>A working Enigma I simulator and a daily intercept. Set the rotors from the key sheet, find the smudged cable and read the message.</p><a class="btn" href="enigma-machine/">Play Enigma</a></div>
+</article>
 <article class="card sealed">
 <div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
 <div class="thumb" aria-hidden="true"><span>SEALED</span></div>
@@ -96,6 +101,8 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>forge-shift-v1</code></td><td>FORGE stars, daily result, sound and proving-ground records</td><td>Until you clear it</td></tr>
 <tr><td><code>grid:power:v2</code></td><td>The city you are running in GRID: seed, day, policy and trust</td><td>Until you clear it</td></tr>
 <tr><td><code>grid:sound</code></td><td>Whether GRID sound is on</td><td>Until you clear it</td></tr>
+<tr><td><code>enigma:round:&lt;date&gt;</code></td><td>Your tries at a daily Enigma intercept</td><td>Until you clear it</td></tr>
+<tr><td><code>enigma:stats</code></td><td>Your Enigma results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>
 <tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>
