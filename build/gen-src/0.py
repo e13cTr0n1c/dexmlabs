@@ -89,17 +89,17 @@ MAKES=[(CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for sho
  (DRILL,'RF panel drill guide','3D print for SO-239, N and BNC holes.','Cults3D'),
  (MAT,'Band plan desk mat','UK ham bands, 160m to 70cm.','Fourthwall')]
 LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Find the settings in the key book, set twelve wheels and decode the tape.'
-home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector, Orbit, FORGE and GRID, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
+home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector and Orbit, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>
 <h1><span>DEXM</span><span>Labs</span></h1>
 <p class="tagline">Deus ex machina</p>
 <p class="lead">Small free games that run in your browser, and things I design for the radio bench and the 3D printer. I build them in my home lab, one at a time, and put them here when they work.</p>
-<div class="meta"><div><strong>7</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
+<div class="meta"><div><strong>5</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
 </div>
 <div class="side">
-<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">7</div></div>
+<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">5</div></div>
 <div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="currentColor"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="currentColor"/></svg><p><strong>Work in progress</strong>Things here change. If something breaks, <a href="contact/">tell me</a>.</p></div>
 </div>
 </div></section>

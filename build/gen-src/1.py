@@ -1,17 +1,6 @@
 <a class="thumb" href="orbit/" tabindex="-1" aria-hidden="true"><img src="assets/orbit-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>Orbit</h3><p>Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.</p><a class="btn" href="orbit/">Play Orbit</a></div>
 </article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">PHYSICS CONTRACTS</span></div>
-<a class="thumb" href="forge/" tabindex="-1" aria-hidden="true"><img src="assets/forge-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>FORGE</h3><p>Twelve short contracts. Set the ramp, the grit, the bumper or the sail, then run it. Stars for a clean result.</p><a class="btn" href="forge/">Open FORGE</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">CITY POWER</span></div>
-<a class="thumb" href="grid/" tabindex="-1" aria-hidden="true"><img src="assets/grid-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>GRID</h3><p>Keep a city lit. Wind, sun, a slow nuclear core and a coal bunker share one exchange. Run the day, then feed whatever went dark.</p>
-<a class="btn" href="grid/">Play GRID</a></div>
-</article>
 <article class="card sealed">
 <div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
 <div class="thumb" aria-hidden="true"><span>SEALED</span></div>

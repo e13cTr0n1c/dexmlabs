@@ -16,7 +16,7 @@ var TAX = /tools\/|templates\/|gumroad|LAUNCH25|\bCIS\b|calculator|Inheritance T
 t("homepage: games first, then makes, then support", function () {
   var d = dom("index.html");
   assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["hero", "games", "makes", "support"]);
-  assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); }), ["skywave/", "lorenz/", "tolerance/", "vector/", "orbit/", "forge/", "grid/"]);
+  assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); }), ["skywave/", "lorenz/", "tolerance/", "vector/", "orbit/"]);
   var makes = [].map.call(d.querySelectorAll("#makes a"), function (a) { return a.getAttribute("href"); });
   assert.strictEqual(makes.length, 4);
   assert.ok(makes.some(function (h) { return /cults3d\.com\/.*lorenz-cipher-chi-wheel/.test(h); }), "Lorenz STL on Cults3D");
@@ -95,7 +95,7 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 20);
+  assert.strictEqual(locs.length, 16);
   locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|vector\/|orbit\/|forge\/|grid\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
@@ -120,7 +120,7 @@ t("game pages carry no links to the moved pages", function () {
   });
 });
 t("new game signup: one config constant, plain form, hidden while placeholder", function () {
-  var gen = read("build/gen.py");
+  var gen = [0, 1, 2, 3].map(function (i) { return read("build/gen-src/" + i + ".py"); }).join("");
   assert.strictEqual((gen.match(/^BUTTONDOWN_USER=/mg) || []).length, 1);
   var user = /^BUTTONDOWN_USER='([^']+)'/m.exec(gen)[1];
   ["index.html", "skywave/index.html", "lorenz/index.html"].forEach(function (f) {

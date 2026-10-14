@@ -64,11 +64,9 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Complete the five-minute daily Vector shift with at least five aircraft cleared</td><td>{PTS['vector']}</td></tr>
 <tr><td>Complete the five-minute daily Orbit shift with at least three satellites deployed</td><td>{PTS['orbit']}</td></tr>
 <tr><td>Clear five aircraft in one endless Vector run, or deploy three satellites in one endless Orbit run</td><td>{PTS['practice']}, up to {PTS['per_day']} qualifying runs a day per game</td></tr>
-<tr><td>Finish a FORGE contract</td><td>No site points. Stars stay in the game.</td></tr>
-<tr><td>Keep a GRID day at least 97 percent lit</td><td>{PTS['practice']}, up to {PTS['per_day']} a UTC day</td></tr>
 <tr><td>Your first visit</td><td>{PTS['welcome']} to start with</td></tr>
 </tbody></table>
-<p>Vector and Orbit sandbox modes do not award points. FORGE keeps its own stars in this browser and does not pay site points. Vector and Orbit daily seeds and point limits use UTC days. You can replay a daily shift, but its points are awarded only once.</p>
+<p>Vector and Orbit sandbox modes do not award points. Vector and Orbit daily seeds and point limits use UTC days. You can replay a daily shift, but its points are awarded only once.</p>
 <p>Each daily round pays once. If you'd already finished today's round before points arrived, you get them the next time you open that game.</p>
 <h2>Spending</h2>
 <table><thead><tr><th>Hint</th><th>Points</th></tr></thead><tbody>
