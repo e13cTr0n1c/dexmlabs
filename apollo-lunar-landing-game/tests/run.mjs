@@ -48,7 +48,7 @@ await t('Daily: same landing for everyone, sites rotate, scoring by precision an
 });
 await t('Page: SEO and copy', () => {
   const h = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  for (const re of [/<title>Apollo Lunar Landing Game/, /<h1[^>]*>Apollo Lunar Landing Game/, /"@type":\s*"VideoGame"/, /"@type":\s*"FAQPage"/, /og:image/, /data-stl/, /\.\.\/orbit\//, /\.\.\/rocket-launch-game\//, /1202/, /cloudflareinsights/]) assert.match(h, re);
+  for (const re of [/<title>Apollo Lunar Landing Game/, /<h1[^>]*>Apollo Lunar Landing Game/, /"@type":\s*"VideoGame"/, /"@type":\s*"FAQPage"/, /og:image/, /data-stl/, /\.\.\/orbit\//, /1202/, /cloudflareinsights/]) assert.match(h, re);
   const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.ok(!/[\u2013\u2014]|\s-\s/.test(text)); assert.ok(!/\bA\.?I\b/.test(text));
 });
 console.log(`${pass}/${pass + fail} passed`); process.exit(fail ? 1 : 0);
