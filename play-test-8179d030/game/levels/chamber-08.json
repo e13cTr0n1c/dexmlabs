@@ -165,5 +165,26 @@
     "Use the arm to carry the heavy crate from (-3.1, 0.55, -1.9) to the floor plate at (1.8, -1.4); do not throw it.",
     "Possess the base and walk out through the east door at z = 3.8 to 6.2.",
     "Hidden: after the button, override and plate, jump the five south-side maintenance steps (0.60, 1.30, 2.00, 2.70 and 3.40 m) and walk the upper ledge through the open staff hatch above y = 3."
-  ]
+  ],
+  "theme": {
+    "wing": "Wing A Intake",
+    "name": "Freight Sorting",
+    "light": {
+      "color": "#ffb070",
+      "intensity": 1.05,
+      "hemi": "#e8d2b0",
+      "sun": "#ffd9a8"
+    },
+    "fog": {
+      "color": "#2a2118",
+      "density": 0.034
+    },
+    "wall": "rust",
+    "floor": "concrete",
+    "dressing": [
+      "pipes",
+      "debris",
+      "cables"
+    ]
+  }
 }

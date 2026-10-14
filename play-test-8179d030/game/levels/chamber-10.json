@@ -240,5 +240,25 @@
     "Use the arm to start the crate rolling down the steel ramp from (4.55, 1.65, 0.65); the yellow rails feed it to the plate at (9.75, 0.65). Do not try to throw it uphill or carry it to the distant plate.",
     "Walk the base out through the low east exit when override and plate are active.",
     "Hidden: after the button, override and plate, follow the small alternating steps against the south wall, with rises of 0.75 m, to the upper east staff hatch above y = 3."
-  ]
+  ],
+  "theme": {
+    "wing": "Wing B Laboratories",
+    "name": "Calibration Lab",
+    "light": {
+      "color": "#f2f7ff",
+      "intensity": 0.9,
+      "hemi": "#e6eef2",
+      "sun": "#f4f8ff"
+    },
+    "fog": {
+      "color": "#2a2e30",
+      "density": 0.02
+    },
+    "wall": "tiled",
+    "floor": "tiled",
+    "dressing": [
+      "window",
+      "signage"
+    ]
+  }
 }

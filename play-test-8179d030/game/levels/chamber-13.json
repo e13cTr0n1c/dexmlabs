@@ -250,5 +250,25 @@
     "With override set and the crate on the plate, possess the base and walk across the floor to the east door at z = 5.",
     "Hidden: after the same button, override and crate sequence, take the base around the screen's west end to x = 2, z = 7.1 on the floor. Jump east along the six 1.4 m treads, gaining only 0.6 m each time. From the y = 3.6 landing, walk north to z = 5 and east through the opened staff hatch above y = 3."
   ],
-  "sourceId": "10"
+  "sourceId": "10",
+  "theme": {
+    "wing": "Wing C Utilities",
+    "name": "Pump Station",
+    "light": {
+      "color": "#d8e6b8",
+      "intensity": 0.95,
+      "hemi": "#c0ccb0",
+      "sun": "#dfe8c8"
+    },
+    "fog": {
+      "color": "#1d221b",
+      "density": 0.036
+    },
+    "wall": "rust",
+    "floor": "flooded",
+    "dressing": [
+      "pipes",
+      "signage"
+    ]
+  }
 }

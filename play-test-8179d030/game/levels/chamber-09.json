@@ -207,5 +207,26 @@
     "Carry the heavy crate from (-5.3, 0.55, -2.8) around the central divider, then lower it carefully onto the guarded plate at (4.9, 1.45).",
     "Use the base to leave through the unobstructed low east door.",
     "Hidden: after the button, override and plate, find the alternating south-wall inspection ledges, climb in rises of 0.73 m or less, and cross the high walkway to exit above y = 3."
-  ]
+  ],
+  "theme": {
+    "wing": "Wing A Intake",
+    "name": "Loading Dock",
+    "light": {
+      "color": "#e8eef5",
+      "intensity": 1.05,
+      "hemi": "#cfd8e0",
+      "sun": "#e6eef8"
+    },
+    "fog": {
+      "color": "#1e2226",
+      "density": 0.026
+    },
+    "wall": "concrete",
+    "floor": "grate",
+    "dressing": [
+      "signage",
+      "cables",
+      "debris"
+    ]
+  }
 }

@@ -205,7 +205,7 @@
     {
       "p": [
         11.4,
-        3.16,
+        3.44,
         0.875
       ],
       "hs": [
@@ -214,7 +214,7 @@
         3.075
       ],
       "mat": "steel",
-      "note": "Fix: staff bridge north to the shell catwalk at the real staff hatch (z -4.5); the high route otherwise dead-ends at the wall above the door."
+      "note": "Fix: staff bridge north to the shell catwalk at the real staff hatch (z -4.5); the high route otherwise dead-ends at the wall above the door. Top matches the catwalk (3.5) so the step up happens once, from the wide exit deck."
     }
   ],
   "cans": [
@@ -236,5 +236,26 @@
     "Possess the base and walk out through the east door.",
     "Hidden: after the button, take the base up the south stair and along the high ledge, and exit above y = 3."
   ],
-  "sourceId": "09"
+  "sourceId": "09",
+  "theme": {
+    "wing": "Wing D Data Core",
+    "name": "Core Archive",
+    "light": {
+      "color": "#c0d0ff",
+      "intensity": 1.0,
+      "hemi": "#c8b890",
+      "sun": "#ffe0b0"
+    },
+    "fog": {
+      "color": "#151820",
+      "density": 0.026
+    },
+    "wall": "server",
+    "floor": "server",
+    "dressing": [
+      "racks",
+      "window",
+      "signage"
+    ]
+  }
 }

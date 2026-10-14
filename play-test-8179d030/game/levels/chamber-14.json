@@ -250,5 +250,25 @@
     "With override set and the crate on the plate, possess the base and walk across the floor to the east door at z = 5.",
     "Hidden: after the same button, override and crate sequence, take the base around the screen's west end to x = 2, z = 7.1 on the floor. Jump east along the six 1.4 m treads, gaining only 0.6 m each time. From the y = 3.6 landing, walk north to z = 5 and east through the opened staff hatch above y = 3."
   ],
-  "sourceId": "11"
+  "sourceId": "11",
+  "theme": {
+    "wing": "Wing C Utilities",
+    "name": "Boiler Gallery",
+    "light": {
+      "color": "#ff9a5a",
+      "intensity": 1.05,
+      "hemi": "#e8b898",
+      "sun": "#ffc08a"
+    },
+    "fog": {
+      "color": "#2b1c14",
+      "density": 0.032
+    },
+    "wall": "rust",
+    "floor": "grate",
+    "dressing": [
+      "pipes",
+      "debris"
+    ]
+  }
 }

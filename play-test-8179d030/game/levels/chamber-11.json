@@ -240,5 +240,25 @@
     "Set the heavy crate rolling from (4.2, 1.55, -4.85) down the long steel chute; guide rails and the end stop settle it over the offset plate at (10.55, -5.2), beyond carrying range.",
     "Possess the base and use the normal low east door once the plate and override are active.",
     "Hidden: after the button, override and plate, find the alternating black and steel footholds at the south-east edge, climb only 0.75 to 0.80 m at a time, then cross the raised catwalk to exit above y = 3."
-  ]
+  ],
+  "theme": {
+    "wing": "Wing B Laboratories",
+    "name": "Clean Test Bay",
+    "light": {
+      "color": "#ffffff",
+      "intensity": 0.75,
+      "hemi": "#f2f2ee",
+      "sun": "#ffffff"
+    },
+    "fog": {
+      "color": "#3a3d3c",
+      "density": 0.016
+    },
+    "wall": "white",
+    "floor": "white",
+    "dressing": [
+      "window",
+      "cables"
+    ]
+  }
 }

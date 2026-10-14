@@ -194,5 +194,25 @@
     "With override set and the crate on the plate, possess the base and walk across the floor to the east door at z = 5.",
     "Hidden: after the same button, override and crate sequence, take the base around the screen's west end to x = 2, z = 7.1 on the floor. Jump east along the six 1.4 m treads, gaining only 0.6 m each time. From the y = 3.6 landing, walk north to z = 5 and east through the opened staff hatch above y = 3."
   ],
-  "sourceId": "09"
+  "sourceId": "09",
+  "theme": {
+    "wing": "Wing B Laboratories",
+    "name": "Wet Lab",
+    "light": {
+      "color": "#cfeee8",
+      "intensity": 0.95,
+      "hemi": "#c8e4de",
+      "sun": "#d8f0ea"
+    },
+    "fog": {
+      "color": "#1c2827",
+      "density": 0.03
+    },
+    "wall": "tiled",
+    "floor": "flooded",
+    "dressing": [
+      "pipes",
+      "window"
+    ]
+  }
 }

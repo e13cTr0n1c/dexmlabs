@@ -46,25 +46,7 @@
     4.6,
     -5
   ],
-  "crateRamp": {
-    "p": [
-      -8.5,
-      2.35,
-      -5
-    ],
-    "hs": [
-      3.95,
-      0.1,
-      1.2
-    ],
-    "mat": "steel",
-    "rot": [
-      0,
-      0,
-      1,
-      -0.4862
-    ]
-  },
+  "crateRamp": null,
   "addedBoxes": [],
   "cans": [
     [
@@ -94,5 +76,25 @@
     "crate slides to plate",
     "base walks east door",
     "hidden: throw base onto catwalk"
-  ]
+  ],
+  "theme": {
+    "wing": "Wing A Intake",
+    "name": "Intake Hall",
+    "light": {
+      "color": "#ffd8a8",
+      "intensity": 1,
+      "hemi": "#dfe8d0",
+      "sun": "#fff2d8"
+    },
+    "fog": {
+      "color": "#22251f",
+      "density": 0.028
+    },
+    "wall": "concrete",
+    "floor": "concrete",
+    "dressing": [
+      "pipes",
+      "signage"
+    ]
+  }
 }
