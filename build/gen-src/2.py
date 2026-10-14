@@ -58,6 +58,7 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
 <tr><td>Solve today's Tolerance</td><td>{PTS['tolerance']}</td></tr>
 <tr><td>Read today's Enigma intercept</td><td>100</td></tr>
+<tr><td>Land today's Apollo lunar module</td><td>100</td></tr>
 <tr><td>Finish today's RBMK scenario</td><td>100</td></tr>
 <tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>
 <tr><td>Read today's Lorenz in realistic mode</td><td>{PTS['real']}</td></tr>
