@@ -43,3 +43,12 @@ button.primary{background:var(--acid);border-color:var(--acid);color:#050705;fon
 .boom-static{position:fixed;inset:0;z-index:20;pointer-events:none;background:radial-gradient(circle at 50% 60%,#fff 0,#ffd27a 12%,#ff6a00 28%,#5a1a00 55%,#0008 80%)}
 .article{margin-top:40px;border-top:1px solid var(--edge);padding-top:20px}.article p,.article li{max-width:68ch}.faq dt{font-weight:700;margin-top:14px}.faq dd{margin:4px 0 0}
 .stl-slot[hidden]{display:none}
+.pick-h{margin-top:24px}.scenarios{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}.scenarios button{text-align:left;padding:10px 12px;min-height:64px}.scenarios small{display:block;font-weight:400;color:var(--muted)}.scenarios button:disabled{opacity:.45;cursor:not-allowed}
+.panel{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}.panel b{font-size:19px}
+.ann{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}.ann li{border:1px solid var(--edge);padding:6px 8px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.ann li.on{background:#5a0d0d;border-color:#ff5c3a;color:#fff;animation:blink 1s steps(2) infinite}@keyframes blink{50%{background:#2a0606}}
+#chart{height:180px}.controls fieldset{border:1px solid var(--edge);margin:0;padding:8px 12px}.controls legend{font-weight:900}.controls .lab{min-width:110px;font-weight:700}.controls .auto{display:inline-flex;align-items:center;gap:6px;min-height:44px}.controls .auto input{width:20px;height:20px;accent-color:#d6ff00}
+.pumps button{min-width:44px;padding:0 10px}.pumps [aria-pressed=true],#ar[aria-pressed=true]{background:#1f3a12;border-color:#d6ff00;color:#d6ff00}
+.grid-line{font-size:22px;letter-spacing:2px}body.shake main{animation:shake .3s linear}@keyframes shake{25%{transform:translate(4px,-2px)}50%{transform:translate(-4px,2px)}75%{transform:translate(3px,1px)}}
+#stats{margin-top:14px}
+@media (max-width:600px){.panel{grid-template-columns:repeat(3,1fr);gap:6px}.panel div{padding:6px}.panel b{font-size:15px}.panel span{font-size:11px}}
