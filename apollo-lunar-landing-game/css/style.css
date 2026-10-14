@@ -46,3 +46,56 @@ button.primary{background:var(--acid);border-color:var(--acid);color:#050705;fon
 .pad{grid-template-columns:repeat(4,1fr)}.pad .abort{grid-column:span 2;border-color:#ff5c3a;color:#ff8a5c}
 .grid-line{font-size:22px;letter-spacing:2px}
 .alarm[hidden]{display:none}@media (min-width:601px){.hud{grid-template-columns:repeat(4,1fr)}}
+/* Lorenz look: header, panels, type and title screen (rules lifted from lorenz/css/style.css) */
+:root{--header:64px;--panel:#0b0e0c;--line:#293026;--edge:#606b58}
+:root[data-theme=light]{--panel:#ffffff;--line:#d3d8cc;--edge:#828a78}
+body{font:13px/1.55 var(--mono)}
+h1,h2,h3{font-family:'Arial Black',Arial,Helvetica,sans-serif;font-weight:900;line-height:1.1;text-transform:none}
+h2{font-size:27px}.muted{color:var(--muted)}.tiny{font-size:12px;letter-spacing:.02em;line-height:1.6;color:var(--muted)}
+.eyebrow{font:12px/1.5 var(--mono);color:var(--muted);letter-spacing:0;text-transform:none;margin:0 0 10px}
+.small-heading{font-size:17px;margin:0}.section-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.section-top>.eyebrow{margin:0}
+.site-header{height:var(--header);padding:0 30px;border-bottom:1px solid var(--line);background:#080a08ed;z-index:20;gap:14px}
+:root[data-theme=light] .site-header{background:#fbfaf6ed}
+.wordmark{font-size:25px;gap:10px}.wordmark svg{stroke:var(--acid-ink);margin-right:4px}.header-sub{font-size:12px;margin-left:10px}
+.site-header nav{gap:26px;font-size:12px;white-space:nowrap}.header-feedback{color:var(--muted);text-decoration:none}.header-feedback span{border-bottom:1px dotted var(--edge)}.header-coffee img{height:30px;width:auto}
+button{font-size:13px}
+.primary,.secondary{min-height:50px;display:flex;align-items:center;justify-content:space-between;gap:26px;padding:14px 20px}
+.primary{color:#11150a;font-weight:800}.primary:hover{background:#e6ff59;border-color:#e6ff59}.primary span[aria-hidden]{font-size:20px;line-height:1}.secondary{background:#0c100d}
+:root[data-theme=light] .secondary{background:#fff}
+.text-button{background:none;border:0;padding:7px 0;min-height:36px;font-size:12px;color:var(--muted)}
+main{max-width:none;padding:0}
+.title-screen{min-height:calc(100svh - var(--header));display:flex;align-items:center;position:relative;overflow:hidden}
+.title-stage{position:absolute;top:0;right:0;bottom:0;left:38%;z-index:1;background:radial-gradient(ellipse at 55% 55%,#141b10 0%,#080a08 68%)}
+.title-stage img{width:100%;height:100%;object-fit:cover;object-position:60% 50%;display:block;opacity:.9}
+.title-copy{width:53%;max-width:780px;padding:56px 5vw 50px;position:relative;z-index:2;background:linear-gradient(90deg,var(--bg) 70%,transparent)}
+.title-copy h1{font-size:clamp(46px,5.4vw,84px);line-height:1;margin:0 0 24px;text-transform:none}
+.hero-copy{font-size:16px;line-height:1.6;margin-bottom:12px;max-width:560px}
+.hero-detail{color:var(--muted);font-size:13px;line-height:1.7;margin-bottom:24px;max-width:560px}
+.hero-buttons{display:flex;gap:10px;flex-wrap:wrap}.hero-buttons .primary{min-width:220px}.hero-buttons .secondary{min-width:160px}
+.hero-facts{margin:22px 0 0;font-size:13px;line-height:1.7;max-width:560px}
+.mode-switch{margin:0 0 18px;max-width:560px}
+.tiers legend{font:12px/1.5 var(--mono);color:var(--muted);margin-bottom:8px}.tiers{margin:0;gap:6px}.tiers button{font-size:13px;background:var(--panel);border-color:var(--line)}
+.stats{margin-top:16px;max-width:560px}.stats div{border-color:var(--line);background:var(--panel)}
+.title-links{display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:12px;margin-top:22px}.title-links a{color:var(--ink);border-bottom:1px solid var(--edge);padding-bottom:4px;text-decoration:none;min-height:0}
+.sound{min-height:36px;font-weight:400}
+.game-screen{padding:22px 30px 30px}
+.game-grid{display:grid;grid-template-columns:minmax(340px,440px) minmax(0,1fr);gap:22px;align-items:start;max-width:1700px;margin:0 auto}
+.game-controls{display:grid;gap:14px}
+.card-box{background:var(--panel);border:1px solid var(--line);padding:18px 20px}
+.game-stage{display:grid;gap:14px}.scope #sky{border-color:var(--line)}
+.hud{grid-template-columns:1fr 1fr!important;gap:6px;margin:12px 0 0}.hud div{border-color:var(--line);background:var(--bg)}
+.pad{grid-template-columns:1fr 1fr;margin:8px 0 10px}.pad button{background:var(--bg);border-color:var(--line)}.pad .abort{grid-column:span 2}
+.feedback{margin:0}
+.article{max-width:860px;margin:0 auto;padding:30px 16px 20px;font-size:14px}
+body[data-screen=game] .article,body[data-screen=game] .dexm-signup{display:none}
+@media(max-width:860px){.header-day{display:none}.site-header{padding:0 14px}.site-header nav{gap:14px}}
+@media(max-width:760px){.title-screen{display:block;min-height:0}.title-stage{position:relative;left:0;height:200px}.title-copy{width:auto;padding:22px 16px 30px;background:none}.title-copy h1{font-size:40px}.game-screen{padding:12px}.game-grid{grid-template-columns:1fr}.game-stage{order:-1}.hero-buttons>*{flex:1 1 100%}}
+.screen[hidden]{display:none!important}
+.patch{position:absolute;right:28px;bottom:28px;margin:0;display:flex;align-items:center;gap:12px;padding:10px 14px 10px 10px;background:#080a08d9;border:1px solid var(--line);color:var(--muted);font:11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.patch img{width:56px;height:56px;border-radius:50%;opacity:.95}
+.patch figcaption{border-left:3px solid var(--acid);padding-left:10px}
+@media(max-width:760px){.patch{right:10px;bottom:10px;padding:6px 10px 6px 6px}.patch img{width:36px;height:36px}}
+@media(max-width:760px){.game-controls{display:contents}.game-stage{order:0}.game-controls>.card-box:nth-child(2){order:1}.game-controls>.card-box:first-child{order:2}#feedback{order:1}.card-box{padding:14px}}
+@media(max-width:760px){.game-controls>.card-box:first-child{order:0}.game-stage{order:1}.game-controls>.card-box:nth-child(2){order:2}#feedback{order:1}.hud b{font-size:15px}.hud div{padding:4px 8px}#site-note{display:none}}
+#feedback:empty{display:none}
+@media(max-width:760px){.hud{grid-template-columns:repeat(4,1fr)!important;gap:4px}.hud b{font-size:13px}.hud span{font-size:10px;line-height:1.3;display:block}.hud div{padding:4px 5px}#flight-h{font-size:20px}}

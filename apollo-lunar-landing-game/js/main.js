@@ -12,10 +12,10 @@ function say(t) { $('feedback').textContent = t; }
 function start(d) {
   cancelAnimationFrame(app.raf); app.d = d; app.s = {...d.world.start}; app.said = {}; app.keys = {}; app.alarm = null; app.alarmsOk = true; app.frozen = null; app.parts = []; app.shake = 0;
   app.pending = d.world.alarms.map(a => ({...a}));
-  $('flight').hidden = false; $('result').hidden = true; $('alarm').hidden = true; say('');
+  $('flight').hidden = false; $('screen-title').hidden = true; document.body.dataset.screen = 'game'; scrollTo(0, 0); $('result').hidden = true; $('alarm').hidden = true; say('');
   const w = d.world; $('flight-h').textContent = `${d.practice ? 'Practice' : `Landing #${d.number}`}: ${w.site.name}, ${TIERS[d.tier].name}`;
   $('site-note').textContent = `${w.site.mission}. ${w.site.note}`;
-  $('sky').scrollIntoView({block: 'center', behavior: 'auto'}); $('sky').focus({preventScroll: true});
+  $('sky').focus({preventScroll: true});
   sound(true); app.last = performance.now(); app.raf = requestAnimationFrame(loop);
 }
 function loop(now) {
@@ -128,3 +128,5 @@ $('play-practice').addEventListener('click', practice); $('again').addEventListe
 document.querySelectorAll('[data-tier]').forEach(b => b.addEventListener('click', () => setTier(b.dataset.tier)));
 $('sound').checked = !!store().sound; $('sound').addEventListener('change', e => { const st = store(); st.sound = e.target.checked; write('apollo:stats', st); });
 $('header-day').textContent = `#${dayNumber(londonKey())}`; setTier(store().tier || 'commander'); stats();
+
+$('back').addEventListener('click', () => { cancelAnimationFrame(app.raf); if (app.audio) app.audio.g.gain.value = 0; app.s = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; scrollTo(0, 0); });
