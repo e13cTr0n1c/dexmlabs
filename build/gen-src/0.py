@@ -20,7 +20,7 @@ DRILL='https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-2
 CHI='https://cults3d.com/en/3d-model/gadget/lorenz-cipher-chi-wheel-demonstrator-simplified-sz42-teaching-model'
 EMAIL='hello@dexmlabs.app'
 # Buttondown username for the 'new game' email list. While it's the placeholder, the signup form is built but hidden.
-BUTTONDOWN_USER='BUTTONDOWN_USER_TBD'
+BUTTONDOWN_USER='dexmlabs'
 SIGNUP_LIVE=BUTTONDOWN_USER!='BUTTONDOWN_USER_TBD'
 def signup(where):
   """A plain form that posts to Buttondown in a new tab. No script, no pixel."""
