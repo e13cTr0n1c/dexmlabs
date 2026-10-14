@@ -1,7 +1,7 @@
 // Apollo lunar module, last few hundred metres. SI units, x along track, y up, angle in radians (0 upright, + tilts thrust towards +x).
 export const G = 1.62, THRUST = 45040, ISP = 311, G0 = 9.80665, DRY = 7300;
 export const ASCENT = {mass: 4700, thrust: 15570};
-export const DETENTS = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 1];
+export const DETENTS = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 1];
 export const RCS = {trans: 890, rate: 10 * Math.PI / 180, acc: 15 * Math.PI / 180, rotFlow: 0.5, transFlow: 0.4};
 export const LIMITS = {down: 3, side: 1.2, tilt: 6 * Math.PI / 180, slope: 12 * Math.PI / 180, boulder: 0.6, attitude: 45 * Math.PI / 180, radarTilt: 30 * Math.PI / 180, legs: 4.7};
 export const massFlow = th => th * THRUST / (ISP * G0);

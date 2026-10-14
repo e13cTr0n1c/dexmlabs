@@ -53,18 +53,23 @@ function juice(s, dt) {
 }
 function draw() {
   const c = $('sky'), x = c.getContext('2d'), W = c.width, H = c.height, s = app.s, w = app.d.world, a = Math.max(0, altitude(w, s));
-  const scale = Math.max(0.35, Math.min(8, (H - 140) / (a + 25))), gy = ground(w, s.x), ox = W / 2 + (Math.random() - 0.5) * app.shake, oy = (Math.random() - 0.5) * app.shake;
-  const X = v => ox + (v - s.x) * scale, Y = v => oy + H - 70 - (v - gy) * scale;
-  x.fillStyle = '#000'; x.fillRect(0, 0, W, H); x.fillStyle = '#fff'; for (let i = 0; i < 70; i++) x.fillRect((i * 151 - s.x * 0.02 * (i % 3)) % W + (i * 151 - s.x * 0.02 * (i % 3) < 0 ? W : 0), (i * 97) % (H - 160), 1.5, 1.5);
-  const x0 = s.x - W / 2 / scale - 4, x1 = s.x + W / 2 / scale + 4, stepM = Math.max(2, 2 / scale);
-  x.fillStyle = '#86837a'; x.beginPath(); x.moveTo(0, H); for (let m = x0; m <= x1; m += stepM) x.lineTo(X(m), Y(ground(w, m))); x.lineTo(W, H); x.fill();
-  x.strokeStyle = '#b9b5aa'; x.lineWidth = 1.5; x.beginPath(); for (let m = x0; m <= x1; m += stepM) x.lineTo(X(m), Y(ground(w, m))); x.stroke();
+  const scale = Math.max(0.35, Math.min(7, (H - 170) / (a + 45))), gy = ground(w, s.x), ox = W / 2 + (Math.random() - 0.5) * app.shake, oy = (Math.random() - 0.5) * app.shake;
+  const X = v => ox + (v - s.x) * scale, Y = v => oy + H - 110 - (v - gy) * scale;
+  x.fillStyle = '#000'; x.fillRect(0, 0, W, H); x.fillStyle = '#fff'; for (let i = 0; i < 70; i++) { const sx = ((i * 151 - s.x * 0.02 * (i % 3)) % W + W) % W; x.fillRect(sx, (i * 97) % (H - 160), 1.5, 1.5); }
+  x.fillStyle = '#3d6fb8'; x.beginPath(); x.arc(W * 0.18, H * 0.2, 26, 0, 7); x.fill(); x.fillStyle = '#e9eef5'; x.beginPath(); x.arc(W * 0.18 - 6, H * 0.2 - 8, 9, 0, 7); x.fill();
+  const hz = Y(gy) - 70 - Math.min(80, a * 0.15); x.fillStyle = '#3b3a37'; x.beginPath(); x.moveTo(0, H); for (let px = 0; px <= W; px += 8) { const m = px + s.x * 0.15; x.lineTo(px, hz - 40 * Math.abs(Math.sin(m / 180)) - 22 * Math.abs(Math.sin(m / 67 + 1))); } x.lineTo(W, H); x.fill();
+  const x0 = s.x - W / 2 / scale - 4, x1 = s.x + W / 2 / scale + 4, stepM = Math.max(1, 2 / scale);
+  const gr = x.createLinearGradient(0, Y(gy) - 40, 0, H); gr.addColorStop(0, '#9a968c'); gr.addColorStop(1, '#55534e'); x.fillStyle = gr; x.beginPath(); x.moveTo(0, H); for (let m = x0; m <= x1; m += stepM) x.lineTo(X(m), Y(ground(w, m))); x.lineTo(W, H); x.fill();
+  x.strokeStyle = '#d8d4c8'; x.lineWidth = 2; x.beginPath(); for (let m = x0; m <= x1; m += stepM) x.lineTo(X(m), Y(ground(w, m))); x.stroke();
+  x.fillStyle = '#6d6a63'; for (let m = Math.floor(x0 / 3) * 3; m <= x1; m += 3) { const k = Math.sin(m * 12.9898) * 43758.5453 % 1; if (k > 0.3) x.fillRect(X(m), Y(ground(w, m)) + 6 + k * 40 * Math.min(1, scale / 2), Math.max(1, scale * 0.4), Math.max(1, scale * 0.25)); }
+  for (const c of w.craters) if (c.x + c.R > x0 && c.x - c.R < x1) { x.strokeStyle = 'rgba(255,255,255,.25)'; x.lineWidth = 1; x.beginPath(); x.ellipse(X(c.x), Y(ground(w, c.x - c.R)), c.R * scale, Math.max(2, c.R * scale * 0.12), 0, 0, Math.PI * 2); x.stroke(); }
   for (const [r, col] of [[100, 'rgba(214,255,0,.35)'], [30, '#d6ff00']]) { x.fillStyle = col; x.fillRect(X(w.target - r), Y(ground(w, w.target)) + 2, 2 * r * scale, 4); }
   x.fillStyle = '#d6ff00'; x.font = '13px monospace'; x.textAlign = 'center'; x.fillText('×3', X(w.target), Y(ground(w, w.target)) + 22); x.fillText('×2', X(w.target - 65), Y(ground(w, w.target - 65)) + 22); x.fillText('×2', X(w.target + 65), Y(ground(w, w.target + 65)) + 22);
   x.fillStyle = '#5e5b55'; for (const b of w.boulders) if (b.x > x0 && b.x < x1) { const g = ground(w, b.x); x.beginPath(); x.ellipse(X(b.x), Y(g), Math.max(1.5, b.w / 2 * scale), Math.max(1.5, b.h * scale), 0, Math.PI, 0); x.fill(); }
   x.fillStyle = 'rgba(201,195,181,.6)'; for (const p of app.parts) x.fillRect(X(p.x), Y(p.y), 2, 2);
   // Lander, 4.5 m half-width to the leg tips.
-  const L = Math.max(scale, 2.4), lx = X(s.x), ly = Y(s.y);
+  const L = Math.max(scale, 3.5), lx = X(s.x), ly = Y(s.y);
+  if (!s.done) { x.strokeStyle = 'rgba(214,255,0,.35)'; x.setLineDash([4, 6]); x.beginPath(); x.moveTo(lx, ly); x.lineTo(lx, Y(gy)); x.stroke(); x.setLineDash([]); }
   if (s.done && !s.landed && !s.safe) { x.fillStyle = '#ffb347'; x.beginPath(); x.arc(lx, ly, 6 * L, Math.PI, 0); x.fill(); } else {
   x.save(); x.translate(lx, ly); x.rotate(s.angle);
   if (!s.aborted) { x.strokeStyle = '#ccc'; x.lineWidth = 2; x.beginPath(); x.moveTo(-2.2 * L, -2 * L); x.lineTo(-4.5 * L, 0); x.moveTo(2.2 * L, -2 * L); x.lineTo(4.5 * L, 0); x.stroke(); x.fillStyle = '#c9a227'; x.fillRect(-2.6 * L, -4.2 * L, 5.2 * L, 2.4 * L); }
