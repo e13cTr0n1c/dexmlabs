@@ -4,6 +4,7 @@
  ('lorenz/help.html','How to play Lorenz','The rules of the daily Lorenz puzzle.'),
  ('lorenz/about.html','Why I built Lorenz','Why I built Lorenz.'),
  ('lorenz/log.html',"What's changed in Lorenz",'The Lorenz change log.'),
+ ('enigma-machine/','Enigma Machine Simulator','A historically accurate Enigma I simulator with a daily code breaking puzzle. Rotors I to V, reflector B, rings, plugboard and double stepping. Free, no account, no cookies.'),
  ('tolerance/','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 urls=['']+[u for u,_,_ in GAME_PAGES]+['points/']+[f'{p}/' for p,_ in POL]
@@ -11,7 +12,7 @@ urls=['']+[u for u,_,_ in GAME_PAGES]+['points/']+[f'{p}/' for p,_ in POL]
 print('sitemap',len(urls))
 (S/'robots.txt').write_text('User-agent: *\nAllow: /\n\nSitemap: https://dexmlabs.app/sitemap.xml\n')
 A='https://dexmlabs.app/'
-L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, and 3D print designs for the radio bench.','',
+L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, and 3D print designs for the radio bench.','',
  '## Home','',f'- [DEXM Labs]({A}): Homepage with the games and the makes.','',
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
  '## Makes','']+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',

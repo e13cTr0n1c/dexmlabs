@@ -57,6 +57,7 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Finish today's Skywave round with at least one contact</td><td>{PTS['skywave']}</td></tr>
 <tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
 <tr><td>Solve today's Tolerance</td><td>{PTS['tolerance']}</td></tr>
+<tr><td>Read today's Enigma intercept</td><td>100</td></tr>
 <tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>
 <tr><td>Read today's Lorenz in realistic mode</td><td>{PTS['real']}</td></tr>
 <tr><td>Send the hard or realistic mode reply back</td><td>{PTS['reply']}</td></tr>
