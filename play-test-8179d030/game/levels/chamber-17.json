@@ -1,0 +1,240 @@
+{
+  "id": "17",
+  "title": "TEST CHAMBER 17",
+  "pa": [
+    "The button is at the end of the arm. Reach it anyway.",
+    "Carry the crate the long way. The short way is a wall."
+  ],
+  "spawn": {
+    "base": [
+      -6.5,
+      1.0,
+      5.0
+    ],
+    "drone": [
+      0.5,
+      3.4,
+      1.2
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -6.5,
+      1.0,
+      5.0
+    ]
+  },
+  "button": [
+    6.45,
+    1.25,
+    -2.4
+  ],
+  "panel": [
+    -9.6,
+    6.9,
+    -6.2
+  ],
+  "plate": [
+    4.4,
+    3.5
+  ],
+  "crate": [
+    -4.8,
+    0.45,
+    -4.5
+  ],
+  "crateRamp": null,
+  "addedBoxes": [
+    {
+      "p": [
+        -10.5,
+        0.4,
+        7.15
+      ],
+      "hs": [
+        1.05,
+        0.4,
+        0.72
+      ],
+      "mat": "con",
+      "note": "south stair 1 top 0.80"
+    },
+    {
+      "p": [
+        -9.0,
+        0.8,
+        7.15
+      ],
+      "hs": [
+        1.05,
+        0.8,
+        0.72
+      ],
+      "mat": "con",
+      "note": "south stair 2 top 1.60"
+    },
+    {
+      "p": [
+        -7.5,
+        1.2,
+        7.15
+      ],
+      "hs": [
+        1.05,
+        1.2,
+        0.72
+      ],
+      "mat": "con",
+      "note": "south stair 3 top 2.40"
+    },
+    {
+      "p": [
+        -6.0,
+        1.6,
+        7.15
+      ],
+      "hs": [
+        1.05,
+        1.6,
+        0.72
+      ],
+      "mat": "con",
+      "note": "south stair 4 top 3.20"
+    },
+    {
+      "p": [
+        -1.7,
+        3.075,
+        7.15
+      ],
+      "hs": [
+        3.8,
+        0.125,
+        0.72
+      ],
+      "mat": "steel",
+      "note": "high ledge along the south wall"
+    },
+    {
+      "p": [
+        4.8,
+        3.075,
+        7.15
+      ],
+      "hs": [
+        3.3,
+        0.125,
+        0.72
+      ],
+      "mat": "steel",
+      "note": "high ledge continuing east"
+    },
+    {
+      "p": [
+        8.4,
+        3.075,
+        6.15
+      ],
+      "hs": [
+        1.5,
+        0.125,
+        1.25
+      ],
+      "mat": "steel",
+      "note": "high ledge bending toward the hatch"
+    },
+    {
+      "p": [
+        10.65,
+        3.12,
+        5.0
+      ],
+      "hs": [
+        1.35,
+        0.1,
+        1.05
+      ],
+      "mat": "steel",
+      "note": "staff exit deck"
+    },
+    {
+      "p": [
+        0.0,
+        0.5,
+        -1.15
+      ],
+      "hs": [
+        3.3,
+        0.5,
+        0.18
+      ],
+      "mat": "blk",
+      "note": "mid wall the long carry has to go over, not through"
+    },
+    {
+      "p": [
+        7.3,
+        0.22,
+        -6.95
+      ],
+      "hs": [
+        1.15,
+        0.22,
+        0.15
+      ],
+      "mat": "yel",
+      "note": "yellow brand strip on the north floor"
+    },
+    {
+      "p": [
+        9.5,
+        0.22,
+        -6.95
+      ],
+      "hs": [
+        0.7,
+        0.22,
+        0.15
+      ],
+      "mat": "blk",
+      "note": "black brand strip"
+    },
+    {
+      "p": [
+        11.4,
+        3.16,
+        0.875
+      ],
+      "hs": [
+        0.5,
+        0.06,
+        3.075
+      ],
+      "mat": "steel",
+      "note": "Fix: staff bridge north to the shell catwalk at the real staff hatch (z -4.5); the high route otherwise dead-ends at the wall above the door."
+    }
+  ],
+  "cans": [
+    [
+      -1.0,
+      0.22,
+      1.7
+    ],
+    [
+      2.2,
+      0.22,
+      -3.5
+    ]
+  ],
+  "solution": [
+    "Possess the arm and press the button at (6.45, 1.25, -2.4). It sits just inside the arm's reach.",
+    "Possess the drone and zap the panel.",
+    "Carry the crate the length of the chamber, over the mid wall, onto the plate at (4.4, 3.5).",
+    "Possess the base and walk out through the east door.",
+    "Hidden: after the button, take the base up the south stair and along the high ledge, and exit above y = 3."
+  ],
+  "sourceId": "09"
+}

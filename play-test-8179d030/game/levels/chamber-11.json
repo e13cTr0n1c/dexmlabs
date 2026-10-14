@@ -1,0 +1,244 @@
+{
+  "id": "11",
+  "title": "TEST CHAMBER 11",
+  "pa": [
+    "Precision placement and maximum-reach testing are now combined.",
+    "The staff passage remains an undocumented convenience."
+  ],
+  "spawn": {
+    "base": [
+      -9,
+      1,
+      5
+    ],
+    "drone": [
+      -4.5,
+      1.8,
+      -4
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -9,
+      1,
+      5
+    ]
+  },
+  "button": [
+    6.8,
+    2.1,
+    1.55
+  ],
+  "panel": [
+    -9.7,
+    6,
+    -7.25
+  ],
+  "plate": [
+    10.55,
+    -1.2
+  ],
+  "crate": [
+    4.2,
+    1.459,
+    -0.85
+  ],
+  "crateRamp": {
+    "p": [
+      6.7,
+      0.0873,
+      -0.85
+    ],
+    "hs": [
+      3,
+      0.5,
+      0.72
+    ],
+    "mat": "steel",
+    "rot": [
+      0,
+      0,
+      1,
+      -0.1396
+    ],
+    "holdCrate": true
+  },
+  "addedBoxes": [
+    {
+      "p": [
+        6.8,
+        0.6,
+        0.04
+      ],
+      "hs": [
+        3.15,
+        0.6,
+        0.14
+      ],
+      "mat": "yel",
+      "note": "North rail guides the long downhill roll to a plate offset toward the other rail."
+    },
+    {
+      "p": [
+        6.8,
+        0.6,
+        -1.74
+      ],
+      "hs": [
+        3.15,
+        0.6,
+        0.14
+      ],
+      "mat": "yel",
+      "note": "South rail makes the chute narrow enough to prevent lateral escape."
+    },
+    {
+      "p": [
+        11.2,
+        0.55,
+        -0.85
+      ],
+      "hs": [
+        0.2,
+        0.55,
+        0.73
+      ],
+      "mat": "haz",
+      "note": "End stop catches the crate beside the offset pressure plate."
+    },
+    {
+      "p": [
+        9,
+        1.05,
+        1.4
+      ],
+      "hs": [
+        0.25,
+        1.05,
+        1
+      ],
+      "mat": "blk",
+      "note": "Tall sight blocker hides the plate landing from the chamber's centre without touching the chute."
+    },
+    {
+      "p": [
+        4.4,
+        0.375,
+        6.5
+      ],
+      "hs": [
+        0.65,
+        0.375,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "First tucked-away staff foothold; top at 0.75 m."
+    },
+    {
+      "p": [
+        5.65,
+        0.775,
+        7.1
+      ],
+      "hs": [
+        0.65,
+        0.775,
+        0.55
+      ],
+      "mat": "steel",
+      "note": "Second staff foothold; top at 1.55 m."
+    },
+    {
+      "p": [
+        6.95,
+        1.175,
+        6.55
+      ],
+      "hs": [
+        0.65,
+        1.175,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Third staff foothold; top at 2.35 m."
+    },
+    {
+      "p": [
+        8.25,
+        1.575,
+        7.1
+      ],
+      "hs": [
+        0.65,
+        1.575,
+        0.55
+      ],
+      "mat": "steel",
+      "note": "Fourth staff foothold; top at 3.15 m."
+    },
+    {
+      "p": [
+        9.55,
+        1.975,
+        6.55
+      ],
+      "hs": [
+        0.65,
+        1.975,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Fifth staff foothold; top at 3.95 m."
+    },
+    {
+      "p": [
+        10.75,
+        3.82,
+        5.4
+      ],
+      "hs": [
+        1.15,
+        0.13,
+        1.15
+      ],
+      "mat": "steel",
+      "note": "Narrow final catwalk reaches the open high east hatch entirely above y = 3."
+    },
+    {
+      "p": [
+        11.4,
+        3.89,
+        1.1
+      ],
+      "hs": [
+        0.5,
+        0.06,
+        3.2
+      ],
+      "mat": "steel",
+      "note": "Fix: staff bridge from the high walkway north to the shell catwalk at the real staff hatch (z -4.5); the walkway alone dead-ends at the wall above the door."
+    }
+  ],
+  "cans": [
+    [
+      -5,
+      0.3,
+      -1.3
+    ],
+    [
+      0.8,
+      0.3,
+      4.8
+    ]
+  ],
+  "solution": [
+    "Possess the arm and press the heavy button at (6.8, 2.1, 1.55), just 0.02 m inside the arm's maximum reach.",
+    "Fly the drone to the high north-west panel and zap it for override.",
+    "Set the heavy crate rolling from (4.2, 1.55, -4.85) down the long steel chute; guide rails and the end stop settle it over the offset plate at (10.55, -5.2), beyond carrying range.",
+    "Possess the base and use the normal low east door once the plate and override are active.",
+    "Hidden: after the button, override and plate, find the alternating black and steel footholds at the south-east edge, climb only 0.75 to 0.80 m at a time, then cross the raised catwalk to exit above y = 3."
+  ]
+}

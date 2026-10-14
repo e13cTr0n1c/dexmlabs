@@ -1,0 +1,98 @@
+{
+  "id": "07",
+  "title": "TEST CHAMBER 07",
+  "pa": [
+    "Good morning, Unit D-3X. Today you will be repurposed. Please remain calm and compliant.",
+    "The staff shortcut is not for associates or assets."
+  ],
+  "spawn": {
+    "base": [
+      -8,
+      1,
+      6
+    ],
+    "drone": [
+      -3,
+      1.2,
+      -4
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -8,
+      1,
+      6
+    ]
+  },
+  "button": [
+    4,
+    1.3,
+    -2
+  ],
+  "panel": [
+    6,
+    1.6,
+    -11.95
+  ],
+  "plate": [
+    3,
+    3
+  ],
+  "crate": [
+    -10.8,
+    4.6,
+    -5
+  ],
+  "crateRamp": {
+    "p": [
+      -8.5,
+      2.35,
+      -5
+    ],
+    "hs": [
+      3.95,
+      0.1,
+      1.2
+    ],
+    "mat": "steel",
+    "rot": [
+      0,
+      0,
+      1,
+      -0.4862
+    ]
+  },
+  "addedBoxes": [],
+  "cans": [
+    [
+      -1,
+      0.3,
+      3.5
+    ],
+    [
+      -0.5,
+      0.3,
+      3.5
+    ],
+    [
+      0,
+      0.3,
+      3.5
+    ],
+    [
+      0.5,
+      0.3,
+      3.5
+    ]
+  ],
+  "solution": [
+    "arm presses button",
+    "drone zaps booth panel",
+    "crate slides to plate",
+    "base walks east door",
+    "hidden: throw base onto catwalk"
+  ]
+}

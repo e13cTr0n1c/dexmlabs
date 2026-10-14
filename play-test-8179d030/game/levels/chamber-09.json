@@ -1,0 +1,211 @@
+{
+  "id": "09",
+  "title": "TEST CHAMBER 09",
+  "pa": [
+    "Long-distance handling is now part of your assessment.",
+    "Please refrain from using the unmarked inspection ledges."
+  ],
+  "spawn": {
+    "base": [
+      -9,
+      1,
+      4.8
+    ],
+    "drone": [
+      -4,
+      1.7,
+      -5
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -9,
+      1,
+      4.8
+    ]
+  },
+  "button": [
+    5.4,
+    1.8,
+    -3.2
+  ],
+  "panel": [
+    -9.2,
+    5.8,
+    -7.35
+  ],
+  "plate": [
+    4.9,
+    1.45
+  ],
+  "crate": [
+    -5.3,
+    0.55,
+    -2.8
+  ],
+  "crateRamp": null,
+  "addedBoxes": [
+    {
+      "p": [
+        0,
+        0.75,
+        -0.7
+      ],
+      "hs": [
+        0.28,
+        0.75,
+        2.4
+      ],
+      "mat": "con",
+      "note": "Central 1.50 m divider prevents a simple ground-level crate crossing; carry around it."
+    },
+    {
+      "p": [
+        6,
+        0.65,
+        1.55
+      ],
+      "hs": [
+        0.25,
+        0.65,
+        1.35
+      ],
+      "mat": "yel",
+      "note": "East guard makes placement on the floor plate precise."
+    },
+    {
+      "p": [
+        4.85,
+        0.45,
+        2.9
+      ],
+      "hs": [
+        1.35,
+        0.45,
+        0.2
+      ],
+      "mat": "haz",
+      "note": "South guard leaves the plate approachable from the west."
+    },
+    {
+      "p": [
+        2.9,
+        0.325,
+        6.85
+      ],
+      "hs": [
+        0.75,
+        0.325,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Concealed first inspection ledge; top at 0.65 m."
+    },
+    {
+      "p": [
+        4.35,
+        0.69,
+        7.05
+      ],
+      "hs": [
+        0.75,
+        0.69,
+        0.55
+      ],
+      "mat": "steel",
+      "note": "Second inspection ledge; top at 1.38 m."
+    },
+    {
+      "p": [
+        5.8,
+        1.055,
+        6.65
+      ],
+      "hs": [
+        0.75,
+        1.055,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Third inspection ledge; top at 2.11 m."
+    },
+    {
+      "p": [
+        7.25,
+        1.42,
+        7.05
+      ],
+      "hs": [
+        0.75,
+        1.42,
+        0.55
+      ],
+      "mat": "steel",
+      "note": "Fourth inspection ledge; top at 2.84 m."
+    },
+    {
+      "p": [
+        8.7,
+        1.785,
+        6.6
+      ],
+      "hs": [
+        0.75,
+        1.785,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Fifth inspection ledge; top at 3.57 m."
+    },
+    {
+      "p": [
+        10.35,
+        3.45,
+        5.45
+      ],
+      "hs": [
+        1.5,
+        0.12,
+        1.2
+      ],
+      "mat": "steel",
+      "note": "Upper walkway behind the plate area leading to the high east hatch."
+    },
+    {
+      "p": [
+        11.4,
+        3.51,
+        1.1
+      ],
+      "hs": [
+        0.5,
+        0.06,
+        3.2
+      ],
+      "mat": "steel",
+      "note": "Fix: staff bridge from the high walkway north to the shell catwalk at the real staff hatch (z -4.5); the walkway alone dead-ends at the wall above the door."
+    }
+  ],
+  "cans": [
+    [
+      -7,
+      0.3,
+      0.6
+    ],
+    [
+      2.2,
+      0.3,
+      -4
+    ]
+  ],
+  "solution": [
+    "Use the arm to press the button at (5.4, 1.8, -3.2), opening the shutter and staff hatch.",
+    "Fly the drone to the high north-west panel and zap it to set override.",
+    "Carry the heavy crate from (-5.3, 0.55, -2.8) around the central divider, then lower it carefully onto the guarded plate at (4.9, 1.45).",
+    "Use the base to leave through the unobstructed low east door.",
+    "Hidden: after the button, override and plate, find the alternating south-wall inspection ledges, climb in rises of 0.73 m or less, and cross the high walkway to exit above y = 3."
+  ]
+}

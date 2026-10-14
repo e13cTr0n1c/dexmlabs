@@ -1,0 +1,282 @@
+{
+  "id": "16",
+  "title": "TEST CHAMBER 16",
+  "pa": [
+    "Chamber eight. The crate is heavy. You are not.",
+    "Three machines. One exit. Do not unionise."
+  ],
+  "spawn": {
+    "base": [
+      -8.5,
+      1.0,
+      5.2
+    ],
+    "drone": [
+      -4.0,
+      2.8,
+      0.2
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -8.5,
+      1.0,
+      5.2
+    ]
+  },
+  "button": [
+    -3.2,
+    1.2,
+    1.8
+  ],
+  "panel": [
+    9.2,
+    6.6,
+    -7.2
+  ],
+  "plate": [
+    4.0,
+    3.2
+  ],
+  "crate": [
+    2.2,
+    0.45,
+    -2.4
+  ],
+  "crateRamp": null,
+  "addedBoxes": [
+    {
+      "p": [
+        -10.4,
+        0.4,
+        -7.15
+      ],
+      "hs": [
+        1.05,
+        0.4,
+        0.8
+      ],
+      "mat": "con",
+      "note": "northwest stair 1 top 0.80"
+    },
+    {
+      "p": [
+        -8.9,
+        0.8,
+        -7.15
+      ],
+      "hs": [
+        1.05,
+        0.8,
+        0.8
+      ],
+      "mat": "con",
+      "note": "northwest stair 2 top 1.60"
+    },
+    {
+      "p": [
+        -7.4,
+        1.2,
+        -7.15
+      ],
+      "hs": [
+        1.05,
+        1.2,
+        0.8
+      ],
+      "mat": "con",
+      "note": "northwest stair 3 top 2.40"
+    },
+    {
+      "p": [
+        -5.9,
+        1.6,
+        -7.15
+      ],
+      "hs": [
+        1.05,
+        1.6,
+        0.8
+      ],
+      "mat": "con",
+      "note": "northwest stair 4 top 3.20"
+    },
+    {
+      "p": [
+        -1.9,
+        3.075,
+        -7.15
+      ],
+      "hs": [
+        3.6,
+        0.125,
+        0.8
+      ],
+      "mat": "steel",
+      "note": "high ledge running east"
+    },
+    {
+      "p": [
+        4.2,
+        3.075,
+        -7.15
+      ],
+      "hs": [
+        3.1,
+        0.125,
+        0.8
+      ],
+      "mat": "steel",
+      "note": "high ledge continuing east"
+    },
+    {
+      "p": [
+        6.7,
+        3.075,
+        -4.325
+      ],
+      "hs": [
+        1.05,
+        0.125,
+        3.625
+      ],
+      "mat": "steel",
+      "note": "high ledge turning south"
+    },
+    {
+      "p": [
+        6.7,
+        3.075,
+        0.6
+      ],
+      "hs": [
+        1.05,
+        0.125,
+        1.9
+      ],
+      "mat": "steel",
+      "note": "high ledge southbound"
+    },
+    {
+      "p": [
+        7.6,
+        3.075,
+        3.4
+      ],
+      "hs": [
+        1.15,
+        0.125,
+        1.6
+      ],
+      "mat": "steel",
+      "note": "high ledge toward the door"
+    },
+    {
+      "p": [
+        8.7,
+        3.075,
+        5.0
+      ],
+      "hs": [
+        1.5,
+        0.125,
+        1.05
+      ],
+      "mat": "steel",
+      "note": "high ledge meeting the hatch"
+    },
+    {
+      "p": [
+        10.65,
+        3.12,
+        5.0
+      ],
+      "hs": [
+        1.35,
+        0.1,
+        1.05
+      ],
+      "mat": "steel",
+      "note": "staff exit deck"
+    },
+    {
+      "p": [
+        3.1,
+        0.5,
+        1.4
+      ],
+      "hs": [
+        2.5,
+        0.5,
+        0.16
+      ],
+      "mat": "blk",
+      "note": "low wall a floor throw cannot cross; the arm carries the crate over"
+    },
+    {
+      "p": [
+        -5.6,
+        0.26,
+        7.4
+      ],
+      "hs": [
+        1.1,
+        0.26,
+        0.18
+      ],
+      "mat": "yel",
+      "note": "yellow brand plinth off the walking line"
+    },
+    {
+      "p": [
+        -3.1,
+        0.26,
+        7.4
+      ],
+      "hs": [
+        1.05,
+        0.26,
+        0.18
+      ],
+      "mat": "blk",
+      "note": "black brand plinth beside the yellow"
+    },
+    {
+      "p": [
+        11.4,
+        3.16,
+        0.875
+      ],
+      "hs": [
+        0.5,
+        0.06,
+        3.075
+      ],
+      "mat": "steel",
+      "note": "Fix: staff bridge north to the shell catwalk at the real staff hatch (z -4.5); the high route otherwise dead-ends at the wall above the door."
+    }
+  ],
+  "cans": [
+    [
+      -1.6,
+      0.22,
+      -4.6
+    ],
+    [
+      0.8,
+      0.22,
+      2.3
+    ]
+  ],
+  "solution": [
+    "Possess the arm and press the button at (-3.2, 1.2, 1.8).",
+    "Possess the drone and zap the panel.",
+    "Carry the crate over the low wall and onto the plate at (4, 3.2).",
+    "Possess the base and walk out through the east door.",
+    "Hidden: after the button, take the base up the northwest stair and along the high ledge, and exit above y = 3."
+  ],
+  "sourceId": "08"
+}

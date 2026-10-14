@@ -1,0 +1,254 @@
+{
+  "id": "14",
+  "title": "TEST CHAMBER 14",
+  "pa": [
+    "The final delivery is just within your remit.",
+    "Staff departures require initiative."
+  ],
+  "spawn": {
+    "base": [
+      -9,
+      1,
+      4.2
+    ],
+    "drone": [
+      -4.5,
+      1.2,
+      -5
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -9,
+      1,
+      4.2
+    ]
+  },
+  "button": [
+    -6.9,
+    1.3,
+    0.65
+  ],
+  "panel": [
+    8,
+    6.8,
+    -7.5
+  ],
+  "plate": [
+    5.7,
+    -2.9
+  ],
+  "crate": [
+    -6.2,
+    1.1,
+    -1.6
+  ],
+  "crateRamp": null,
+  "addedBoxes": [
+    {
+      "p": [
+        5.7,
+        2.65,
+        -2.9
+      ],
+      "hs": [
+        2.1,
+        0.25,
+        2
+      ],
+      "mat": "steel",
+      "note": "Plate-bay roof; underside y = 2.4 allows a generous carry clearance through the open south face. The plate is farther east than in chamber 10."
+    },
+    {
+      "p": [
+        3.7,
+        1.2,
+        -2.9
+      ],
+      "hs": [
+        0.1,
+        1.2,
+        2
+      ],
+      "mat": "yel",
+      "note": "West bay wall shifts the entrance farther east, extending the carry around its south end."
+    },
+    {
+      "p": [
+        7.7,
+        1.2,
+        -2.9
+      ],
+      "hs": [
+        0.1,
+        1.2,
+        2
+      ],
+      "mat": "blk",
+      "note": "East bay wall; the interior is 3.8 m wide, so no tight squeeze is required."
+    },
+    {
+      "p": [
+        5.7,
+        1.2,
+        -5
+      ],
+      "hs": [
+        2.1,
+        1.2,
+        0.1
+      ],
+      "mat": "con",
+      "note": "North bay wall closes the back; the south entrance at z = -0.9 stays open."
+    },
+    {
+      "p": [
+        3,
+        0.3,
+        7.1
+      ],
+      "hs": [
+        0.7,
+        0.3,
+        0.7
+      ],
+      "mat": "yel",
+      "note": "Concealed stair 1; top y = 0.6."
+    },
+    {
+      "p": [
+        4.4,
+        0.6,
+        7.1
+      ],
+      "hs": [
+        0.7,
+        0.6,
+        0.7
+      ],
+      "mat": "con",
+      "note": "Concealed stair 2; top y = 1.2."
+    },
+    {
+      "p": [
+        5.8,
+        0.9,
+        7.1
+      ],
+      "hs": [
+        0.7,
+        0.9,
+        0.7
+      ],
+      "mat": "con",
+      "note": "Concealed stair 3; top y = 1.8."
+    },
+    {
+      "p": [
+        7.2,
+        1.2,
+        7.1
+      ],
+      "hs": [
+        0.7,
+        1.2,
+        0.7
+      ],
+      "mat": "con",
+      "note": "Concealed stair 4; top y = 2.4."
+    },
+    {
+      "p": [
+        8.6,
+        1.5,
+        7.1
+      ],
+      "hs": [
+        0.7,
+        1.5,
+        0.7
+      ],
+      "mat": "con",
+      "note": "Concealed stair 5; top y = 3.0."
+    },
+    {
+      "p": [
+        10,
+        1.8,
+        7.1
+      ],
+      "hs": [
+        0.7,
+        1.8,
+        0.7
+      ],
+      "mat": "yel",
+      "note": "Concealed stair 6; top y = 3.6."
+    },
+    {
+      "p": [
+        11.35,
+        3.4,
+        6.2
+      ],
+      "hs": [
+        0.65,
+        0.2,
+        1.6
+      ],
+      "mat": "steel",
+      "note": "Staff landing at y = 3.6; underside y = 3.2 leaves the lower east door clear. Continue to z = 5 at the existing upper exit."
+    },
+    {
+      "p": [
+        6.5,
+        2.25,
+        6.325
+      ],
+      "hs": [
+        4.2,
+        2.25,
+        0.075
+      ],
+      "mat": "blk",
+      "note": "Privacy screen conceals the southern staircase. Its entrance is around the west end at x = 2.3."
+    },
+    {
+      "p": [
+        11.4,
+        3.54,
+        1.2
+      ],
+      "hs": [
+        0.5,
+        0.06,
+        3.4
+      ],
+      "mat": "steel",
+      "note": "Fix: staff bridge north to the shell catwalk at the real staff hatch (z -4.5); the high route otherwise dead-ends at the wall above the door."
+    }
+  ],
+  "cans": [
+    [
+      -2,
+      0.3,
+      3.2
+    ],
+    [
+      0.8,
+      0.3,
+      4.7
+    ]
+  ],
+  "solution": [
+    "Possess the arm and press the button at (-6.9, 1.3, 0.65), releasing the crate and opening the staff hatch. The button itself is 6.989 m from the shoulder.",
+    "Possess the drone, fly to (8, 5.3, -6), and zap the panel at (8, 6.8, -7.5) to set override.",
+    "Possess the arm and carry the released crate at centre height y = 1.1 from (-6.2, -1.6) through these (x, z) waypoints: (2.3, -1.6), (2.3, 0.6), (5.7, 0.6), then (5.7, -2.9). This 17.6 m carry goes around the west wall and north through the bay's open south face. Set the crate down on the plate below y = 1.2; do not throw it.",
+    "With override set and the crate on the plate, possess the base and walk across the floor to the east door at z = 5.",
+    "Hidden: after the same button, override and crate sequence, take the base around the screen's west end to x = 2, z = 7.1 on the floor. Jump east along the six 1.4 m treads, gaining only 0.6 m each time. From the y = 3.6 landing, walk north to z = 5 and east through the opened staff hatch above y = 3."
+  ],
+  "sourceId": "11"
+}

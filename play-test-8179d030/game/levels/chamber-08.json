@@ -1,0 +1,169 @@
+{
+  "id": "08",
+  "title": "TEST CHAMBER 08",
+  "pa": [
+    "Welcome to the equipment reassignment programme.",
+    "The service stairs are not part of your scheduled test."
+  ],
+  "spawn": {
+    "base": [
+      -8,
+      1,
+      5.2
+    ],
+    "drone": [
+      -3,
+      1.5,
+      -4
+    ],
+    "arm": [
+      0,
+      0,
+      0
+    ],
+    "respawn": [
+      -8,
+      1,
+      5.2
+    ]
+  },
+  "button": [
+    -4.2,
+    1.5,
+    2
+  ],
+  "panel": [
+    8.6,
+    5.7,
+    -7.2
+  ],
+  "plate": [
+    1.8,
+    -1.4
+  ],
+  "crate": [
+    -3.1,
+    0.55,
+    -1.9
+  ],
+  "crateRamp": null,
+  "addedBoxes": [
+    {
+      "p": [
+        3.1,
+        0.3,
+        6.95
+      ],
+      "hs": [
+        0.8,
+        0.3,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "First discreet maintenance step; top at 0.60 m."
+    },
+    {
+      "p": [
+        4.65,
+        0.65,
+        6.95
+      ],
+      "hs": [
+        0.8,
+        0.65,
+        0.55
+      ],
+      "mat": "steel",
+      "note": "Second service step; top at 1.30 m."
+    },
+    {
+      "p": [
+        6.2,
+        1,
+        6.95
+      ],
+      "hs": [
+        0.8,
+        1,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Third service step; top at 2.00 m."
+    },
+    {
+      "p": [
+        7.75,
+        1.35,
+        6.95
+      ],
+      "hs": [
+        0.8,
+        1.35,
+        0.55
+      ],
+      "mat": "steel",
+      "note": "Fourth service step; top at 2.70 m."
+    },
+    {
+      "p": [
+        9.3,
+        1.7,
+        6.95
+      ],
+      "hs": [
+        0.8,
+        1.7,
+        0.55
+      ],
+      "mat": "blk",
+      "note": "Fifth service step; top at 3.40 m."
+    },
+    {
+      "p": [
+        10.72,
+        3.28,
+        5.45
+      ],
+      "hs": [
+        1.15,
+        0.12,
+        1.2
+      ],
+      "mat": "steel",
+      "note": "High staff walkway to the east hatch; underside remains above y = 3."
+    },
+    {
+      "p": [
+        11.4,
+        3.34,
+        1.1
+      ],
+      "hs": [
+        0.5,
+        0.06,
+        3.2
+      ],
+      "mat": "steel",
+      "note": "Fix: staff bridge from the high walkway north to the shell catwalk at the real staff hatch (z -4.5); the walkway alone dead-ends at the wall above the door."
+    }
+  ],
+  "cans": [
+    [
+      -6.2,
+      0.3,
+      1
+    ],
+    [
+      0.5,
+      0.3,
+      2.6
+    ]
+  ],
+  "solution": [
+    "Possess the arm and press the heavy button at (-4.2, 1.5, 2) to open the shutter and staff hatch.",
+    "Possess the drone and zap the high north-east panel to enable override.",
+    "Use the arm to carry the heavy crate from (-3.1, 0.55, -1.9) to the floor plate at (1.8, -1.4); do not throw it.",
+    "Possess the base and walk out through the east door at z = 3.8 to 6.2.",
+    "Hidden: after the button, override and plate, jump the five south-side maintenance steps (0.60, 1.30, 2.00, 2.70 and 3.40 m) and walk the upper ledge through the open staff hatch above y = 3."
+  ]
+}
