@@ -4,7 +4,7 @@
   'use strict';
   var URL = 'https://buymeacoffee.com/arthurdeusexmachina';
   // finish screens, by game folder
-  var END = {'enigma-machine': '#result', skywave: '.results-card', lorenz: '#decoded-card', tolerance: '#result', orbit: '#result-overlay .overlay-card', vector: '#result-overlay .overlay-card', forge: '#result'}, AFTER = {forge: 1};
+  var END = {'chernobyl-reactor-simulator': '#result', 'enigma-machine': '#result', skywave: '.results-card', lorenz: '#decoded-card', tolerance: '#result', orbit: '#result-overlay .overlay-card', vector: '#result-overlay .overlay-card', forge: '#result'}, AFTER = {forge: 1};
   // full screen games keep the page button on the title screen, where it can be seen
   var TITLE = {lorenz: '#screen-title .title-links', skywave: '#screen-title .hero-facts'}; // forge rewrites #result, so its button sits just after it
   function slot(kind) {
