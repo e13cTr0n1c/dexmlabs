@@ -18,11 +18,6 @@
 </article>
 <article class="card">
 <div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">SPACE</span></div>
-<a class="thumb" href="mars-base-game/" tabindex="-1" aria-hidden="true"><img src="assets/mars-base-game-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Mars Base</h3><p>Keep four people alive on Mars for 30 sols through a dust storm. A new mission every day.</p><a class="btn" href="mars-base-game/">Play Mars Base</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">SPACE</span></div>
 <a class="thumb" href="rocket-launch-game/" tabindex="-1" aria-hidden="true"><img src="assets/rocket-launch-game-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>Rocket Launch</h3><p>Build a two stage rocket and get today's payload to orbit with real physics.</p><a class="btn" href="rocket-launch-game/">Play Rocket Launch</a></div>
 </article>
@@ -125,7 +120,6 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>enigma:stats</code></td><td>Your Enigma results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>rbmk:stats</code></td><td>Your RBMK results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>apollo:stats</code></td><td>Your Apollo results and streak</td><td>Until you clear it</td></tr>
-<tr><td><code>mars:stats</code></td><td>Your Mars Base results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>rocket:stats</code></td><td>Your Rocket Launch results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>
