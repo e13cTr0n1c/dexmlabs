@@ -52,3 +52,13 @@ export function step(w, s0, input = {}, dt = 1 / 30) {
   return s;
 }
 export function abort(s) { return s.aborted || s.done ? s : {...s, aborted: true, omega: 0}; }
+
+// RCS jets to draw for an input. A jet pushes the craft away from the side it fires on,
+// so translating right fires the left jets, and rotating clockwise fires top left and bottom right.
+// side: -1 left, 1 right (in the craft's frame); level: 'top' or 'bottom'.
+export function rcsJets(input = {}) {
+  const j = [], t = Math.sign(input.trans || 0), r = Math.sign(input.rot || 0);
+  if (t) j.push({side: -t, level: 'top'}, {side: -t, level: 'bottom'});
+  if (r) j.push({side: -r, level: 'top'}, {side: r, level: 'bottom'});
+  return j;
+}
