@@ -16,6 +16,11 @@
 <a class="thumb" href="apollo-lunar-landing-game/" tabindex="-1" aria-hidden="true"><img src="assets/apollo-lunar-landing-game-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
 <div class="card-body"><h3>Apollo</h3><p>Fly the last 200 metres of an Apollo landing with real lunar gravity and a fuel gauge that won't wait. A new site every day.</p><a class="btn" href="apollo-lunar-landing-game/">Play Apollo</a></div>
 </article>
+<article class="card">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">SPACE</span></div>
+<a class="thumb" href="mars-base-game/" tabindex="-1" aria-hidden="true"><img src="assets/mars-base-game-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
+<div class="card-body"><h3>Mars Base</h3><p>Keep four people alive on Mars for 30 sols through a dust storm. A new mission every day.</p><a class="btn" href="mars-base-game/">Play Mars Base</a></div>
+</article>
 <article class="card sealed">
 <div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
 <div class="thumb" aria-hidden="true"><span>SEALED</span></div>
@@ -115,6 +120,7 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>enigma:stats</code></td><td>Your Enigma results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>rbmk:stats</code></td><td>Your RBMK results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>apollo:stats</code></td><td>Your Apollo results and streak</td><td>Until you clear it</td></tr>
+<tr><td><code>mars:stats</code></td><td>Your Mars Base results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>
 <tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>
