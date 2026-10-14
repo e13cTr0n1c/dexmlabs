@@ -19,6 +19,13 @@ await t('RCS: rotation is rate limited to 10°/s, attitude stops at 45°, transl
   let s = st({fuel: 400}); for (let i = 0; i < 300; i++) s = L.step(flat, s, {rot: 1}); near(s.omega, 0, 1e-9, 'stopped'); near(s.angle, L.LIMITS.attitude, 1e-9, 'limit'); assert.ok(s.rcs < 50);
   let u = st({fuel: 400}); u = L.step(flat, u, {trans: 1}, 1); near(u.vx, 890 / (L.DRY + 400), 1e-3, 'trans');
 });
+await t('RCS plume sits opposite the direction of travel, and the physics agrees', () => {
+  for (const d of [1, -1]) { let u = st({fuel: 400}); u = L.step(flat, u, {trans: d}, 1); assert.equal(Math.sign(u.vx), d, 'trans moves that way');
+    const j = L.rcsJets({trans: d}); assert.equal(j.length, 2); assert.ok(j.every(q => q.side === -d), 'plume on the far side'); }
+  for (const d of [1, -1]) { let u = st({fuel: 400}); for (let i = 0; i < 30; i++) u = L.step(flat, u, {rot: d}); assert.equal(Math.sign(u.angle), d, 'rot turns that way');
+    const j = L.rcsJets({rot: d}), top = j.find(q => q.level === 'top'), bot = j.find(q => q.level === 'bottom'); assert.equal(top.side, -d, 'top jet pushes the top the right way'); assert.equal(bot.side, d); }
+  assert.deepEqual(L.rcsJets({}), []);
+});
 await t('Touchdown limits: 3 m/s, 1.2 m/s sideways, 6° tilt, 12° slope, 0.6 m boulder', () => {
   assert.equal(L.touchdownFault(flat, 0, 2.9, 1.1, 0.1), null);
   assert.equal(L.touchdownFault(flat, 0, 3.1, 0, 0).k, 'hard'); assert.equal(L.touchdownFault(flat, 0, 1, 1.3, 0).k, 'side'); assert.equal(L.touchdownFault(flat, 0, 1, 0, 0.12).k, 'tilt');

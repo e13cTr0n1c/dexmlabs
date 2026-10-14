@@ -1,4 +1,4 @@
-import {step, abort, ground, boulderUnder, hoverSeconds, detentUp, detentDown, altitude, LIMITS} from './lm.js';
+import {step, abort, ground, boulderUnder, hoverSeconds, detentUp, detentDown, altitude, LIMITS, rcsJets} from './lm.js';
 import {makeLanding, score, shareText, grid, streak, londonKey, dayNumber, precision, TIERS} from './game.js';
 const $ = id => document.getElementById(id);
 const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
@@ -76,7 +76,7 @@ function draw() {
   x.fillStyle = '#ddd'; x.fillRect(-1.9 * L, (s.aborted ? -3 : -7.2) * L, 3.8 * L, 3 * L);
   const th = s.aborted ? 0.35 : s.fuel > 0 ? s.throttle : 0;
   if (th > 0) { const fl = reduced() ? 1 : 0.8 + Math.random() * 0.4, by = s.aborted ? 0 : -1.8 * L; x.fillStyle = '#ffb347'; x.beginPath(); x.moveTo(-0.8 * L, by); x.lineTo(0.8 * L, by); x.lineTo(0, by + th * 10 * L * fl); x.fill(); }
-  if (app.keys.rl || app.keys.rr || app.keys.tl || app.keys.tr) { x.fillStyle = '#fff'; const sd = app.keys.rl || app.keys.tr ? 1 : -1; x.fillRect(sd * 2.6 * L - (sd < 0 ? 4 : 0), -6.5 * L, 4, 2); }
+  if (s.rcs > 0) { x.fillStyle = '#fff'; for (const j of rcsJets({rot: app.keys.rl ? -1 : app.keys.rr ? 1 : 0, trans: app.keys.tl ? -1 : app.keys.tr ? 1 : 0})) { const jy = j.level === 'top' ? -6.5 * L : -3.4 * L, jx = j.side * 2.6 * L, len = 3 * L * (reduced() ? 1 : 0.8 + Math.random() * 0.4); x.beginPath(); x.moveTo(jx, jy - 0.5 * L); x.lineTo(jx, jy + 0.5 * L); x.lineTo(jx + j.side * len, jy); x.fill(); } }
   x.restore(); }
   // Range strip
   const sx = v => 20 + (v + w.W) / (2 * w.W) * (W - 40); x.fillStyle = '#333'; x.fillRect(20, 14, W - 40, 4); x.fillStyle = '#d6ff00'; x.fillRect(sx(w.target) - 2, 10, 4, 12); x.fillStyle = '#fff'; x.fillRect(sx(s.x) - 3, 9, 6, 14);
@@ -104,7 +104,7 @@ function sound(on) {
   const s = app.s; app.audio.g.gain.value = on === false || !s || s.done ? 0 : (s.aborted ? 0.15 : s.fuel > 0 ? s.throttle * 0.25 : 0);
 }
 function beep(f, len) { const st = store(); if (!st.sound || !app.audio) return; const {ac} = app.audio, o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; g.gain.value = 0.1; o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + len); }
-const HOLD = {ArrowLeft: 'rl', ArrowRight: 'rr', a: 'tl', d: 'tr', A: 'tl', D: 'tr'};
+const HOLD = {ArrowLeft: 'rl', ArrowRight: 'rr', q: 'rl', Q: 'rl', e: 'rr', E: 'rr', a: 'tl', d: 'tr', A: 'tl', D: 'tr'};
 addEventListener('keydown', e => {
   if (!app.s || $('flight').hidden) return; const k = HOLD[e.key];
   if (k && !app.s.done) { app.keys[k] = true; e.preventDefault(); }
