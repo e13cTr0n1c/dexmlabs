@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Arthur Jones · Full-Stack Software Developer</title>
+<meta name="description" content="CV and portfolio of Arthur Jones, full-stack software developer.">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#050605;--panel:#090b09;--ink:#eae8df;--muted:#8d9389;--acid:#d6ff00;--cyan:#4cf3ff;--orange:#ff6d19;--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.6;font-size:15px}
+a{color:var(--acid)}a:focus-visible,button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.bar{position:fixed;top:0;left:0;height:2px;background:var(--acid);width:0;z-index:9}
+.nav{position:sticky;top:0;z-index:5;display:flex;gap:18px;justify-content:space-between;align-items:center;padding:12px 5vw;background:rgba(5,6,5,.86);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.nav b{color:var(--acid)}.nav nav{display:flex;gap:16px;flex-wrap:wrap}.nav nav a{color:var(--muted);text-decoration:none}.nav nav a.on{color:var(--ink)}
+main{max-width:1080px;margin:0 auto;padding:0 5vw}
+section{padding:72px 0;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--acid);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+h1,h2{font-weight:800;letter-spacing:-.02em;line-height:.95;margin:0 0 22px;text-transform:uppercase}
+h1{font-size:clamp(40px,7vw,84px)}h1 span{color:var(--acid);white-space:nowrap;font-size:.8em}h2{font-size:clamp(30px,4.5vw,52px)}
+.hero{display:grid;grid-template-columns:1.4fr 1fr;gap:48px;align-items:center;min-height:78vh}
+.hero p{color:var(--muted);max-width:56ch}
+.photo{position:relative;border:1px solid var(--line);padding:10px;background:var(--panel)}
+.photo img{display:block;width:100%;height:auto;filter:grayscale(.15)}
+.photo::after{content:"AJ // NODE 01";position:absolute;bottom:-24px;left:0;font-size:11px;color:var(--muted);letter-spacing:.1em}
+.contact{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{display:inline-block;border:1px solid var(--line);padding:10px 14px;color:var(--ink);text-decoration:none;min-height:44px}
+.btn.p{background:var(--acid);color:#050605;border-color:var(--acid);font-weight:700}
+.skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{border:1px solid var(--line);background:var(--panel);padding:18px}
+.card h3{margin:0 0 8px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.card.lead{border-color:rgba(214,255,0,.45)}.card.lead h3{color:var(--acid)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}.tags span{border:1px solid var(--line);padding:3px 8px;font-size:12px}
+.job{display:grid;grid-template-columns:200px 1fr;gap:24px;padding:22px 0;border-top:1px dashed var(--line)}
+.job:first-of-type{border-top:0}.job .when{color:var(--muted);font-size:13px}.job h3{margin:0 0 4px;font-size:18px}.job .org{color:var(--acid);font-size:13px;margin-bottom:10px}
+ul{padding-left:18px;margin:0}li{margin:4px 0}li::marker{color:var(--acid)}
+.proj{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.proj .card a{font-weight:700;text-decoration:none}.proj .card p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.life{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.collage{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.collage img{width:100%;aspect-ratio:3/5;object-fit:cover;border:1px solid var(--line)}
+.collage img:nth-child(2){transform:translateY(24px)}
+.muted{color:var(--muted)}footer{padding:40px 5vw;color:var(--muted);font-size:12px;text-align:center}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}}
+@media (max-width:760px){.hero{grid-template-columns:1fr;min-height:0;gap:28px}.hero .photo{max-width:240px;order:-1;margin-bottom:18px}.job{grid-template-columns:1fr;gap:4px}.life{grid-template-columns:1fr}.nav nav{display:none}}
+@media print{.nav,.bar{display:none}.reveal{opacity:1;transform:none}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<div class="bar" id="bar"></div>
+<header class="nav"><b>ARTHUR JONES_</b><nav aria-label="Sections"><a href="#skills">Skills</a><a href="#experience">Experience</a><a href="#projects">Projects</a><a href="#education">Education</a><a href="#contact">Contact</a></nav></header>
+<main>
+<section class="hero" id="top">
+ <div>
+  <div class="eyebrow">CV / Software developer</div>
+  <h1>Arthur<br>Jones<br><span>Full-stack_</span></h1>
+  <p>Full-stack Software Developer with over three years of commercial experience delivering solutions from initial concept through to deployment. I work across C#, Python, JavaScript (including React) and SQL, with the Microsoft Power Platform as a strong second string. I design APIs, integrate complex systems and build efficient, maintainable solutions tailored to customer requirements.</p>
+  <div class="contact"><a class="btn p" href="mailto:thearthurjones@outlook.com?subject=CV%20enquiry">thearthurjones@outlook.com</a><a class="btn" href="tel:+447851699246">+44 7851 699246</a><a class="btn" href="https://dexmlabs.app/">dexmlabs.app</a></div>
+ </div>
+ <div class="photo"><img src="img/arthur.jpg" alt="Arthur Jones" width="512" height="512"></div>
+</section>
+
+<section id="profile">
+ <div class="eyebrow reveal">01 / Profile</div>
+ <h2 class="reveal">Concept to<br>deployment_</h2>
+ <p class="reveal" style="max-width:70ch">I am quick to learn and apply new languages, frameworks and tools. I am confident working independently or collaboratively, leading customer meetings and translating business requirements into practical technical solutions. I have a particular interest in software for technically demanding fields such as defence and aerospace.</p>
+</section>
+
+<section id="skills">
+ <div class="eyebrow reveal">02 / Technical skills</div>
+ <h2 class="reveal">Actual tools.<br>No filler_</h2>
+ <div class="skills">
+  <div class="card lead reveal"><h3>Languages</h3><div class="tags"><span>C#</span><span>Python</span><span>JavaScript</span><span>SQL</span><span>MySQL</span><span>DAX</span><span>Power Query</span><span>Power Fx</span><span>Learning C++</span></div></div>
+  <div class="card lead reveal"><h3>Web and front end</h3><div class="tags"><span>React</span><span>Three.js</span><span>Rapier physics</span><span>Accessibility</span><span>Keyboard</span><span>Reduced motion</span></div></div>
+  <div class="card lead reveal"><h3>APIs and integration</h3><div class="tags"><span>REST APIs</span><span>Custom API design</span><span>System integration</span></div></div>
+  <div class="card lead reveal"><h3>AI and automation</h3><div class="tags"><span>AI integration</span><span>Power Automate</span><span>Facial recognition clocking in</span></div></div>
+  <div class="card reveal"><h3>Testing and tooling</h3><div class="tags"><span>Git</span><span>GitHub Pages</span><span>Node</span><span>jsdom</span><span>Playwright</span><span>Cloudflare analytics</span></div></div>
+  <div class="card reveal"><h3>Microsoft Power Platform</h3><div class="tags"><span>Power Apps</span><span>Power Automate</span><span>Power BI</span><span>Dynamics 365</span><span>Dataverse</span></div></div>
+  <div class="card reveal"><h3>Other</h3><div class="tags"><span>AWS (introductory)</span><span>Raspberry Pi</span><span>PC building and repair</span><span>Hardware troubleshooting</span></div></div>
+ </div>
+</section>
+
+<section id="experience">
+ <div class="eyebrow reveal">03 / Experience</div>
+ <h2 class="reveal">Where I<br>work_</h2>
+ <div class="job reveal"><div class="when">July 2023 to present</div><div><h3>Software Developer</h3><div class="org">F1 Group, Lincoln, UK</div><ul>
+  <li>Leads full-stack software projects from concept to deployment, selecting technologies based on project requirements and business needs.</li>
+  <li>Develops scalable solutions using C#, Python, JavaScript (including React), SQL and MySQL.</li>
+  <li>Designs and integrates systems using APIs, including custom APIs connecting customer platforms to improve business processes.</li>
+  <li>Applies emerging technologies including AI, for example an AI powered facial recognition clocking in system integrated with HR systems.</li>
+  <li>Delivers across the Microsoft Power Platform: Power Apps, Power Automate, Power BI (DAX, Power Query), Power Fx, Dynamics 365 and Dataverse.</li>
+  <li>Works directly with customers to gather requirements, lead technical discussions and deliver tailored solutions.</li>
+  <li>Completed a Level 3 Software Developer Apprenticeship with Distinction.</li></ul></div></div>
+ <div class="job reveal"><div class="when">April 2022</div><div><h3>Work Experience, Software Development</h3><div class="org">Scholarpack, Lincoln, UK</div><ul>
+  <li>Completed live software development tasks alongside experienced developers and took part in agile development meetings.</li>
+  <li>Learnt how AWS supports cloud hosted applications; hosted a multiplayer game on a cloud server.</li></ul></div></div>
+ <div class="job reveal"><div class="when">July 2020</div><div><h3>Work Experience, IT Support</h3><div class="org">Software Into Action, Nottingham, UK</div><ul>
+  <li>Diagnosed, repaired and troubleshot customer computers within an IT support environment.</li>
+  <li>Built, configured and prepared new computers for deployment and lease.</li></ul></div></div>
+</section>
+
+<section id="projects">
+ <div class="eyebrow reveal">04 / Personal projects</div>
+ <h2 class="reveal">Built in my<br>spare time_</h2>
+ <p class="muted reveal" style="max-width:70ch">I build and run my own sites in my spare time. Everything below is live, hand built and tested. The stack is JavaScript, Three.js, Rapier physics and Python, with Node, jsdom and Playwright test suites on every release, and accessibility built in (keyboard, reduced motion, 44px targets).</p>
+ <div class="proj">
+  <div class="card reveal"><a href="https://dexmlabs.app/">DEXM Labs ↗</a><p>My games and makes site. A static site from my own Python generator, with GitHub Pages hosting, Cloudflare analytics and IndexNow.</p></div>
+  <div class="card reveal"><a href="https://dexmlabs.app/apollo-lunar-landing-game/">Apollo lunar landing ↗</a><p>A 3D lander in Three.js with real thrust and attitude physics.</p></div>
+  <div class="card reveal"><a href="https://dexmlabs.app/chernobyl-reactor-simulator/">Chernobyl reactor simulator ↗</a><p>An RBMK model with xenon, void feedback and the AZ-5 sequence.</p></div>
+  <div class="card reveal"><a href="https://dexmlabs.app/enigma-machine/">Enigma</a> and <a href="https://dexmlabs.app/lorenz/">Lorenz ↗</a><p>Working cipher machine simulators with rotor stepping, chi, psi and motor wheels, and a guided codebreaking game.</p></div>
+  <div class="card reveal"><a href="https://dexmlabs.app/orbit/">Orbit</a> and <a href="https://dexmlabs.app/vector/">Vector ↗</a><p>Physics and ATC games, plus a site wide points ledger and light and dark modes.</p></div>
+  <div class="card reveal"><a href="https://dexmlabs.app/skywave/">Skywave ↗</a><p>A 3D radio propagation globe.</p></div>
+  <div class="card reveal"><a href="https://e13ctr0n1c.github.io/">Plain Sums ↗</a><p>My UK tax and money calculators: CIS deductions and refunds, probate IHT, gift taper, late payment interest and the VAT threshold.</p></div>
+  <div class="card reveal"><b style="color:var(--acid)">ADS-B radar display</b><p>A Raspberry Pi ADS-B receiver driving a 24/7 radar style aircraft display.</p></div>
+ </div>
+</section>
+
+<section id="education">
+ <div class="eyebrow reveal">05 / Education</div>
+ <h2 class="reveal">Education_</h2>
+ <div class="job reveal"><div class="when">Apprenticeship</div><div><h3>Level 3 Software Developer Apprenticeship, Distinction</h3><div class="org">F1 Group</div></div></div>
+ <div class="job reveal"><div class="when">2019 to 2023</div><div><h3>Lincoln UTC</h3></div></div>
+ <div class="job reveal"><div class="when">2009 to 2019</div><div><h3>Lincoln Minster School</h3><p class="muted" style="margin:0">GCSEs: Computer Science 8; Chemistry, Biology, Physics, Maths, Engineering 1 and Engineering 2 all grade 6.</p></div></div>
+</section>
+
+<section id="life">
+ <div class="life">
+  <div class="collage reveal"><img src="img/plane.jpg" alt="Arthur in a light aircraft" loading="lazy"><img src="img/island.jpg" alt="Travel photo" loading="lazy"><img src="img/bmw.jpg" alt="BMW Museum" loading="lazy"></div>
+  <div class="reveal"><div class="eyebrow">06 / Beyond code</div><h2>Builder.<br>Tinkerer_</h2>
+   <ul><li><b>Engineering:</b> 3D CAD modelling, CNC machines, laser cutters, manual lathes</li><li><b>Interests:</b> Grade 7 singing, Grade 5 piano, Grade 5 drums (Distinction); programming and emerging technology</li><li><b>Other:</b> Full driving licence</li></ul></div>
+ </div>
+</section>
+
+<section id="contact">
+ <div class="eyebrow reveal">07 / Contact</div>
+ <h2 class="reveal">Make<br>contact_</h2>
+ <div class="contact reveal"><a class="btn p" href="mailto:thearthurjones@outlook.com?subject=CV%20enquiry">Email thearthurjones@outlook.com ↗</a><a class="btn" href="tel:+447851699246">Call +44 7851 699246</a></div>
+</section>
+</main>
+<footer>Arthur Jones · hand built, like everything else on dexmlabs.app</footer>
+<script>
+(function(){
+ var bar=document.getElementById('bar');
+ function onScroll(){var h=document.documentElement;var p=h.scrollTop/(h.scrollHeight-h.clientHeight||1);bar.style.width=(p*100)+'%';}
+ addEventListener('scroll',onScroll,{passive:true});onScroll();
+ var els=document.querySelectorAll('.reveal');
+ if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return;}
+ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{rootMargin:'0px 0px -8% 0px'});
+ els.forEach(function(e){io.observe(e)});
+ var links=document.querySelectorAll('.nav nav a');
+ var so=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-45% 0px -50% 0px'});
+ document.querySelectorAll('main section[id]').forEach(function(s){so.observe(s)});
+})();
+</script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
