@@ -48,10 +48,12 @@
 (S/'index.html').write_text(home)
 # the same block on the game title screens
 import re as _re
-for game,before in (('skywave','<div class="signed-note">'),('lorenz','<p class="disclaimer">')):
+_F='<footer class="site-footer"'
+for game,before in (('skywave','<div class="signed-note">'),('lorenz','<p class="disclaimer">'),('tolerance',_F),('vector','<footer class="foot">'),('orbit','<footer class="foot">'),('enigma-machine',_F),('chernobyl-reactor-simulator',_F),('apollo-lunar-landing-game',_F),('rocket-launch-game',_F)):
   f=S/game/'index.html'; t=f.read_text()
   t=_re.sub(r'<section class="dexm-signup" data-signup.*?</form></section>','',t,flags=_re.S)
   assert before in t, game
+  if SIGNUP_LIVE: t=t.replace("form-action 'none'","form-action https://buttondown.com")
   f.write_text(t.replace(before,signup(game)+before,1))
 
 # ---------- policies ----------
