@@ -1,6 +1,6 @@
 # DEXM Labs
 
-> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, and 3D print designs for the radio bench.
+> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, a Chernobyl RBMK reactor simulator, and 3D print designs for the radio bench.
 
 ## Home
 
@@ -17,6 +17,7 @@
 - [Why I built Lorenz](https://dexmlabs.app/lorenz/about.html): Why I built Lorenz.
 - [What's changed in Lorenz](https://dexmlabs.app/lorenz/log.html): The Lorenz change log.
 - [Enigma Machine Simulator](https://dexmlabs.app/enigma-machine/): A historically accurate Enigma I simulator with a daily code breaking puzzle. Rotors I to V, reflector B, rings, plugboard and double stepping. Free, no account, no cookies.
+- [Chernobyl Reactor Simulator](https://dexmlabs.app/chernobyl-reactor-simulator/): A simplified RBMK-1000 reactor simulator game with daily scenarios: control rods, graphite tips, the void coefficient, xenon and AZ-5. A game, not a training tool.
 - [Tolerance](https://dexmlabs.app/tolerance/): A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.
 
 ## Makes
