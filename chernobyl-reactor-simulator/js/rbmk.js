@@ -9,12 +9,13 @@ const H = 1 / 30, LI = Math.log(2) / 6.6 * H, LX = Math.log(2) / 9.2 * H, BURN =
 // with these, xenon peaks about 10 reactor hours after a cut in power, as it does in a real core
 export const xenonEq = P => (YI + YX) * P / (LX + BURN * P) / ((YI + YX) / (LX + BURN));
 export const iodineEq = P => P;
-export const voidFrac = (P, flow) => Math.max(0, Math.min(1, 0.3 * P / Math.max(flow, 0.05)));
+// Steam in the channels: more power or less flow, lower pressure, or warmer inlet water (less subcooling) all mean more steam.
+export const voidFrac = (P, flow, p = 1, sub = 1) => Math.max(0, Math.min(1, 0.3 * P / Math.max(flow, 0.05) * (1 + 0.4 * (1 - Math.min(p, 1.3))) + 0.12 * (1 - Math.max(0, Math.min(1, sub)))));
 const R0 = K.rods * 0.3 + K.xenon + K.doppler - K.void * voidFrac(1, 1);
 
 export function reactivity(s) {
   const tip = s.az5 && s.az5.t < 4 ? K.tip * (1 - s.az5.from) ** 8 * (1 - s.az5.t / 4) : 0;
-  return R0 - K.rods * s.rods / RODS - K.xenon * s.X + K.void * voidFrac(s.P, s.flow) - K.doppler * s.P + tip;
+  return R0 - K.rods * s.rods / RODS - K.xenon * s.X + K.void * voidFrac(s.P, s.flow, s.p ?? 1, s.sub ?? 1) - K.doppler * s.P + tip;
 }
 /** A reactor in equilibrium at power P with `rods` inserted and full flow. Rods are solved so it holds. */
 export function steady(P, flow = 1, X = xenonEq(P)) {
