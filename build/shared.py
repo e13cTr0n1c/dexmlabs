@@ -12,4 +12,4 @@ def tools(r):
   """The points chip and the theme toggle, for the header of every page."""
   return f'<div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="{r}points/" aria-haspopup="dialog">{COIN}<span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme">{MOON}{SUN}</button></div>'
 def shared_head(r):
-  return f'<link rel="stylesheet" href="{r}assets/dexm-ui.css"><script src="{r}assets/points.js" defer></script><script src="{r}assets/theme.js" defer></script>'
+  return f'<link rel="stylesheet" href="{r}assets/dexm-ui.css"><script src="{r}assets/points.js" defer></script><script src="{r}assets/support.js" defer></script><script src="{r}assets/theme.js" defer></script>'

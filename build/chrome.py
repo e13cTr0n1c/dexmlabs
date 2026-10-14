@@ -16,7 +16,7 @@ def h(src): return "'sha256-" + base64.b64encode(hashlib.sha256(src.encode()).di
 def page(path):
   s = path.read_text()
   s = re.sub(r'<script>\(function\(\)\{var d=document\.documentElement.*?</script>\n?', '', s)
-  s = re.sub(r'<link rel="stylesheet" href="\.\./assets/dexm-ui\.css"><script src="\.\./assets/points\.js" defer></script><script src="\.\./assets/theme\.js" defer></script>', '', s)
+  s = re.sub(r'<link rel="stylesheet" href="\.\./assets/dexm-ui\.css"><script src="\.\./assets/points\.js" defer></script>(<script src="\.\./assets/support\.js" defer></script>)?<script src="\.\./assets/theme\.js" defer></script>', '', s)
   s = re.sub(r'<div class="dexm-tools">.*?</div>', '', s)
   # theme script straight after the viewport meta, before any other script or stylesheet
   m = re.search(r'<meta name="viewport"[^>]*>', s)
