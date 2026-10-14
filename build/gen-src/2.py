@@ -59,7 +59,6 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Solve today's Tolerance</td><td>{PTS['tolerance']}</td></tr>
 <tr><td>Read today's Enigma intercept</td><td>100</td></tr>
 <tr><td>Reach orbit with today's rocket</td><td>100</td></tr>
-<tr><td>Finish today's Mars mission</td><td>100</td></tr>
 <tr><td>Land today's Apollo lunar module</td><td>100</td></tr>
 <tr><td>Finish today's RBMK scenario</td><td>100</td></tr>
 <tr><td>Read today's Lorenz in hard mode</td><td>{PTS['hard']}</td></tr>

@@ -19,7 +19,7 @@ await t('Daily: same mission for everyone, score is payload fraction, share grid
 });
 await t('Page: SEO and copy', () => {
   const h = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  for (const re of [/<title>Rocket Launch Game/, /<h1[^>]*>Rocket Launch Game/, /"@type": "VideoGame"/, /"@type": "FAQPage"/, /og:image/, /\.\.\/apollo-lunar-landing-game\//, /\.\.\/mars-base-game\//, /\.\.\/orbit\//]) assert.match(h, re);
+  for (const re of [/<title>Rocket Launch Game/, /<h1[^>]*>Rocket Launch Game/, /"@type": "VideoGame"/, /"@type": "FAQPage"/, /og:image/, /\.\.\/apollo-lunar-landing-game\//, /\.\.\/orbit\//]) assert.match(h, re);
   const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.ok(!/[\u2013\u2014]|\s-\s/.test(text)); assert.ok(!/\bA\.?I\b/.test(text));
 });
 console.log(`${pass}/${pass + fail} passed`); process.exit(fail ? 1 : 0);
