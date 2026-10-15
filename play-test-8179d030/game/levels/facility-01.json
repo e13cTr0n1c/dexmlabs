@@ -1,0 +1,161 @@
+{
+  "id": "facility-01",
+  "title": "FACILITY 01 \u00b7 LOADING HALL",
+  "kind": "facility",
+  "assets": {
+    "glb": "assets/facility.glb",
+    "layout": "assets/facility_layout.json",
+    "lightmap": "assets/facility_lightmap.jpg"
+  },
+  "pa": [
+    "Good morning, Unit D-3X. This is Loading Hall 01. Please remain calm, compliant and out of the conveyor.",
+    "Staff crawlspaces are for staff. You are an asset. Please do not look for one."
+  ],
+  "spawn": {
+    "base": [
+      -17,
+      0.65,
+      8.5
+    ],
+    "drone": [
+      -1.2,
+      1.1,
+      -3.2
+    ],
+    "arm": [
+      2,
+      0,
+      -2
+    ],
+    "respawn": [
+      -17,
+      0.65,
+      8.5
+    ],
+    "yaw": -1.0
+  },
+  "theme": {
+    "wing": "Wing B Loading",
+    "name": "Loading Hall 01",
+    "light": {
+      "color": "#ffd8a8",
+      "intensity": 1,
+      "hemi": "#cfd6d8",
+      "sun": "#fff2d8"
+    },
+    "fog": {
+      "color": "#1d1f1d",
+      "density": 0.012
+    },
+    "wall": "concrete",
+    "floor": "concrete",
+    "dressing": []
+  },
+  "lightmapGain": 3.2,
+  "movers": [
+    {
+      "type": "conveyor",
+      "id": "beltA",
+      "mark": "beltA",
+      "speed": 0.9
+    },
+    {
+      "type": "conveyor",
+      "id": "beltB",
+      "mark": "beltB",
+      "speed": 1.2
+    },
+    {
+      "type": "factoryArm",
+      "id": "loaderA",
+      "mark": "armLoaderA",
+      "pallet": "palletA",
+      "belt": "beltA",
+      "drop": [
+        -10,
+        -6
+      ],
+      "scale": 0.85,
+      "lift": 0.35,
+      "maxOnBelt": 5
+    },
+    {
+      "type": "factoryArm",
+      "id": "loaderB",
+      "mark": "armLoaderB",
+      "pallet": "palletB",
+      "belt": "beltB",
+      "drop": [
+        -10,
+        2
+      ],
+      "scale": 0.85,
+      "lift": 0.35,
+      "maxOnBelt": 5
+    },
+    {
+      "type": "lift",
+      "id": "lift1",
+      "mark": "lift",
+      "y": [
+        0.02,
+        6.02
+      ],
+      "speed": 1.2,
+      "dwell": [
+        6,
+        8
+      ],
+      "needs": "liftPower"
+    },
+    {
+      "type": "gate",
+      "id": "dispatch",
+      "mark": "gate",
+      "dy": 2.7,
+      "opensWhen": "plate"
+    },
+    {
+      "type": "scannerHatch",
+      "id": "hatch",
+      "mark": "hatch",
+      "radius": 2.6,
+      "allows": "base"
+    },
+    {
+      "type": "gantry",
+      "id": "gantry",
+      "bridge": "bridge",
+      "trolley": "trolley"
+    }
+  ],
+  "puzzle": {
+    "switches": [
+      {
+        "id": "liftPower",
+        "mark": "panel",
+        "zappedBy": "drone",
+        "powers": "lift1"
+      }
+    ],
+    "plate": {
+      "mark": "plate",
+      "needs": "crate",
+      "opens": "dispatch"
+    },
+    "win": {
+      "mark": "win"
+    },
+    "hidden": {
+      "mark": "crawl",
+      "note": "arm lifts the base bot onto belt B, the belt carries it to the scanner hatch and into the crawlspace"
+    }
+  },
+  "solution": [
+    "drone flies up the north vent and zaps the lift panel",
+    "arm takes a crate off belt A and sets it on the lift car",
+    "base rides the lift up with the crate and pushes it onto the dispatch plate",
+    "base walks through the dispatch gate",
+    "hidden: arm lifts the base onto belt B, belt carries it through the scanner hatch into the crawlspace"
+  ]
+}
