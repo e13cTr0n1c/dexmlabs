@@ -51,7 +51,7 @@
     "floor": "concrete",
     "dressing": []
   },
-  "lightmapGain": 3.2,
+  "lightmapGain": 2.7,
   "movers": [
     {
       "type": "conveyor",
