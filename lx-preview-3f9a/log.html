@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script>
+  <meta name="theme-color" content="#080a08">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kE1co0z749oaTiQdaivkHEhVq9XX5NAlLv+Izxpx4G4=' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>What's changed in Lorenz</title>
+  <meta name="description" content="What's changed in Lorenz. Lorenz, a daily cipher machine game from DEXM Labs.">
+  <link rel="canonical" href="https://dexmlabs.app/lorenz/log.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="DEXM Labs">
+  <meta property="og:title" content="What's changed in Lorenz">
+  <meta property="og:description" content="What's changed in Lorenz. Lorenz, a daily cipher machine game from DEXM Labs.">
+  <meta property="og:url" content="https://dexmlabs.app/lorenz/log.html">
+  <meta property="og:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lorenz: the twelve wheels of the cipher machine and the teleprinter tape, from the game">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://dexmlabs.app/lorenz/img/og-lorenz.png">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/support.js" defer></script><script src="../assets/theme.js" defer></script>
+  <script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="wordmark" href="./index.html"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="2.5"/><path d="M14 2v4M26 14h-4M14 26v-4M2 14h4"/></svg>Lorenz<span class="header-sub">Cipher machine game</span></a>
+    <nav aria-label="Main">
+      <a class="header-feedback" href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback"><span class="fb-long">Know your Tunny? Tell me what I got wrong.</span><span class="fb-short">Feedback</span></a>
+      <a class="header-coffee" href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="107" height="30"></a>
+      <a href="./index.html">Play</a>
+      <a href="./help.html">Guide</a>
+      <a href="./about.html">About</a><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div>
+    </nav>
+  </header>
+
+  <main id="main" class="document-page">
+    <h1>What's changed</h1>
+    <p class="lede">Fixes and changes to Lorenz, newest first. If you reported something and I've fixed it, it should be in here.</p>
+    <ul class="log-list prose">
+      <li><time datetime="2026-10-13">13 October 2026</time>The reply now goes out on a fresh line of today's page, with its QEP number in clear in the preamble, as it should have all along. Sending it on the settings you read the message with makes a depth, which is how Tunny was broken in August 1941, so the game flags it and won't send it.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Fixed in hard mode: after you corrected your pins, the tape punched on the old ones stayed up, so a right setup looked wrong and readings of that tape cost points. The old tape now goes as soon as a pin changes, a reading of a tape off the wrong pins is free, and I've given back what it took. The odd double exclamation mark is gone too.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>The modes are now Normal, Hard and Realistic. Hard is the whole job, pins and reply included, but you prove each step once: set one chi wheel (or the chi and motor wheels) and the rest flick in, type the first 5 characters right and the rest fills in. Realistic is all by hand, with no marks or word counts until the whole reading is in. Old hard scores and streaks carry over.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Realistic now walks you through it: read the QEP, set the pins, set the start positions, run the tape, with buttons to step back and fix things. The pin strip shows the pattern sheet, so there are no dots and crosses to read, and the 3D machine no longer crops the motor wheel numbers. Turn on and Turn back are now Step forward and Step back.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>When you set pins face on, a strip above the wheel shows the rim unrolled, with the pin at the top under a pointer and its neighbours either side, so you can see and tap them in a line.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>New Realistic mode: hard mode, but you set every wheel's pins yourself, face on, from the day's pattern sheet. It has its own score, streak and points. Pin setting has moved out of hard mode, and rounds you already played keep their scores. Panels can now be hidden too.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>The Visual demonstration now runs on the machine, above each set of wheels, and the wheels step with it. Hard mode also has an optional wheel pattern sheet: set the day's pins by hand as well for 250 more.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Hard mode now ends with a reply: you encipher a short answer and punch it, and it's scored on its own. There's also a reading aid: copy a row's holes and the cheat sheet lights up the matching line, so reading the tape is quicker but still by hand.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>New teleprinter speed, Visual demonstration. It shows each character going through the chi and psi wheels, bit by bit, before it's printed.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Hints now cost points instead of score. Points are shared with Skywave, and you earn them by reading the daily, the hard mode message and practice rounds. Wrong readings still cost score. There's also a light mode, which follows your device until you pick one with the sun and moon button.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Hard mode now works in practice too.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Fixed the hard mode answer check. Changing the messages at lunchtime made it check your reading against the wrong message, so correct answers failed. Today keeps the message it started with, either message is accepted today, punctuation no longer counts, and any points the bug took are given back when you next open the round. Sorry about that.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>New messages that read like army and High Command traffic, figure shift D and J now shown as Who are you? and bell, clearer wording about what the machine was, and the chi wheel model button now sits under my note.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Added hard mode: the QEP number on the tape, a dated book with five pages, and the answer only on punched tape, read with a cheat sheet. It has its own score and streak.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>You can now download the Lorenz machine STL to print your own.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Fixed the smudged figure so it always sits on the right line of the book.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Today's line in the QEP book is now highlighted.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>Added a footer link to Skywave, my other game.</li>
+      <li><time datetime="2026-10-09">9 October 2026</time>First version: the daily intercept with the QEP book, twelve wheels in 3D, the teleprinter tape, practice with random settings, encipher, and chi only mode for the printable model.</li>
+    </ul>
+    <p class="prose">Spotted a mistake? Email me: <a href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback">hello@dexmlabs.app</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <a class="footer-home" href="../">DEXM Labs</a>
+    <span class="footer-links">
+      <a href="./index.html">Play</a>
+      <a href="./help.html">Guide</a>
+      <a href="./about.html">About</a>
+      <a href="./log.html"><span class="fl-long">What's changed</span><span class="fl-short">Changes</span></a>
+      <a href="../skywave/">Skywave</a><a href="../tolerance/">Tolerance</a>
+      <a href="../privacy/">Privacy</a>
+      <a href="../cookies/">Cookies</a>
+      <a href="../terms/">Terms</a>
+      <a href="../disclaimer/">Disclaimer</a>
+      <a href="../contact/">Contact</a>
+    </span>
+  </footer>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

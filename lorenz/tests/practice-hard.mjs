@@ -101,7 +101,7 @@ async function bootPage(storage, fn) {
 const nextSeed = seed => { Math.random = () => seed / 2 ** 32; };
 const setWheels = (d, w, start) => { for (const [id, v] of Object.entries(start)) { const i = d.getElementById(`dial-${id}`); i.value = String(v); i.dispatchEvent(new w.Event('change')); } };
 /** Hard mode: set χ1 from the sheet in the list view, and the rest fill in. */
-const setChi1 = (d, h) => { d.querySelector('#pin-wheels [data-wheel=chi1]').click(); h.patterns.chi1.forEach((b, i) => { if (b) d.querySelector(`#pin-grid [data-pin="${i}"]`).click(); }); };
+const setChi1 = (d, h) => { h.patterns.chi1.forEach((b, i) => { if (b) d.querySelector(`#pin-rows [data-row=chi1] [data-pin="${i}"]`).click(); }); };
 const runAndSkip = d => { d.getElementById('run-button').click(); d.getElementById('skip-button').click(); };
 
 const daily = HD.makeHardRound({});

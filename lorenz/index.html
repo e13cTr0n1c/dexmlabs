@@ -6,11 +6,12 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kE1co0z749oaTiQdaivkHEhVq9XX5NAlLv+Izxpx4G4=' 'sha256-4yrEXDEXQMJT9u6JeOZ1LJ1l2cJH14/9SIHu4TJ9uSQ=' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; connect-src 'self' https://cdn.jsdelivr.net https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action https://buttondown.com">
 <title>Lorenz, a daily cipher machine game</title><link rel="icon" href="./assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/support.js" defer></script><script src="../assets/theme.js" defer></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.min.js"}}</script>
-<script type="module" src="./js/main.js"></script><script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
+<script type="module" src="./js/main.js"></script><script src="./js/walkthrough.js" defer></script><script src="./js/storage-note.js" data-cookies="../cookies/" defer></script>
 </head><body data-screen="title">
 <a class="skip-link" href="#main">Skip to the game</a>
 <header class="site-header"><button class="wordmark" data-action="title" aria-label="Lorenz home"><svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="9"/><circle cx="14" cy="14" r="2.5"/><path d="M14 2v4M26 14h-4M14 26v-4M2 14h4"/></svg>Lorenz<span class="header-sub">Cipher machine game</span></button><nav aria-label="Main"><span id="header-day" class="header-day"></span><a class="header-feedback" href="mailto:hello@dexmlabs.app?subject=Lorenz%20feedback"><span class="fb-long">Know your Tunny? Tell me what I got wrong.</span><span class="fb-short">Feedback</span></a><a class="header-coffee" href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener"><img src="./img/bmc-button.png" alt="Buy me a coffee" width="107" height="30"></a><a href="./help.html">Guide</a><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div><button id="settings-open" class="icon-button" aria-label="Open settings">&#9881;</button></nav></header>
 <main id="main">
+<div class="walk-bar"><button type="button" id="walk-open" class="walk-button" aria-haspopup="dialog" aria-expanded="false">Walkthrough<span class="walk-sub">How to use the machine, step by step</span></button></div>
 
 <section id="screen-title" class="screen title-screen" aria-labelledby="title-heading">
 <div id="title-stage-slot" class="stage-slot"><div id="machine-stage" class="machine-stage" role="group" aria-label="The twelve wheels of the machine, with the active cams raised"><div id="machine-labels" class="machine-labels" aria-hidden="true"></div><div id="demo-overlay" class="demo-overlay" role="group" aria-label="How each character goes through the machine" hidden></div><p id="renderer-note" class="renderer-note" role="status"></p><div id="pin-face" class="pin-face" hidden></div></div></div>
@@ -42,7 +43,7 @@
 <p class="muted" id="round-intro">The operator sent this QEP number in clear before the message. Find it in the book below and set the wheels to match.</p>
 <p class="model-line"><span class="eyebrow">Machine</span> <span id="model-name">SZ40</span><span id="practice-model" class="segmented" role="group" aria-label="Machine model" hidden><button data-model="SZ40" aria-pressed="true">SZ40</button><button data-model="SZ42A" aria-pressed="false">SZ42A</button></span><button id="practice-new" class="text-button" hidden>New random settings</button></p>
 <p class="model-line" id="today-line" hidden><span class="eyebrow">Today</span> <span id="today-date"></span></p>
-<div id="preamble-box" class="preamble-box" hidden><div class="section-top" data-panel="preamble" data-panel-name="the preamble"><h2 class="small-heading">Preamble, sent in clear</h2><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
+<div id="preamble-box" class="preamble-box" hidden><div class="section-top" data-panel="preamble" data-panel-name="the preamble"><h2 class="small-heading">Preamble, sent in clear</h2><button type="button" class="cheat-button" data-cheat>Show telecode cheat sheet</button></div>
 <div id="panel-preamble">
 <div id="preamble-tape" class="punch-tape" role="img"></div>
 <p class="tiny">The operator sent the QEP number in clear, not enciphered, before the message. Read it off the tape: impulse 1 is the top hole.</p>
@@ -66,13 +67,9 @@
 <div id="panel-pins">
 <p class="tiny" id="pin-help"></p>
 <div id="pin-scope" class="pin-scope" role="group" aria-label="Which wheels you set yourself" hidden><button type="button" class="secondary" data-scope="one" aria-pressed="true">Set one chi wheel</button><button type="button" class="secondary" data-scope="chimu" aria-pressed="false">Set the chi and motor wheels</button></div>
-<div class="pin-scroll"><table class="pin-table"><caption class="sr-only">Today's pin patterns, x raised and dot lowered, in fives</caption><tbody id="pin-sheet-body"></tbody></table></div>
 <button type="button" id="pin-open" class="secondary pin-open">Set the pins on the machine</button>
-<details class="pin-list" id="pin-list"><summary>List view</summary>
-<div id="pin-wheels" class="pin-wheels" role="group" aria-label="Wheel to set"></div>
-<div class="section-top"><p id="pin-wheel-name" class="tiny"></p><button type="button" id="pin-clear" class="secondary small">Clear this wheel</button></div>
-<div id="pin-grid" class="pin-grid" role="group"></div>
-</details>
+<div class="pin-rows-top"><p class="tiny" id="pin-rows-help">One row per wheel. Tap a pin to raise it, tap again to lower it. The small x and dot marks above each group of five are today's sheet, so copy them across.</p><div class="pin-rows-tools"><button type="button" class="secondary small" id="pin-rows-open">Open all rows</button><button type="button" class="secondary small" id="pin-rows-close">Close all rows</button></div></div>
+<div id="pin-rows" class="pin-rows" role="group" aria-label="Pins, one row for each wheel"></div>
 </div>
 </article>
 </div>
@@ -123,7 +120,7 @@
 <div id="panel-teleprinter">
 <div class="tape-wrap"><canvas id="tape-canvas" class="tape-canvas" height="128" aria-hidden="true"></canvas></div>
 <p class="tiny tape-legend" id="tape-legend">Each row across the tape is one character: five holes, with the small sprocket hole between holes 2 and 3. The letter under each row is what the teleprinter printed.</p>
-<div id="hard-out" class="hard-out" hidden><div class="section-top"><span class="eyebrow">Tape out, punched</span><button type="button" class="text-button" data-cheat>Telecode cheat sheet</button></div>
+<div id="hard-out" class="hard-out" hidden><div class="section-top"><span class="eyebrow">Tape out, punched</span><button type="button" class="cheat-button" data-cheat>Show telecode cheat sheet</button></div>
 <div id="out-tape" class="punch-tape out-tape" aria-label="The tape the machine punched"><p class="tiny">Run the tape and the machine punches its output here.</p></div>
 <p class="tiny">No printer in hard mode. Read each row with the cheat sheet. Tap a row to mark it as read.</p>
 <div id="read-aid" class="read-aid" hidden><div class="section-top"><span class="eyebrow">Reading aid</span><span class="tiny" id="aid-pos" aria-live="polite">Row 1</span></div>
@@ -132,7 +129,7 @@
 <div class="aid-holes" role="group" aria-label="Your copy of the row: tap a position to punch it">
 <button type="button" class="aid-hole" data-bit="0" aria-pressed="false" aria-label="Hole 1"><span aria-hidden="true">1</span></button><button type="button" class="aid-hole" data-bit="1" aria-pressed="false" aria-label="Hole 2"><span aria-hidden="true">2</span></button><span class="aid-sprocket" aria-hidden="true"></span><button type="button" class="aid-hole" data-bit="2" aria-pressed="false" aria-label="Hole 3"><span aria-hidden="true">3</span></button><button type="button" class="aid-hole" data-bit="3" aria-pressed="false" aria-label="Hole 4"><span aria-hidden="true">4</span></button><button type="button" class="aid-hole" data-bit="4" aria-pressed="false" aria-label="Hole 5"><span aria-hidden="true">5</span></button></div>
 <button type="button" id="aid-next" class="secondary aid-nav">Next</button></div>
-<div class="aid-tools"><button type="button" id="aid-shift" class="secondary" aria-pressed="false">Letter shift</button><button type="button" id="aid-clear" class="secondary">Clear holes</button><button type="button" class="secondary" data-cheat>Open the cheat sheet</button></div>
+<div class="aid-tools"><button type="button" id="aid-shift" class="secondary" aria-pressed="false">Letter shift</button><button type="button" id="aid-clear" class="secondary">Clear holes</button><button type="button" class="cheat-button" data-cheat>Show telecode cheat sheet</button></div>
 </div>
 <p class="tiny prove-note" id="prove-note" hidden>Get the first 5 characters right and the rest fills in for you.</p>
 <label for="hard-answer" class="field-label">What the tape says</label><textarea id="hard-answer" rows="3" maxlength="400" spellcheck="false" autocomplete="off"></textarea>

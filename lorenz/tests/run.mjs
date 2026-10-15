@@ -1183,7 +1183,7 @@ await t('Pin view: pick a wheel on the machine, it turns face on, pins toggle an
     assert.equal(d.getElementById('panel-wheels').hidden, true, 'still hidden as you left it'); assert.equal(d.getElementById('panel-tape').hidden, false); assert.equal(d.getElementById('panel-pins').hidden, false);
     assert.deepEqual(shown.at(-1).chi1.slice(0, 6), [1, 0, 0, 0, 0, 1], 'the model shows your pins after Back');
     // the list view is still there as a fallback, and agrees
-    d.querySelector('#pin-wheels [data-wheel=chi1]').click(); assert.equal(d.querySelector('#pin-grid [data-pin="5"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(d.querySelector('#pin-rows [data-row=chi1] [data-pin="5"]').getAttribute('aria-pressed'), 'true');
     d.getElementById('pin-open').click(); assert.equal(face.hidden, false); face.querySelector('[data-face=back]').click(); assert.equal(face.hidden, true);
   });
   // normal mode: the labels are only labels
@@ -1298,11 +1298,10 @@ await t('Hard help in the page: one wheel right and the rest flick in on the mod
   await bootPage({'lorenz:difficulty': '"hard"'}, async (d, w) => {
     const shown = []; w.addEventListener('lorenz:view', e => shown.push(e.detail.patterns));
     d.getElementById('play-daily').click(); d.getElementById('qep-guess').value = String(h.qep); d.getElementById('qep-guess-go').click();
-    d.querySelector('#pin-wheels [data-wheel=chi1]').click();
-    const ups = h.patterns.chi1.map((b, i) => b ? i : -1).filter(i => i >= 0);
-    for (const i of ups.slice(0, -1)) d.querySelector(`#pin-grid [data-pin="${i}"]`).click();
+        const ups = h.patterns.chi1.map((b, i) => b ? i : -1).filter(i => i >= 0);
+    for (const i of ups.slice(0, -1)) d.querySelector(`#pin-rows [data-row=chi1] [data-pin="${i}"]`).click();
     assert.equal(JSON.parse(w.localStorage.getItem(key)).pins.auto, false); assert.equal(shown.at(-1).psi1.some(Boolean), false);
-    d.querySelector(`#pin-grid [data-pin="${ups.at(-1)}"]`).click();
+    d.querySelector(`#pin-rows [data-row=chi1] [data-pin="${ups.at(-1)}"]`).click();
     assert.match(d.getElementById('feedback').textContent, /χ1 matches the sheet, so the other wheels are set for you\./);
     const saved = JSON.parse(w.localStorage.getItem(key)); assert.equal(saved.pins.auto, true); assert.ok(HD.pinsMatch(h, Object.fromEntries(Object.entries(saved.pins.grid).map(([k, v]) => [k, [...v].map(Number)]))));
     assert.deepEqual(shown.at(-1), h.patterns, 'the model shows them all (at once under reduced motion)');
@@ -1423,7 +1422,7 @@ await t('Practice pins: every practice round, either model, runs on its own patt
   await bootPage({'lorenz:difficulty': '"hard"'}, async (d, w) => {
     const seed = 2654435761; Math.random = () => seed / 2 ** 32; d.getElementById('play-practice').click(); Math.random = () => 0.5;
     const h = HD.makeHardRound({mode: 'practice', seed}); d.getElementById('qep-guess').value = String(h.qep); d.getElementById('qep-guess-go').click();
-    d.querySelector('#pin-wheels [data-wheel=chi1]').click(); h.patterns.chi1.forEach((b, i) => { if (b) d.querySelector(`#pin-grid [data-pin="${i}"]`).click(); });
+    h.patterns.chi1.forEach((b, i) => { if (b) d.querySelector(`#pin-rows [data-row=chi1] [data-pin="${i}"]`).click(); });
     const other = h.pages.find(x => !x.today); setWheels(d, w, other.book.find(l => l.qep === h.qep).start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();
     assert.equal(d.getElementById('feedback').textContent, `The tape's punched, but those are the settings on the ${HD.pageDate(other.key)} page. Today is ${HD.pageDate(h.key)}, so turn to that page and use its line for QEP ${G.pad2(h.qep)}.`);
     setWheels(d, w, h.start); d.getElementById('run-button').click(); d.getElementById('skip-button').click();

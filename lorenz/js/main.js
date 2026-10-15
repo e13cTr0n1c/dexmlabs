@@ -567,14 +567,22 @@ function renderPins() {
   const p = st.pins, sel = app.pinWheel || 'chi1', w = WHEEL[sel];
   const done = WHEELS.filter(x => p.grid[x.id].some(Boolean)).length;
   $('pin-state').textContent = st.solved ? 'Read on your own pins' : `${done} of 12 wheels have pins up`;
-  $('pin-sheet-body').innerHTML = WHEELS.map(x => `<tr><th scope="row">${x.label}</th><td>${patternRow(st.round.patterns[x.id])}</td></tr>`).join('');
-  document.querySelectorAll('#pin-wheels button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.wheel === sel)));
-  $('pin-wheel-name').textContent = `${w.label}, ${w.size} pins, ${p.grid[sel].filter(Boolean).length} raised`;
-  const grid = $('pin-grid'); grid.setAttribute('aria-label', `Pins of ${w.label}`);
-  grid.innerHTML = p.grid[sel].map((b, i) => `<button type="button" class="pin${b ? ' up' : ''}" data-pin="${i}" aria-pressed="${b ? 'true' : 'false'}" aria-label="Pin ${i + 1}"${st.solved ? ' disabled' : ''}>${i + 1}</button>`).join('');
-  $('pin-clear').disabled = st.solved;
+  renderPinRows(st, sel);
   renderScope(); $('pin-help').textContent = isHelped() ? 'Hard mode: set the wheels you choose below from this sheet, x raised and dot lowered. Once they match, the rest are set for you.' : 'Realistic: set every pin on every wheel yourself from this sheet, x raised and dot lowered. Nothing tells you whether a pin is right; the tape will.';
   if (app.face && !$('pin-face').hidden) app.face.draw();
+}
+/** The per-wheel rows: each wheel has its own row of 44 pixel pin toggles in groups of five, with the sheet's x and dot marks above each group. */
+const pinOpen = new Set(['chi1']);
+function renderPinRows(st, sel) {
+  const box = $('pin-rows'), p = st.pins; pinOpen.add(sel);
+  box.innerHTML = WHEELS.map(x => {
+    const bits = p.grid[x.id], sheet = st.round.patterns[x.id], up = bits.filter(Boolean).length, groups = [];
+    for (let s = 0; s < x.size; s += 5) {
+      const pins = bits.slice(s, s + 5).map((b, k) => { const i = s + k; return `<button type="button" class="pin${b ? ' up' : ''}" data-pin="${i}" aria-pressed="${b ? 'true' : 'false'}" aria-label="${x.label} pin ${i + 1}, ${b ? 'raised' : 'lowered'}"${st.solved ? ' disabled' : ''}>${i + 1}</button>`; }).join('');
+      groups.push(`<div class="pin-group"><span class="pin-sheet-marks" aria-hidden="true">${sheet.slice(s, s + 5).map(v => `<span>${v ? 'x' : '.'}</span>`).join('')}</span><div class="pin-group-pins">${pins}</div></div>`);
+    }
+    return `<details class="pin-row${x.id === sel ? ' current' : ''}" data-row="${x.id}"${pinOpen.has(x.id) ? ' open' : ''}><summary><span class="pin-row-name">${x.label}</span><span class="pin-row-count">${x.size} pins, ${up} raised</span></summary><div class="pin-row-body"><div class="pin-row-tools"><span class="tiny">Sheet: <code>${escapeHTML(patternRow(sheet))}</code></span><button type="button" class="secondary small" data-clear="${x.id}"${st.solved ? ' disabled' : ''}>Clear ${x.label}</button></div><div class="pin-groups">${groups.join('')}</div></div></details>`;
+  }).join('');
 }
 function setPin(id, i) {
   if (!isPins() || app.run) return;
@@ -694,10 +702,14 @@ function bindPins() {
     let best = null, gap = Infinity; app.labels.forEach(el => { const r = el.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - e.clientX); if (d < gap) { gap = d; best = el; } });
     if (best) pick(best);
   });
-  $('pin-wheels').innerHTML = WHEELS.map(w => `<button type="button" data-wheel="${w.id}" aria-pressed="false">${w.label}</button>`).join('');
-  $('pin-wheels').addEventListener('click', e => { const b = e.target.closest('[data-wheel]'); if (!b) return; app.pinWheel = b.dataset.wheel; renderPins(); });
-  $('pin-grid').addEventListener('click', e => { const b = e.target.closest('[data-pin]'); if (!b) return; const i = Number(b.dataset.pin); setPin(app.pinWheel || 'chi1', i); $('pin-grid').querySelector(`[data-pin="${i}"]`)?.focus(); });
-  $('pin-clear').addEventListener('click', () => { if (app.run || !isPins()) return; const ran = app.state.ran; app.state = clearPins(app.state, app.pinWheel || 'chi1'); saveRound(); renderPins(); syncView(false); if (ran && !app.state.ran) dropTape(); });
+  const rows = $('pin-rows');
+  rows.addEventListener('toggle', e => { const r = e.target.closest?.('[data-row]'); if (!r) return; if (r.open) pinOpen.add(r.dataset.row); else pinOpen.delete(r.dataset.row); }, true);
+  rows.addEventListener('click', e => {
+    const c = e.target.closest('[data-clear]'); if (c) { if (app.run || !isPins()) return; const id = c.dataset.clear; app.pinWheel = id; const ran = app.state.ran; app.state = clearPins(app.state, id); saveRound(); renderPins(); syncView(false); if (ran && !app.state.ran) dropTape(); rows.querySelector(`[data-clear="${id}"]`)?.focus(); return; }
+    const b = e.target.closest('[data-pin]'); if (!b) return; const id = b.closest('[data-row]').dataset.row, i = Number(b.dataset.pin); app.pinWheel = id; setPin(id, i); rows.querySelector(`[data-row="${id}"] [data-pin="${i}"]`)?.focus();
+  });
+  $('pin-rows-open').addEventListener('click', () => { WHEELS.forEach(w => pinOpen.add(w.id)); rows.querySelectorAll('details').forEach(d => { d.open = true; }); });
+  $('pin-rows-close').addEventListener('click', () => { pinOpen.clear(); rows.querySelectorAll('details').forEach(d => { d.open = false; }); });
 }
 /* ---------- Reading aid: you punch a copy of one row, the cheat sheet lights up the line, you read it ---------- */
 function renderAid() {
