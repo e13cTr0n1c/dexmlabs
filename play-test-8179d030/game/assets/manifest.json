@@ -1,0 +1,604 @@
+{
+ "version": 1,
+ "voLines": true,
+ "art": {
+  "poster-safety-1": {
+   "file": "poster-safety-1.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "S wall bay x -12",
+   "present": true
+  },
+  "poster-safety-2": {
+   "file": "poster-safety-2.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "S wall bay x -4",
+   "present": true
+  },
+  "poster-safety-3": {
+   "file": "poster-safety-3.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "N wall bay x -12",
+   "present": true
+  },
+  "poster-wing-intake": {
+   "file": "poster-wing-intake.jpg",
+   "size": "1536x1024",
+   "alpha": false,
+   "use": "poster",
+   "where": "S wall high banner",
+   "present": true
+  },
+  "poster-wing-processing": {
+   "file": "poster-wing-processing.jpg",
+   "size": "1536x1024",
+   "alpha": false,
+   "use": "reserved",
+   "where": "level two",
+   "present": true
+  },
+  "poster-wing-reactor": {
+   "file": "poster-wing-reactor.jpg",
+   "size": "1536x1024",
+   "alpha": false,
+   "use": "reserved",
+   "where": "later level",
+   "present": true
+  },
+  "poster-employee-month": {
+   "file": "poster-employee-month.jpg",
+   "size": "1024x1024",
+   "alpha": false,
+   "use": "poster",
+   "where": "S wall bay x 12",
+   "present": true
+  },
+  "sign-stencil-bay-numbers": {
+   "file": "sign-stencil-bay-numbers.png",
+   "size": "2048x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "N wall low band",
+   "present": true
+  },
+  "sign-hazard-panel": {
+   "file": "sign-hazard-panel.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "N wall bay x 4",
+   "present": true
+  },
+  "sign-biohazard-door": {
+   "file": "sign-biohazard-door.png",
+   "size": "1024x1024",
+   "alpha": true,
+   "use": "reserved",
+   "where": "later level",
+   "present": true
+  },
+  "screen-boot": {
+   "file": "screen-boot.png",
+   "size": "1024x576",
+   "alpha": false,
+   "use": "screen",
+   "where": "control cab monitor while the level loads",
+   "present": true
+  },
+  "screen-cctv-frame": {
+   "file": "screen-cctv-frame.png",
+   "size": "1024x576",
+   "alpha": true,
+   "use": "reserved",
+   "where": "",
+   "present": true
+  },
+  "screen-status-ok": {
+   "file": "screen-status-ok.png",
+   "size": "1024x576",
+   "alpha": false,
+   "use": "screen",
+   "where": "N wall monitor, normal state",
+   "present": true
+  },
+  "screen-status-warn": {
+   "file": "screen-status-warn.png",
+   "size": "1024x576",
+   "alpha": false,
+   "use": "screen",
+   "where": "N wall monitor, shown once the lift is powered",
+   "present": true
+  },
+  "screen-reactor-diagram": {
+   "file": "screen-reactor-diagram.png",
+   "size": "1024x576",
+   "alpha": false,
+   "use": "reserved",
+   "where": "later level",
+   "present": true
+  },
+  "screen-portal-diagram": {
+   "file": "screen-portal-diagram.png",
+   "size": "1024x576",
+   "alpha": false,
+   "use": "reserved",
+   "where": "level two",
+   "present": true
+  },
+  "title-bg": {
+   "file": "title-bg.jpg",
+   "size": "1920x1080",
+   "alpha": false,
+   "use": "reserved",
+   "where": "no title screen yet",
+   "present": true
+  },
+  "title-logo": {
+   "file": "title-logo.png",
+   "size": "1600x600",
+   "alpha": true,
+   "use": "reserved",
+   "where": "no title screen yet",
+   "present": true
+  },
+  "title-layer-far": {
+   "file": "title-layer-far.png",
+   "size": "1920x1080",
+   "alpha": true,
+   "use": "reserved",
+   "where": "no title screen yet",
+   "present": true
+  },
+  "title-layer-mid": {
+   "file": "title-layer-mid.png",
+   "size": "1920x1080",
+   "alpha": true,
+   "use": "reserved",
+   "where": "no title screen yet",
+   "present": true
+  },
+  "title-layer-near": {
+   "file": "title-layer-near.png",
+   "size": "1920x1080",
+   "alpha": true,
+   "use": "reserved",
+   "where": "no title screen yet",
+   "present": true
+  },
+  "icon-512": {
+   "file": "icon-512.png",
+   "size": "512x512",
+   "alpha": false,
+   "use": "reserved",
+   "where": "store and favicon",
+   "present": true
+  },
+  "icon-128": {
+   "file": "icon-128.png",
+   "size": "128x128",
+   "alpha": false,
+   "use": "reserved",
+   "where": "store and favicon",
+   "present": true
+  },
+  "cover-1280x720": {
+   "file": "cover-1280x720.png",
+   "size": "1280x720",
+   "alpha": false,
+   "use": "reserved",
+   "where": "store cover",
+   "present": true
+  },
+  "cover-square-1080": {
+   "file": "cover-square-1080.png",
+   "size": "1080x1080",
+   "alpha": false,
+   "use": "reserved",
+   "where": "store cover",
+   "present": true
+  },
+  "og-1200x630": {
+   "file": "og-1200x630.png",
+   "size": "1200x630",
+   "alpha": false,
+   "use": "reserved",
+   "where": "link preview",
+   "present": true
+  },
+  "hud-icon-base": {
+   "file": "hud-icon-base.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-icon-drone": {
+   "file": "hud-icon-drone.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-icon-arm": {
+   "file": "hud-icon-arm.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-crosshair": {
+   "file": "hud-crosshair.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-grab": {
+   "file": "hud-grab.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-zap": {
+   "file": "hud-zap.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-press": {
+   "file": "hud-press.png",
+   "size": "128x128",
+   "alpha": true,
+   "use": "reserved",
+   "where": "HUD",
+   "present": true
+  },
+  "hud-medal-gold": {
+   "file": "hud-medal-gold.png",
+   "size": "256x256",
+   "alpha": true,
+   "use": "reserved",
+   "where": "par time medals",
+   "present": true
+  },
+  "hud-medal-silver": {
+   "file": "hud-medal-silver.png",
+   "size": "256x256",
+   "alpha": true,
+   "use": "reserved",
+   "where": "par time medals",
+   "present": true
+  },
+  "hud-medal-bronze": {
+   "file": "hud-medal-bronze.png",
+   "size": "256x256",
+   "alpha": true,
+   "use": "reserved",
+   "where": "par time medals",
+   "present": true
+  },
+  "decal-arrow-yellow": {
+   "file": "decal-arrow-yellow.png",
+   "size": "512x512",
+   "alpha": true,
+   "use": "decal",
+   "where": "facility floor, beside belts",
+   "present": true
+  },
+  "decal-crate-outline": {
+   "file": "decal-crate-outline.png",
+   "size": "512x512",
+   "alpha": true,
+   "use": "decal",
+   "where": "facility floor, at the pallets",
+   "present": true
+  },
+  "decal-wear-1": {
+   "file": "decal-wear-1.png",
+   "size": "1024x1024",
+   "alpha": true,
+   "use": "decal",
+   "where": "facility floor",
+   "present": true
+  },
+  "decal-wear-2": {
+   "file": "decal-wear-2.png",
+   "size": "1024x1024",
+   "alpha": true,
+   "use": "decal",
+   "where": "facility floor",
+   "present": true
+  },
+  "decal-wear-3": {
+   "file": "decal-wear-3.png",
+   "size": "1024x1024",
+   "alpha": true,
+   "use": "decal",
+   "where": "facility floor",
+   "present": true
+  },
+  "decal-roundel-worn": {
+   "file": "decal-roundel-worn.png",
+   "size": "1024x1024",
+   "alpha": true,
+   "use": "decal",
+   "where": "facility floor, centre",
+   "present": true
+  }
+ },
+ "vo": {
+  "intro": {
+   "variants": 1,
+   "maxSeconds": 10,
+   "found": {
+    "intro": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "chamber_start": {
+   "variants": 3,
+   "maxSeconds": 5,
+   "found": {
+    "chamber_start_1": [
+     "mp3",
+     "ogg"
+    ],
+    "chamber_start_2": [
+     "mp3",
+     "ogg"
+    ],
+    "chamber_start_3": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "facility_start": {
+   "variants": 1,
+   "maxSeconds": 8,
+   "found": {
+    "facility_start": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "possess_base": {
+   "variants": 2,
+   "maxSeconds": 4,
+   "found": {
+    "possess_base_1": [
+     "mp3",
+     "ogg"
+    ],
+    "possess_base_2": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "possess_drone": {
+   "variants": 2,
+   "maxSeconds": 4,
+   "found": {
+    "possess_drone_1": [
+     "mp3",
+     "ogg"
+    ],
+    "possess_drone_2": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "possess_arm": {
+   "variants": 2,
+   "maxSeconds": 4,
+   "found": {
+    "possess_arm_1": [
+     "mp3",
+     "ogg"
+    ],
+    "possess_arm_2": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "button_pressed": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "button_pressed": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "panel_zapped": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "panel_zapped": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "plate_ok": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "plate_ok": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "door_open": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "door_open": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "win": {
+   "variants": 4,
+   "maxSeconds": 6,
+   "found": {
+    "win_1": [
+     "mp3",
+     "ogg"
+    ],
+    "win_2": [
+     "mp3",
+     "ogg"
+    ],
+    "win_3": [
+     "mp3",
+     "ogg"
+    ],
+    "win_4": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "hidden_route": {
+   "variants": 1,
+   "maxSeconds": 6,
+   "found": {
+    "hidden_route": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "fail": {
+   "variants": 3,
+   "maxSeconds": 5,
+   "found": {
+    "fail_1": [
+     "mp3",
+     "ogg"
+    ],
+    "fail_2": [
+     "mp3",
+     "ogg"
+    ],
+    "fail_3": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "nudge": {
+   "variants": 6,
+   "maxSeconds": 6,
+   "found": {
+    "nudge_1": [
+     "mp3",
+     "ogg"
+    ],
+    "nudge_2": [
+     "mp3",
+     "ogg"
+    ],
+    "nudge_3": [
+     "mp3",
+     "ogg"
+    ],
+    "nudge_4": [
+     "mp3",
+     "ogg"
+    ],
+    "nudge_5": [
+     "mp3",
+     "ogg"
+    ],
+    "nudge_6": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "warn_conveyor": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "warn_conveyor": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "warn_vent": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "warn_vent": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "portal": {
+   "variants": 1,
+   "maxSeconds": 4,
+   "found": {
+    "portal": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "level_two": {
+   "variants": 1,
+   "maxSeconds": 8,
+   "found": {
+    "level_two": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "notice": {
+   "variants": 1,
+   "maxSeconds": 6,
+   "found": {
+    "notice": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "outro": {
+   "variants": 1,
+   "maxSeconds": 10,
+   "found": {
+    "outro": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  }
+ }
+}
