@@ -1,0 +1,66 @@
+{
+ "id": "facility-03",
+ "title": "FACILITY 03 \u00b7 SECTION THREE",
+ "kind": "facility",
+ "module": "fac3",
+ "pa": [
+  "Section three. Assembly and freight. New machines have been issued. Please return them in the condition you found them."
+ ],
+ "winText": "Section three cleared. The freight arrived, the laser cut, and you remain technically property.",
+ "spawn": {
+  "base": [
+   2.5,
+   0.65,
+   0
+  ],
+  "drone": [
+   64,
+   1.1,
+   -7.2
+  ],
+  "arm": [
+   40.5,
+   0,
+   -1.5
+  ],
+  "respawn": [
+   2.5,
+   0.65,
+   0
+  ],
+  "yaw": -1.5708
+ },
+ "theme": {
+  "wing": "Wing D Assembly",
+  "name": "Section Three",
+  "light": {
+   "color": "#ffd8a8",
+   "intensity": 1,
+   "hemi": "#cfd6d8",
+   "sun": "#fff2d8"
+  },
+  "fog": {
+   "color": "#15171a",
+   "density": 0.012
+  },
+  "wall": "concrete",
+  "floor": "concrete",
+  "dressing": []
+ },
+ "par": [
+  360,
+  600
+ ],
+ "winCue": "f2_win",
+ "puzzle": {
+  "rooms": [
+   "3A loading dock",
+   "3B cutting room",
+   "3C freight bridge"
+  ],
+  "win": {
+   "mark": "vestibule",
+   "needs": "plateC"
+  }
+ }
+}
