@@ -68,4 +68,19 @@ for (const L of LEVELS) {
   for (let i = 0; i < 60 * 25; i++) P.step(s3, {}, 1 / 60);
   ok(s3.phase === 'docked' && s3.events.map(e => e.type).join() === 'soft,retract,hard', `a good contact runs soft capture, retraction and hard capture (${s3.events.map(e => `${e.type} ${e.t.toFixed(1)} s`).join(', ')})`);
 }
+// 7. Daily Drop: the same run for everyone on a UK date, one scored attempt, and the autopilot docks the next 60.
+{
+  const D = await import('../js/daily.js'), {dailyLevel} = await import('../js/daily-level.js');
+  ok(D.ukDate(new Date('2026-10-19T23:30:00Z')) === '2026-10-20' && D.puzzleNo('2026-10-20') === 0 && D.puzzleNo('2026-11-01') === 12, 'UK date and puzzle numbers counted from 2026-10-20');
+  ok(new Date(D.nextDrop(new Date('2026-10-25T12:00:00Z'))).toISOString() === '2026-10-26T00:00:00.000Z' && new Date(D.nextDrop(new Date('2026-10-20T12:00:00Z'))).toISOString() === '2026-10-20T23:00:00.000Z', 'next drop at UK midnight, either side of the clock change');
+  const a = dailyLevel('2026-10-21'); ok(JSON.stringify(a) === JSON.stringify(dailyLevel('2026-10-21')) && JSON.stringify(a.start) !== JSON.stringify(dailyLevel('2026-10-22').start), 'same run all day, a new one tomorrow');
+  ok(LEVELS.length === 5 && !LEVELS.some(L => L.daily), 'the five runs are unchanged');
+  const m = new Map(), S = D.makeStore('x', {getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, v)}); ok(S.put('d', {score: 1}) && !S.put('d', {score: 2}) && S.get('d').score === 1, 'one scored attempt is kept and practice never overwrites it');
+  const from = D.ukDate(), ls = Array.from({length: 60}, (_, i) => dailyLevel(D.addDays(from, i))); ok(ls.some(L => L.station) && ls.some(L => !L.station) && new Set(ls.map(L => L.start.ax)).size > 30, 'drops mix steady and tumbling stations over a range of starts');
+  const bad = [];
+  for (const L of ls) { const sim = P.makeSim(L); let t = 0, cmd = null; const h = 1 / 60;
+    while (sim.t < 6000 && sim.phase !== 'docked' && sim.phase !== 'crash' && sim.phase !== 'lost') { if (t <= 0) { cmd = decide(sim); t = 1 / 30; } P.step(sim, sim.phase === 'fly' ? cmd : {}, h); t -= h; }
+    if (sim.phase !== 'docked' || !(P.score(sim).total > 0)) bad.push(`${L.date} ${sim.phase}`); }
+  ok(!bad.length, `the autopilot docks all 60 drops from ${from}${bad.length ? ': failed ' + bad.join(', ') : ''}`);
+}
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

@@ -91,5 +91,27 @@ const b = await M.page.locator('[data-hold="rr"]').boundingBox(); await M.page.m
 ok(await M.page.evaluate(() => window.BoosterGame.state().angle > 0.05), 'holding Lean (E) leans the booster');
 await M.page.screenshot({path: path.join(process.env.TMPDIR || '/tmp', 'booster-phone.png')});
 ok(M.errors.length === 0, 'phone has no console errors ' + JSON.stringify(M.errors));
+// 6. Daily Drop: prominent on the title, ?daily starts it, one scored flight, then practice, and a share card.
+// The box clock is moved to 2026-10-21 in the page (puzzle #1), so the scored path runs even before launch.
+const SHIFT = `(() => { const off = Date.parse('2026-10-21T09:00:00Z') - Date.now(), D = Date; class F extends D { constructor(...a) { a.length ? super(...a) : super(D.now() + off); } static now() { return D.now() + off; } } window.Date = F; })()`;
+{ const ctx0 = await browser.newContext({viewport: {width: 1440, height: 900}, deviceScaleFactor: 1}); await ctx0.addInitScript(SHIFT); const pg = await ctx0.newPage(), Dl = {ctx: ctx0, page: pg, errors: []};
+  pg.on('console', m => { if (m.type() === 'error' && !(m.location()?.url || '').startsWith('https://') && !/cloudflareinsights|ERR_FAILED/.test(m.text())) Dl.errors.push(m.text()); }); pg.on('pageerror', e => Dl.errors.push(String(e)));
+  await ctx0.route(u => !u.href.startsWith(BASE), r => r.abort()); await pg.goto(BASE + '/booster-landing-game/', {waitUntil: 'load'}); await pg.waitForFunction(() => window.BoosterGame);
+  ok(await pg.evaluate(() => { const d = document.getElementById('daily'), m = document.getElementById('missions'); return !!d && !!(d.compareDocumentPosition(m) & Node.DOCUMENT_POSITION_FOLLOWING) && /Daily Drop/.test(d.textContent); }), 'Daily Drop card sits above the missions on the title');
+  await pg.waitForTimeout(1100); ok(await pg.evaluate(() => /^Next drop in \d+:\d\d:\d\d$/.test(document.getElementById('daily-next').textContent)), 'countdown to the next drop ' + await pg.evaluate(() => document.getElementById('daily-next').textContent));
+  await pg.screenshot({path: path.join(shots, '5-daily-title.png')});
+  await pg.goto(BASE + '/booster-landing-game/?daily', {waitUntil: 'load'}); await pg.waitForFunction(() => window.BoosterGame?.state()?.t > 0.2);
+  ok(await pg.evaluate(() => window.BoosterGame.world().level.daily === true && /Daily Drop/.test(document.getElementById('flight-h').textContent)), '?daily opens straight into the Daily Drop');
+  const pre = await pg.evaluate(() => window.BoosterGame.daily().no < 0);
+  await pg.evaluate(PILOT); await pg.waitForFunction(() => window.BoosterGame.last, null, {timeout: 150000, polling: 250});
+  const r = await pg.evaluate(() => window.BoosterGame.last); console.log('daily', JSON.stringify(r));
+  ok(r.daily && r.landed, 'the keyboard pilot solves today\'s drop');
+  if (pre) ok(await pg.evaluate(() => !window.BoosterGame.dailyRecord()), 'before launch the preview is not scored');
+  else { const card = await pg.evaluate(() => window.BoosterGame.dailyCard()); console.log(card); ok(/^DEXM Booster #\d+ (🚀 Landed|🗼 Caught) [\d.]+ m\/s · [\d.]+ m off · \d+% fuel\n[🟩🟨🟧🟥]{5} \d+ pts\nhttps:\/\/dexmlabs\.app\/booster-landing-game\/\?daily$/u.test(card), 'share card');
+    const first = await pg.evaluate(() => window.BoosterGame.dailyRecord().score); await pg.evaluate(() => window.BoosterGame.last = null); await pg.keyboard.press('r'); await pg.waitForFunction(() => window.BoosterGame.state()?.t > 0.2);
+    ok(await pg.evaluate(() => /practice/.test(document.getElementById('flight-h').textContent)), 'flying again is practice'); await pg.keyboard.press('x');
+    await pg.evaluate(() => { for (let i = 0; i < 3; i++) window.dispatchEvent(new KeyboardEvent('keydown', {key: 'q'})); }); await pg.waitForFunction(() => window.BoosterGame.last, null, {timeout: 150000, polling: 250});
+    ok(await pg.evaluate(f => window.BoosterGame.dailyRecord().score === f, first), 'practice does not change the scored result'); }
+  ok(Dl.errors.length === 0, 'Daily Drop has no console errors ' + JSON.stringify(Dl.errors)); await Dl.ctx.close(); }
 await browser.close();
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

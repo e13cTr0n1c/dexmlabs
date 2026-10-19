@@ -3,6 +3,8 @@ import * as THREE from './vendor/three.min.js';
 import * as P from './physics.js';
 import {LEVELS, byId} from './levels.js';
 import {buildBackground, buildStation, buildCapsule, puffSprite} from './scene.js';
+import {ukDate, countdown, grid, makeStore} from './daily.js';
+import {dailyLevel} from './daily-level.js';
 
 const $ = id => document.getElementById(id);
 const KEY = 'docking:stats';
@@ -15,6 +17,7 @@ const app = {sim: null, level: byId(store().level), keys: new Set(), fine: false
   orbit: {yaw: 0, pitch: 0.2, dist: 16}, said: {}, trail: [], prevJets: new Float32Array(P.JETS.length), finished: false, chaseOff: null, chaseUp: null, evIdx: 0, hudT: 0, puffs: [], resultShown: false};
 window.DockingRun = {sim: () => app.sim, start: id => start(byId(id)), setScale: k => { app.testScale = k; }, onStep: null, P, levels: LEVELS,
   orbit: () => app.orbit, setCam: c => { app.cam = c; syncToggles(); }, clean: on => { app.clean = on; over.style.visibility = on ? 'hidden' : ''; $('keys-overlay').style.visibility = on ? 'hidden' : ''; },
+  daily: () => dailyLevel(), startDaily: () => startDaily(), dailyRecord: () => DAILY.get(ukDate()), dailyCard: () => { const r = DAILY.get(ukDate()); return r && dailyCard(r); }, last: null,
   state: () => ({phase: app.sim?.phase, warp: app.warp, cam: app.cam, fine: app.fine, assist: app.assist, paused: app.paused, finished: app.finished, keys: [...app.keys]})};
 
 // ---------- renderer and scenes ----------
@@ -43,11 +46,11 @@ const CAM_TURN = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1,
 
 // ---------- a run ----------
 function start(level) {
-  cancelAnimationFrame(app.raf); app.level = level; const st = store(); st.level = level.id; write(st);
+  cancelAnimationFrame(app.raf); if (!level.daily) { app.level = level; app.daily = null; const st = store(); st.level = level.id; write(st); }
   app.sim = P.makeSim(level); app.keys.clear(); app.warp = 1; app.paused = false; app.said = {}; app.trail = []; app.finished = false; app.resultShown = false; app.evIdx = 0; app.chaseOff = null; app.acc = 0;
   app.fine = level.start.ax < 60; syncToggles();
   $('flight').hidden = false; $('screen-title').hidden = true; document.body.dataset.screen = 'game'; scrollTo(0, 0); $('result').hidden = true;
-  $('flight-h').textContent = level.name; $('level-note').textContent = level.blurb; say('');
+  $('flight-h').textContent = level.name + (level.daily && app.daily.practice ? ' (practice)' : ''); $('level-note').textContent = (level.daily ? (app.daily.practice ? 'Practice: this run is not scored. ' : 'Your one scored run today. ') : '') + level.blurb; say('');
   if (!glReady && !initGL()) return;
   resize(); view.focus({preventScroll: true}); app.last = performance.now(); app.raf = requestAnimationFrame(loop);
 }
@@ -103,7 +106,7 @@ function poseObjects(dt) {
   const sun = P.sunDir(s), lit = P.sunlit(s), sunB = P.qrotT(st.q, sun);
   for (const w of station.wings) w.rotation.z = Math.atan2(-sunB[0], sunB[1]);
   sunLight.position.set(sun[0] * 100, sun[1] * 100, sun[2] * 100); sunLight.intensity = 2.8 * lit;
-  const below = THREE.MathUtils.smoothstep(sun[1], -0.25, 0.35); earthshine.intensity = 0.9 * below * (app.level.night ? 0 : 1);
+  const below = THREE.MathUtils.smoothstep(sun[1], -0.25, 0.35); earthshine.intensity = 0.9 * below * (s.level.night ? 0 : 1);
   const dark = 1 - lit; capsule.flood.intensity = 30 * dark + 3; station.portSpot.intensity = 50 * dark + 6; station.portLight.intensity = 5 + 10 * dark;
   const t = performance.now() / 1000;
   for (const L of station.lights) { const b = L.userData.blink; L.material.opacity = b === 1 ? (t % 1.6 < 0.9 ? 1 : 0.15) : b === 2 ? (t % 2.1 < 0.12 ? 1 : 0.05) : 0.9; L.material.opacity *= 0.35 + 0.65 * dark; }
@@ -237,8 +240,9 @@ function syncToggles() {
 
 // ---------- finish ----------
 function finish() {
-  const s = app.sim, L = app.level, sc = P.score(s), st = store(); app.resultShown = true; sound(0, true);
+  const s = app.sim, L = s.level, sc = P.score(s), st = store(); app.resultShown = true; sound(0, true);
   const ok = s.phase === 'docked';
+  if (L.daily) return finishDaily(s, L, sc, ok);
   $('result').hidden = false; const c = s.contact;
   if (ok) {
     const prev = st.best[L.id] || 0, nb = sc.total > prev; if (nb) st.best[L.id] = sc.total; st.docks[L.id] = (st.docks[L.id] || 0) + 1; write(st);
@@ -252,6 +256,34 @@ function finish() {
   }
   const i = LEVELS.indexOf(L); $('next').hidden = !ok || i === LEVELS.length - 1; levelList(); $('again').focus({preventScroll: true});
 }
+
+// ---------- Daily Drop: one scored run a day for everyone, then practice that doesn't count ----------
+const DAILY = makeStore('docking:daily'), SITE = 'https://dexmlabs.app/docking-run-game/';
+function dailyCard(rec) {
+  const head = `DEXM Docking #${rec.no}`;
+  if (!rec.docked) return `${head} 💥 ${rec.lost}\n${grid([0, 0, 0, 0, 0, 0])}\n${SITE}?daily`;
+  return `${head} 🛰️ Docked ${(rec.closing * 100).toFixed(1)} cm/s · ${(rec.lat * 100).toFixed(1)} cm off · ${rec.fuelPct}% fuel\n${grid(rec.grid)} ${rec.score} pts\n${SITE}?daily`;
+}
+function startDaily() { const L = dailyLevel(), done = DAILY.get(L.date); app.daily = {L, practice: !!done || L.no < 0}; start(L); }
+function finishDaily(s, L, sc, ok) {
+  const c = s.contact, rec = ok ? {no: L.no, docked: true, score: sc.total, closing: c.closing, lat: c.lat, fuelPct: Math.round(s.prop / s.prop0 * 100), grid: [sc.parts.speed / 250, sc.parts.centre / 250, sc.parts.align / 200, sc.parts.rates / 100, sc.parts.fuel / 250, sc.parts.time / 200]}
+    : {no: L.no, docked: false, score: 0, lost: s.phase === 'lost' ? 'Lost the station.' : 'Collision.'};
+  const scored = !app.daily.practice && DAILY.put(L.date, rec); app.daily.practice = true;
+  $('result-head').textContent = ok ? `Hard capture. ${sc.total} points: ${P.rank(sc.total)}.` : rec.lost;
+  $('result-text').textContent = (ok ? `Contact at ${c.closing.toFixed(3)} m/s, ${(c.lat * 100).toFixed(1)} cm off the centreline, ${c.ang.toFixed(2)}° off axis, with ${s.prop.toFixed(1)} kg of propellant left.` : (s.fault || '')) + (scored ? ' That was your scored run for today. Fly again to practise.' : ' Practice run, not scored.');
+  if (ok) { const p = sc.parts; $('result-parts').innerHTML = [['Closing rate', p.speed], ['Centreline', p.centre], ['Alignment', p.align], ['Rates', p.rates], ['Fuel', p.fuel], ['Time', p.time]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join(''); }
+  $('result-parts').hidden = !ok; $('next').hidden = true;
+  const today = DAILY.get(L.date); app.share = today ? dailyCard(today) : `Docking Run, ${L.name} (practice). ${SITE}?daily`; $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result';
+  window.DockingRun.last = {daily: true, docked: ok, score: sc.total || 0}; levelList(); renderDaily(); $('again').focus({preventScroll: true});
+}
+function renderDaily() {
+  const L = dailyLevel(), rec = DAILY.get(L.date), pre = L.no < 0;
+  $('daily-h').textContent = pre ? 'Daily Drop #0 lands at midnight' : `Daily Drop #${L.no}`; $('daily-blurb').textContent = (pre ? 'Preview: ' : '') + L.blurb;
+  $('daily-status').textContent = pre ? 'Practise the preview now. Scoring starts with #0.' : rec ? (rec.docked ? `Today: ${rec.score} points. Practice runs don't count.` : `Today: ${rec.lost} Practice runs don't count.`) : 'One scored run today, the same for everyone. Then practise as much as you like.';
+  $('daily-play').innerHTML = `${rec || pre ? 'Practise today\'s drop' : 'Fly today\'s drop'} <span aria-hidden="true">&rarr;</span>`; $('daily-share').hidden = !rec; $('daily').classList.toggle('played', !!rec);
+}
+function tickDaily() { $('daily-next').textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
+function copyShare(text) { app.share = text; navigator.clipboard?.writeText(text).then(() => say('Result copied.'), () => { $('share-text').hidden = false; $('share-text').value = text; }); }
 
 // ---------- sound: off unless switched on ----------
 let audio = null;
@@ -292,7 +324,7 @@ addEventListener('keydown', e => {
   if (h) { app.keys.add(h); e.preventDefault(); return; }
   if (e.repeat) return;
   const act = {KeyT: () => toggle('fine'), KeyH: () => toggle('assist'), KeyC: () => toggle('cam'), KeyP: () => toggle('pause'), Escape: () => toggle('pause'), BracketRight: () => setWarp(1), Period: () => setWarp(1), BracketLeft: () => setWarp(-1), Comma: () => setWarp(-1), Slash: () => toggle('keys'),
-    Enter: () => { if (app.resultShown) start(app.level); }, KeyN: () => { if (app.resultShown && !$('next').hidden) next(); }, KeyM: () => { const st = store(); st.sound = !st.sound; write(st); $('sound').checked = st.sound; say(st.sound ? 'Sound on.' : 'Sound off.'); if (!st.sound && audio) audio.g.gain.value = 0; }}[c];
+    Enter: () => { if (app.resultShown) again(); }, KeyN: () => { if (app.resultShown && !$('next').hidden) next(); }, KeyM: () => { const st = store(); st.sound = !st.sound; write(st); $('sound').checked = st.sound; say(st.sound ? 'Sound on.' : 'Sound off.'); if (!st.sound && audio) audio.g.gain.value = 0; }}[c];
   if (act) { act(); e.preventDefault(); }
 });
 addEventListener('keyup', e => { const h = HOLD[codeOf(e)]; if (h) app.keys.delete(h); });
@@ -309,10 +341,11 @@ view.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, 
 addEventListener('pointermove', e => { if (!drag || app.cam !== 'chase') return; app.orbit.yaw = drag.yaw + (e.clientX - drag.x) * 0.008; app.orbit.pitch = Math.max(-1.3, Math.min(1.3, drag.pitch + (e.clientY - drag.y) * 0.006)); });
 addEventListener('pointerup', () => { drag = null; });
 view.addEventListener('wheel', e => { if (app.cam !== 'chase') return; e.preventDefault(); app.orbit.dist = Math.max(6, Math.min(120, app.orbit.dist * Math.exp(e.deltaY * 0.001))); }, {passive: false});
-$('again').addEventListener('click', () => start(app.level)); $('next').addEventListener('click', next);
+const again = () => app.daily ? startDaily() : start(app.level);
+$('again').addEventListener('click', again); $('daily-play').addEventListener('click', startDaily); $('daily-share').addEventListener('click', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); $('next').addEventListener('click', next);
 function next() { const i = LEVELS.indexOf(app.level); start(LEVELS[Math.min(LEVELS.length - 1, i + 1)]); }
-$('share').addEventListener('click', () => navigator.clipboard?.writeText(app.share).then(() => say('Result copied.'), () => { $('share-text').hidden = false; $('share-text').value = app.share; }));
-$('back').addEventListener('click', () => { cancelAnimationFrame(app.raf); sound(0, true); app.sim = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; levelList(); scrollTo(0, 0); });
+$('share').addEventListener('click', () => copyShare(app.share));
+$('back').addEventListener('click', () => { cancelAnimationFrame(app.raf); sound(0, true); app.sim = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; levelList(); renderDaily(); scrollTo(0, 0); });
 
 // ---------- title screen ----------
 function levelList() {
@@ -326,3 +359,5 @@ $('play').addEventListener('click', () => start(app.level));
 $('sound').checked = !!store().sound; $('sound').addEventListener('change', e => { const st = store(); st.sound = e.target.checked; write(st); if (!st.sound && audio) audio.g.gain.value = 0; });
 if (store().keysHidden) $('keys-overlay').hidden = true;
 levelList(); syncToggles();
+renderDaily(); tickDaily(); setInterval(tickDaily, 1000);
+if (new URLSearchParams(location.search).has('daily')) startDaily();

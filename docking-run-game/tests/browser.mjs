@@ -97,4 +97,25 @@ const PILOT = `(async () => {
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'no sideways scroll on a phone');
   ok(!errors.length, 'no console errors on a phone'); await ctx.close();
 }
+// ---- Daily Drop: on the title, ?daily, one scored run then practice, the share card. The page clock is moved to 2026-10-21 (#1). ----
+{
+  const SHIFT = `(() => { const off = Date.parse('2026-10-21T09:00:00Z') - Date.now(), D = Date; class F extends D { constructor(...a) { a.length ? super(...a) : super(D.now() + off); } static now() { return D.now() + off; } } window.Date = F; })()`;
+  const ctx = await browser.newContext({viewport: {width: 1440, height: 900}, deviceScaleFactor: 1}); await ctx.addInitScript(SHIFT); const page = await ctx.newPage(), errors = [];
+  page.on('console', m => { if (m.type() === 'error' && !/cloudflareinsights|ERR_FAILED/.test(m.text() + (m.location()?.url || ''))) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
+  await ctx.route(u => !u.href.startsWith(BASE), r => r.abort());
+  await page.goto(BASE + '/docking-run-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.DockingRun); await page.waitForTimeout(1100);
+  ok(await page.evaluate(() => { const d = document.getElementById('daily'); return /Daily Drop #1/.test(d.textContent) && !!(d.compareDocumentPosition(document.getElementById('levels')) & Node.DOCUMENT_POSITION_FOLLOWING) && /^Next drop in \d+:\d\d:\d\d$/.test(document.getElementById('daily-next').textContent); }), 'Daily Drop card above the runs, with a countdown');
+  await page.screenshot({path: path.join(shots, '6-daily-title.png')});
+  await page.goto(BASE + '/docking-run-game/?daily', {waitUntil: 'load'}); await page.waitForFunction(() => window.DockingRun?.sim());
+  ok(await page.evaluate(() => DockingRun.sim().level.daily && !document.getElementById('flight').hidden), '?daily opens straight into the Daily Drop');
+  await page.evaluate(PILOT); await page.evaluate(() => DockingRun.setScale(25));
+  await page.waitForFunction(() => DockingRun.last, null, {timeout: 240000, polling: 250});
+  const card = await page.evaluate(() => DockingRun.dailyCard()); console.log(card);
+  ok(/^DEXM Docking #1 🛰️ Docked [\d.]+ cm\/s · [\d.]+ cm off · \d+% fuel\n[🟩🟨🟧🟥]{6} \d+ pts\nhttps:\/\/dexmlabs\.app\/docking-run-game\/\?daily$/u.test(card || ''), 'scored run docked and the share card is built');
+  const first = await page.evaluate(() => DockingRun.dailyRecord().score); await page.evaluate(() => { DockingRun.last = null; document.getElementById('again').click(); });
+  ok(await page.evaluate(() => /practice/.test(document.getElementById('flight-h').textContent)), 'flying again is practice');
+  await page.evaluate(() => DockingRun.setScale(25)); await page.waitForFunction(() => DockingRun.last, null, {timeout: 240000, polling: 250});
+  ok(await page.evaluate(f => DockingRun.dailyRecord().score === f, first), 'practice does not change the scored result');
+  ok(!errors.length, `Daily Drop has no console errors (${errors.join(' | ') || 'clean'})`); await ctx.close();
+}
 await browser.close(); console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

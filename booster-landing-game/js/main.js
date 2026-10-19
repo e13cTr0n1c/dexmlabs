@@ -1,6 +1,8 @@
 import {step, deck, target, deckYAt, seaY, wind, rho, stopHeight, hoverSeconds, throttleUp, throttleDown, deployLegs, closeArms, catchWindow, inWindow, makeWorld, score, parts, LIMITS, LEGS, TOWER, CATCH, DEG} from './physics.js';
 import {LEVELS, MISSIONS, level} from './levels.js';
 import {drawVehicle} from './draw-vehicles.js';
+import {ukDate, puzzleNo, countdown, grid, makeStore} from './daily.js';
+import {dailyLevel} from './daily-level.js';
 const $ = id => document.getElementById(id);
 const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
@@ -22,12 +24,33 @@ function say(t) { $('feedback').textContent = t; }
 
 const NOTES = {calm: 'Coast down, burn late and hard, then feather it onto the ring. Legs below 90 m/s.', windy: 'The wind is stronger up high. Lean into it and let the grid fins glide you over.', night: 'You start supersonic. A short entry burn keeps the heat down. Watch for the deck lights.', storm: 'You will cook without an entry burn. Then a gale, rain and a deck that rises and falls a few metres.',
   'catch-calm': 'Come in beside the tower, not over it. Hover with the catch pins level with the arms, centred, then close them with C.', 'catch-cross': 'The wind blows you towards the tower. Hold a little upwind and lean into it.', 'catch-night': 'Floodlit and gusty. The green marks show where the pins need to be.'};
+// Daily Drop: one scored flight a day for everyone, then practice that doesn't count.
+const DAILY = makeStore('booster:daily'), SITE = 'https://dexmlabs.app/booster-landing-game/';
+function dailyCard(rec) {
+  const head = `DEXM Booster #${rec.no}`, tower = rec.kind === 'tower';
+  if (!rec.landed) return `${head} 💥 ${rec.lost}\n${grid([0, 0, 0, 0, 0])}\n${SITE}?daily`;
+  return `${head} ${tower ? '🗼 Caught' : '🚀 Landed'} ${rec.impact.toFixed(1)} m/s · ${rec.dist.toFixed(1)} m off · ${rec.fuelPct}% fuel\n${grid(rec.grid)} ${rec.score} pts\n${SITE}?daily`;
+}
+function startDaily() {
+  const L = dailyLevel(), done = DAILY.get(L.date);
+  app.daily = {L, practice: !!done || L.no < 0}; start(L, L.seed);
+}
+function renderDaily() {
+  const box = $('daily'); if (!box) return; const L = dailyLevel(), rec = DAILY.get(L.date), pre = L.no < 0;
+  $('daily-h').textContent = pre ? `Daily Drop #0 lands at midnight` : `Daily Drop #${L.no}`;
+  $('daily-blurb').textContent = (pre ? 'Preview: ' : '') + L.blurb;
+  $('daily-status').textContent = pre ? 'Practise the preview now. Scoring starts with #0.' : rec ? (rec.landed ? `Today: ${rec.score} points. Practice flights don't count.` : `Today: ${rec.lost} Practice flights don't count.`) : 'One scored flight today, the same for everyone. Then practise as much as you like.';
+  $('daily-play').innerHTML = `${rec || pre ? 'Practise today\'s drop' : 'Fly today\'s drop'} <span aria-hidden="true">&rarr;</span>`;
+  $('daily-share').hidden = !rec; box.classList.toggle('played', !!rec);
+}
+function tickDaily() { const e = $('daily-next'); if (e) e.textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
+function copyShare(text) { app.share = text; navigator.clipboard?.writeText(text).then(() => say('Result copied.'), () => { $('share-text').hidden = false; $('share-text').value = text; }); }
 function start(id = app.level, seed = Math.floor(Math.random() * 2 ** 31)) {
-  cancelAnimationFrame(app.raf); app.level = id; const L = level(id), w = makeWorld(L, seed, {assist: app.assist});
+  cancelAnimationFrame(app.raf); const L = typeof id === 'object' ? id : level(id); if (!L.daily) { app.level = id; app.daily = null; } const w = makeWorld(L, seed, {assist: L.daily ? false : app.assist});
   Object.assign(app, {w, s: {...w.start}, keys: {}, said: {}, parts: [], rings: [], shake: 0, flash: 0, bolt: null, paused: false, acc: 0, ended: false, rec: [], replay: null, after: 0});
   app.cam = {scale: camTarget(w, w.start).scale, x: w.start.x}; app.clouds = makeClouds(seed, L);
   $('flight').hidden = false; $('screen-title').hidden = true; document.body.dataset.screen = 'game'; document.body.dataset.kind = w.kind; scrollTo(0, 0); $('result').hidden = true; $('paused').hidden = true; say('');
-  $('flight-h').textContent = `${L.name}: ${L.blurb}`; $('level-note').textContent = NOTES[id] + (w.kind === 'tower' && w.assist ? ' Arm assist is on.' : '');
+  $('flight-h').textContent = `${L.name}${L.daily && app.daily.practice ? ' (practice)' : ''}: ${L.blurb}`; $('level-note').textContent = (L.daily ? (app.daily.practice ? 'Practice: this flight is not scored. ' : 'Your one scored flight today. ') + (w.kind === 'tower' ? NOTES['catch-calm'] : NOTES.calm) : NOTES[id]) + (w.kind === 'tower' && w.assist ? ' Arm assist is on.' : '');
   const tower = w.kind === 'tower', lab = (k, t) => { $('h-' + k).nextElementSibling.textContent = t; };
   lab('alt', tower ? 'Pins above arms' : 'Height above deck'); lab('range', tower ? 'To the arms' : 'To deck centre'); lab('legs', tower ? 'Arms' : 'Legs'); lab('deck', tower ? 'Carriage height' : 'Deck, m/s');
   $('legs').textContent = tower ? 'Close arms (C)' : 'Legs (L)'; $('legs').setAttribute('aria-label', tower ? 'Close the arms (C)' : 'Deploy legs (L)');
@@ -253,13 +276,18 @@ function finish() {
   if (s.landed) { const p = parts(s, w); $('result-parts').innerHTML = [['Soft', p.soft], ['Level', p.level], ['Still', p.still], ['Centre', p.centre], ['Fuel', p.fuel], ['Bullseye', p.bull]].map(([k, q]) => `<div><b>${q}</b><span>${k}</span></div>`).join('') + `<div><b>×${+p.mult.toFixed(3)}</b><span>${L.name}${w.assist ? ', assist' : ''}</span></div>`; $('result-parts').hidden = false; }
   else $('result-parts').hidden = true;
   st.best = st.best || {}; st.landed = st.landed || {};
-  if (s.landed) { st.landed[L.id] = (st.landed[L.id] || 0) + 1; if (sc > (st.best[L.id] || 0)) { st.best[L.id] = sc; txt += ' A new personal best.'; } }
+  if (L.daily) { const p = s.landed ? parts(s, w) : null, rec = {no: L.no, kind: w.kind, landed: !!s.landed, score: sc, impact: t.impact, dist: t.dist, fuelPct: Math.round(s.fuel / w.fuel * 100), lost: $('result-head').textContent,
+      grid: p ? [p.soft / 300, p.level / 150, p.still / 100, p.centre / 350, p.fuel / 250].map(x => x / p.mult) : []};
+    if (!app.daily.practice && DAILY.put(L.date, rec)) txt += ' That was your scored flight for today. Fly again to practise.'; else txt += ' Practice flight, not scored.';
+    app.daily.practice = true; }
+  else if (s.landed) { st.landed[L.id] = (st.landed[L.id] || 0) + 1; if (sc > (st.best[L.id] || 0)) { st.best[L.id] = sc; txt += ' A new personal best.'; } }
   $('result-text').textContent = txt; write(KEY, st);
-  const i = LEVELS.findIndex(l => l.id === L.id), nx = LEVELS[i + 1]; $('next').hidden = !s.landed || !nx || nx.mission !== L.mission; if (!$('next').hidden) $('next').textContent = `Next: ${nx.name} (N)`;
+  const i = LEVELS.findIndex(l => l.id === L.id), nx = LEVELS[i + 1]; $('next').hidden = L.daily || !s.landed || !nx || nx.mission !== L.mission; if (!$('next').hidden) $('next').textContent = `Next: ${nx.name} (N)`;
   $('replay').hidden = app.rec.length < 10;
   app.share = `Booster landing, ${L.name}\n${s.landed ? `${tower ? 'Caught' : 'Recovered'}, ${sc} points, ${t.dist.toFixed(1)} m from centre at ${t.impact.toFixed(1)} m/s` : 'Lost'}\nhttps://dexmlabs.app/booster-landing-game/`;
-  renderMissions(); setLevel(L.id); $('again').focus({preventScroll: true});
-  window.BoosterGame.last = {landed: !!s.landed, caught: !!s.caught, score: sc, fault: s.fault?.k || null, touch: s.touch || null};
+  const today = L.daily && DAILY.get(L.date); if (today) app.share = dailyCard(today); $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result';
+  renderMissions(); setLevel(app.level); renderDaily(); $('again').focus({preventScroll: true});
+  window.BoosterGame.last = {daily: !!L.daily, landed: !!s.landed, caught: !!s.caught, score: sc, fault: s.fault?.k || null, touch: s.touch || null};
 }
 
 // Sound: off unless switched on. All made here with WebAudio, no files.
@@ -302,7 +330,7 @@ addEventListener('keydown', e => {
   else if (low === 'l' || low === 'g') legs();
   else if (low === 'c') arms();
   else if (low === 'p' || e.key === 'Escape') pause();
-  else if (low === 'r' && app.s.done) start(app.level);
+  else if (low === 'r' && app.s.done) again();
   else if (low === 'v' && app.s.done) startReplay();
   else if (low === 'n' && app.s.done && !$('next').hidden) next();
 });
@@ -313,10 +341,13 @@ document.querySelectorAll('[data-hold]').forEach(b => { const k = b.dataset.hold
 const tap = (id, f) => $(id).addEventListener('click', f);
 tap('th-up', () => thr(throttleUp)); tap('th-down', () => thr(throttleDown)); tap('th-full', () => thr(() => 1)); tap('th-cut', () => thr(() => 0)); tap('legs', legs); tap('pause', () => pause()); tap('resume', () => pause(false));
 function next() { const i = LEVELS.findIndex(l => l.id === app.level); start(LEVELS[Math.min(LEVELS.length - 1, i + 1)].id); }
-tap('again', () => start(app.level)); tap('next', next); tap('play', () => start(app.level)); tap('replay', startReplay);
-tap('share', () => navigator.clipboard?.writeText(app.share).then(() => say('Result copied.'), () => { $('share-text').hidden = false; $('share-text').value = app.share; }));
-tap('back', () => { cancelAnimationFrame(app.raf); if (app.audio) app.audio.out.gain.value = 0; app.s = null; app.replay = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; renderMissions(); setLevel(app.level); scrollTo(0, 0); });
+const again = () => app.daily ? startDaily() : start(app.level);
+tap('again', again); tap('daily-play', startDaily); tap('daily-share', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); tap('next', next); tap('play', () => start(app.level)); tap('replay', startReplay);
+tap('share', () => copyShare(app.share));
+tap('back', () => { cancelAnimationFrame(app.raf); if (app.audio) app.audio.out.gain.value = 0; app.s = null; app.replay = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; renderMissions(); setLevel(app.level); renderDaily(); scrollTo(0, 0); });
 $('sound').checked = !!store().sound; $('sound').addEventListener('change', e => { const st = store(); st.sound = e.target.checked; write(KEY, st); if (e.target.checked && app.s) sound(); });
 // For tests and the curious: read only views of the flight.
-window.BoosterGame = {flights: 0, last: null, state: () => app.s && {...app.s}, world: () => app.w, deck: () => app.s && deck(app.w, app.s.t), level: () => app.level, replaying: () => !!app.replay, start: (id, opts = {}) => { if ('assist' in opts) app.assist = !!opts.assist; start(id); }};
+window.BoosterGame = {flights: 0, last: null, state: () => app.s && {...app.s}, world: () => app.w, deck: () => app.s && deck(app.w, app.s.t), level: () => app.level, replaying: () => !!app.replay, start: (id, opts = {}) => { if ('assist' in opts) app.assist = !!opts.assist; start(id); }, daily: () => dailyLevel(), startDaily, dailyRecord: () => DAILY.get(ukDate()), dailyCard: () => { const r = DAILY.get(ukDate()); return r && dailyCard(r); }};
 app.assist = !!store().assist; renderMissions(); setLevel(level(store().level || 'calm').id);
+renderDaily(); tickDaily(); setInterval(tickDaily, 1000);
+if (new URLSearchParams(location.search).has('daily')) startDaily();

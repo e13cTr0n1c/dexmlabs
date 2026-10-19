@@ -40,4 +40,22 @@ await t('Page: title, structured data, support links, the trademark notice and n
   const note = 'Fan-made game. Not affiliated with, endorsed or sponsored by SpaceX. SpaceX, Falcon 9 and Starship are trademarks of Space Exploration Technologies Corp.';
   assert.ok(h.split(note).length - 1 >= 3, 'notice on the title, in the about text and the footer'); assert.match(h, /class="footer-disclaimer">Fan-made game/);
   const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.ok(!/[\u2013\u2014]|\s-\s/.test(text)); });
+// Daily Drop
+const Dd = await import('../js/daily.js'), {dailyLevel} = await import('../js/daily-level.js');
+await t('Daily Drop: the UK date, puzzle numbers from 2026-10-20, and the next drop at UK midnight across the clock change', () => {
+  assert.equal(Dd.ukDate(new Date('2026-10-19T23:30:00Z')), '2026-10-20'); assert.equal(Dd.ukDate(new Date('2026-12-01T23:30:00Z')), '2026-12-01');
+  assert.equal(Dd.puzzleNo('2026-10-20'), 0); assert.equal(Dd.puzzleNo('2026-11-01'), 12); assert.equal(Dd.puzzleNo('2027-10-20'), 365);
+  assert.equal(new Date(Dd.nextDrop(new Date('2026-10-20T12:00:00Z'))).toISOString(), '2026-10-20T23:00:00.000Z');
+  assert.equal(new Date(Dd.nextDrop(new Date('2026-10-25T12:00:00Z'))).toISOString(), '2026-10-26T00:00:00.000Z');
+  assert.equal(new Date(Dd.nextDrop(new Date('2027-03-28T12:00:00Z'))).toISOString(), '2027-03-28T23:00:00.000Z'); assert.match(Dd.countdown(new Date('2026-10-20T22:00:00Z')), /^1:00:00$/); });
+await t('Daily Drop: the same flight all day for everyone, a different one tomorrow, and the levels untouched', () => { const a = dailyLevel('2026-10-21'), b = dailyLevel('2026-10-21'), c = dailyLevel('2026-10-22');
+  assert.deepEqual(a, b); assert.notDeepEqual(a.start, c.start); assert.equal(a.no, 1); assert.equal(a.start.jitter, 0); assert.equal(LEVELS.length, 7); assert.ok(!LEVELS.some(L => L.daily));
+  assert.deepEqual(P.makeWorld(a, a.seed).start, P.makeWorld(b, b.seed).start); });
+await t('Daily Drop: one scored attempt a day is kept, practice never overwrites it', () => { const m = new Map(), ls = {getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, v)}, S = Dd.makeStore('x', ls);
+  assert.equal(S.put('2026-10-21', {score: 900}), true); assert.equal(S.put('2026-10-21', {score: 10}), false); assert.equal(S.get('2026-10-21').score, 900); S.put('2026-10-22', {score: 1}); assert.equal(S.streak('2026-10-22'), 2); });
+await t('Daily Drop: mixes ship and tower days with real variety', () => { const ls = Array.from({length: 60}, (_, i) => dailyLevel(Dd.addDays('2026-10-20', i)));
+  assert.ok(ls.some(L => L.kind === 'tower') && ls.some(L => L.kind === 'ship')); assert.ok(new Set(ls.map(L => L.start.y)).size > 40); assert.ok(new Set(ls.map(L => L.wind.base)).size > 30); });
+await t('Daily Drop: the autopilot lands or catches every one of the next 60 drops', () => { const bad = [], from = Dd.ukDate();
+  for (let i = 0; i < 60; i++) { const d = Dd.addDays(from, i), L = dailyLevel(d), s = fly(P.makeWorld(L, L.seed)); if (!s.landed || P.score(s, P.makeWorld(L, L.seed)) <= 0) bad.push(`${d} ${L.kind} ${s.fault?.k}`); }
+  console.log(`    60 drops from ${from}: ${60 - bad.length} solved`); assert.deepEqual(bad, []); });
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
