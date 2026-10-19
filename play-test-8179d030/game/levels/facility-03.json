@@ -51,7 +51,7 @@
   360,
   600
  ],
- "winCue": "f2_win",
+ "winCue": "f3_win",
  "puzzle": {
   "rooms": [
    "3A loading dock",
@@ -62,5 +62,6 @@
    "mark": "vestibule",
    "needs": "plateC"
   }
- }
+ },
+ "startCue": "f3_start"
 }
