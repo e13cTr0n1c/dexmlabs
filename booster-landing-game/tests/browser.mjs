@@ -15,7 +15,7 @@ async function open(viewport) {
   page.on('console', m => { if (m.type() === 'error' && !(m.location()?.url || '').startsWith('https://') && !/cloudflareinsights/.test(m.text())) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
   page.on('response', r => { if (r.status() >= 400 && r.url().startsWith(BASE)) missing.push(r.url()); });
   await ctx.route(u => !u.href.startsWith(BASE), r => r.abort()); // nothing leaves the box, no analytics from tests
-  await page.goto(BASE + '/booster-landing-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.BoosterGame && document.querySelectorAll('[data-level]').length === 4);
+  await page.goto(BASE + '/booster-landing-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.BoosterGame && document.querySelectorAll('[data-level]').length === 7);
   return {ctx, page, errors, missing};
 }
 // The pilot runs inside the page and only presses keys, 20 times a second.
@@ -26,7 +26,7 @@ const PILOT = `(async () => {
   window.__pilot = setInterval(() => { const s = G.state(); if (!s || s.done) { for (const k of Object.keys(held)) hold(k, false); clearInterval(window.__pilot); return; }
     const p = decide(G.world(), s); hold('q', p.rot < 0); hold('e', p.rot > 0); hold('a', p.gim < 0); hold('d', p.gim > 0);
     if (p.th === 0 && s.throttle > 0) { key('x', true); key('x', false); } else if (p.th > s.throttle + 0.03) { key('w', true); key('w', false); } else if (p.th < s.throttle - 0.03 && s.throttle > 0.4) { key('s', true); key('s', false); }
-    if (p.legs && !s.legsOut) { key('l', true); key('l', false); } }, 50);
+    if (p.legs && !s.legsOut) { key('l', true); key('l', false); } if (p.close) { key('c', true); key('c', false); } }, 50);
 })()`;
 async function flyLevel(page, id, shotAt, shotName) {
   await page.evaluate(id => { document.querySelector(`[data-level="${id}"]`).click(); document.getElementById('play').click(); }, id);
@@ -40,25 +40,41 @@ const D = await open({width: 1440, height: 900});
 ok(D.errors.length === 0, 'desktop loads with no console errors ' + JSON.stringify(D.errors));
 ok(D.missing.length === 0, 'every local file resolves ' + JSON.stringify(D.missing));
 ok(await D.page.evaluate(() => !!document.querySelector('.dexm-support-site') && !!document.querySelector('#result .dexm-support')), 'support buttons on the page and on the finish screen');
-await D.page.screenshot({path: path.join(shots, '1-title.png')});
+ok(await D.page.evaluate(() => document.querySelectorAll('.mission').length === 2 && document.querySelectorAll('.mission canvas').length === 2 && !!document.getElementById('assist')), 'mission select shows both vehicles, their levels and the arm assist switch');
+const note = 'Fan-made game. Not affiliated with, endorsed or sponsored by SpaceX. SpaceX, Falcon 9 and Starship are trademarks of Space Exploration Technologies Corp.';
+ok(await D.page.evaluate(n => document.querySelector('.site-footer').textContent.includes(n) && document.querySelector('.disclaimer').textContent.includes(n) && document.body.textContent.split(n).length > 3, note), 'trademark notice on the title, in the about text and the footer');
+await D.page.screenshot({path: path.join(shots, '1-missions.png')});
 // 2. Scripted landing on Calm through the keyboard.
 await D.page.evaluate(() => { document.querySelector('[data-level="calm"]').click(); document.getElementById('play').click(); });
 await D.page.waitForFunction(() => window.BoosterGame.state()?.t > 0.2); await D.page.evaluate(PILOT);
-await D.page.waitForFunction(() => { const s = window.BoosterGame.state(); return s.done || (s.throttle > 0 && s.y < 700); }, null, {timeout: 120000, polling: 100});
+await D.page.waitForFunction(() => { const s = window.BoosterGame.state(), d = window.BoosterGame.deck(); return s.done || (s.throttle > 0 && s.legsOut && s.y - d.y < 24); }, null, {timeout: 120000, polling: 50});
+await D.page.locator('#sky').screenshot({path: path.join(shots, '2-falcon-landing.png')});
 await D.page.waitForFunction(() => window.BoosterGame.last, null, {timeout: 120000, polling: 250});
 const calm = await D.page.evaluate(() => window.BoosterGame.last); console.log('calm result', JSON.stringify(calm));
 ok(calm.landed && calm.score > 0, 'scripted keyboard pilot lands Calm');
 ok(await D.page.evaluate(() => !document.getElementById('result').hidden && /recovered/i.test(document.getElementById('result-head').textContent)), 'result card shows the landing');
 ok(await D.page.evaluate(() => JSON.parse(localStorage.getItem('booster:stats')).best.calm > 0), 'best score kept locally');
-await D.page.waitForTimeout(700); await D.page.screenshot({path: path.join(shots, '2-calm-landed.png')});
+await D.page.waitForTimeout(700); ok(await D.page.evaluate(() => !document.getElementById('replay').hidden), 'replay button shows after a flight');
+await D.page.keyboard.press('v'); await D.page.waitForTimeout(400); ok(await D.page.evaluate(() => window.BoosterGame.replaying()), 'V plays the last five seconds back');
+await D.page.waitForFunction(() => !window.BoosterGame.replaying(), null, {timeout: 15000}); ok(true, 'replay finishes on its own');
+// Tower catch, manual: the pilot closes the arms with C.
+for (const [id, opt, name] of [['catch-calm', {}, null], ['catch-night', {}, '3-tower-catch.png'], ['catch-cross', {assist: true}, null]]) {
+  await D.page.evaluate(() => window.BoosterGame.last = null);
+  await D.page.evaluate(([id, o]) => window.BoosterGame.start(id, o), [id, opt]); await D.page.waitForFunction(() => window.BoosterGame.state()?.t > 0.2); await D.page.evaluate(PILOT);
+  await D.page.waitForFunction(() => window.BoosterGame.last, null, {timeout: 150000, polling: 250});
+  const r = await D.page.evaluate(() => window.BoosterGame.last); console.log(id, JSON.stringify(opt), JSON.stringify(r));
+  ok(r.caught && r.score > 0, `scripted pilot catches ${id}${opt.assist ? ' with arm assist' : ' closing the arms with C'}`);
+  if (name) { await D.page.waitForTimeout(900); await D.page.locator('#sky').screenshot({path: path.join(shots, name)}); }
+}
+ok(await D.page.evaluate(() => /caught/i.test(document.getElementById('result-head').textContent)), 'result card shows the catch');
 // 3. Storm: entry burn and heavy weather, screenshot mid-flight, see how the pilot does.
 await D.page.evaluate(() => window.BoosterGame.last = null);
 await D.page.evaluate(() => window.BoosterGame.start('storm')); await D.page.waitForFunction(() => window.BoosterGame.state()?.t > 0.2); await D.page.evaluate(PILOT);
 await D.page.waitForFunction(() => { const s = window.BoosterGame.state(); return s.done || (s.y < 260 && s.throttle > 0); }, null, {timeout: 150000, polling: 100});
-await D.page.locator('#sky').screenshot({path: path.join(shots, '3-storm-approach.png')});
+await D.page.locator('#sky').screenshot({path: path.join(shots, '4-storm-approach.png')});
 await D.page.waitForFunction(() => window.BoosterGame.last, null, {timeout: 150000, polling: 250});
 console.log('storm result', JSON.stringify(await D.page.evaluate(() => window.BoosterGame.last)));
-ok(D.errors.length === 0, 'no console errors after three flights ' + JSON.stringify(D.errors));
+ok(D.errors.length === 0, 'no console errors after six flights ' + JSON.stringify(D.errors));
 // 4. Night, a quick look.
 await D.page.evaluate(() => window.BoosterGame.start('night')); await D.page.waitForFunction(() => window.BoosterGame.state()?.t > 9, null, {timeout: 30000});
 ok(await D.page.evaluate(() => window.BoosterGame.state().mach < 1), 'night starts supersonic and goes subsonic within 9 s');

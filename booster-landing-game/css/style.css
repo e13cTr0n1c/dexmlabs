@@ -65,8 +65,8 @@ button{font-size:13px}
 .text-button{background:none;border:0;padding:7px 0;min-height:36px;font-size:12px;color:var(--muted)}
 main{max-width:none;padding:0}
 .title-screen{min-height:calc(100svh - var(--header));display:flex;align-items:center;position:relative;overflow:hidden}
-.title-stage{position:absolute;top:0;right:0;bottom:0;left:38%;z-index:1;background:radial-gradient(ellipse at 55% 55%,#141b10 0%,#080a08 68%)}
-.title-stage img{width:100%;height:100%;object-fit:cover;object-position:60% 50%;display:block;opacity:.9}
+.title-stage{position:absolute;top:0;right:0;bottom:0;left:38%;z-index:1;background:#2a2a52}
+.title-stage img{position:sticky;top:0;width:100%;height:min(100%,100vh);object-fit:cover;object-position:40% 50%;display:block;opacity:.9}
 .title-copy{width:53%;max-width:780px;padding:56px 5vw 50px;position:relative;z-index:2;background:linear-gradient(90deg,var(--bg) 70%,transparent)}
 .title-copy h1{font-size:clamp(46px,5.4vw,84px);line-height:1;margin:0 0 24px;text-transform:none}
 .hero-copy{font-size:16px;line-height:1.6;margin-bottom:12px;max-width:560px}
@@ -112,3 +112,11 @@ body[data-screen=game] .article,body[data-screen=game] .dexm-signup{display:none
 body[data-screen=game] .support-cta{display:none}
 @media(max-width:760px){.game-stage{order:0!important}.game-controls>.card-box:nth-child(2){order:1!important}#feedback{order:1!important}.game-controls>.card-box:first-child{order:2!important}.game-controls>.card-box:nth-child(2) .tiny:last-child{display:none}}
 @media(max-width:430px){.wordmark{font-size:20px;gap:6px}.wordmark svg{width:22px;height:22px;margin-right:0}.site-header{padding:0 10px}.site-header nav{gap:8px}}
+/* Missions */
+.missions{display:grid;gap:10px;max-width:640px;margin:0 0 18px}.mission{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:start;background:var(--panel);border:1px solid var(--line);padding:12px}.mission.picked{border-color:var(--acid)}
+.mission h2{font-size:19px;margin:0 0 4px}.mission p{margin:0 0 8px;font-size:12px;line-height:1.5}.preview{width:96px;height:192px;background:radial-gradient(ellipse at 50% 85%,#203047 0,#0b0f14 70%);border:1px solid var(--line)}
+.mission .levels{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.levels button{min-height:64px}
+.assist{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.45}.assist input{width:18px;height:18px;margin-top:1px;accent-color:var(--acid);flex:none}
+.disclaimer{font-size:11px;color:var(--muted);max-width:560px;margin:10px 0 0;line-height:1.5}.footer-disclaimer{flex-basis:100%;color:var(--muted);font-size:11px;order:3}
+.title-copy{width:58%}@media(max-width:1100px){.title-copy{width:66%}}
+@media(max-width:760px){.title-copy{width:auto}.mission{grid-template-columns:72px 1fr}.preview{width:72px;height:144px}}
