@@ -45,3 +45,5 @@ button.primary{background:var(--acid);border-color:var(--acid);color:#050705;fon
 .grid-row{display:flex;gap:3px;margin:4px 0}.grid-row i{width:16px;height:16px;border:1px solid var(--edge)}.grid-row i.ok{background:var(--acid);border-color:var(--acid)}
 .stl-slot[hidden]{display:none}
 .lamps{max-width:520px}.wordmark{text-decoration:none}
+/* Support links: a plain footer style line, no ads */
+.support-cta{margin:22px 0 0;padding-top:12px;border-top:1px solid var(--edge);color:var(--muted);font-size:13px;line-height:1.5}.support-cta p{margin:0}.support-cta-links{display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;margin-top:4px}.support-cta-links a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink);text-decoration:underline;text-decoration-color:var(--edge);text-underline-offset:3px}.support-cta-sep{color:var(--muted)}
