@@ -385,6 +385,142 @@
    "use": "poster",
    "where": "facility-02 reactor wing wall",
    "present": true
+  },
+  "sign-server-cold-aisle": {
+   "file": "sign-server-cold-aisle.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 portal/server room door",
+   "present": true
+  },
+  "sign-cold-storage": {
+   "file": "sign-cold-storage.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 vent gallery / cold store door",
+   "present": true
+  },
+  "sign-maintenance-steam": {
+   "file": "sign-maintenance-steam.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 reactor maintenance wing",
+   "present": true
+  },
+  "sign-clean-lab": {
+   "file": "sign-clean-lab.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 arrival lock / clean lab airlock",
+   "present": true
+  },
+  "sign-gantry-crane": {
+   "file": "sign-gantry-crane.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 processing hall by the crane",
+   "present": true
+  },
+  "sign-forklift-route": {
+   "file": "sign-forklift-route.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-01 and facility-02 forklift lanes (floor stencil)",
+   "present": true
+  },
+  "poster-propaganda-servers": {
+   "file": "poster-propaganda-servers.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 server room wall",
+   "present": true
+  },
+  "poster-propaganda-cold-storage": {
+   "file": "poster-propaganda-cold-storage.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 cold storage wall",
+   "present": true
+  },
+  "poster-propaganda-clean-lab": {
+   "file": "poster-propaganda-clean-lab.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 clean lab / corridor",
+   "present": true
+  },
+  "poster-propaganda-cranes": {
+   "file": "poster-propaganda-cranes.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 crane hall",
+   "present": true
+  },
+  "screen-server-status": {
+   "file": "screen-server-status.png",
+   "size": "1024x1024",
+   "alpha": false,
+   "use": "screen",
+   "where": "facility-02 server room wall monitor",
+   "present": true
+  },
+  "screen-cold-storage-inventory": {
+   "file": "screen-cold-storage-inventory.png",
+   "size": "1024x1024",
+   "alpha": false,
+   "use": "screen",
+   "where": "facility-02 cold storage wall monitor",
+   "present": true
+  },
+  "screen-crane-readout": {
+   "file": "screen-crane-readout.png",
+   "size": "1024x1024",
+   "alpha": false,
+   "use": "screen",
+   "where": "facility-02 gantry crane control readout",
+   "present": true
+  },
+  "screen-units-online": {
+   "file": "screen-units-online.png",
+   "size": "1024x1024",
+   "alpha": false,
+   "use": "screen",
+   "where": "facility-02 reactor balcony wall monitor",
+   "present": true
+  },
+  "mural-dexm-timeline": {
+   "file": "mural-dexm-timeline.jpg",
+   "size": "2048x1024",
+   "alpha": false,
+   "use": "mural",
+   "where": "facility-02 processing hall long wall",
+   "present": true
+  },
+  "mural-facility-cutaway": {
+   "file": "mural-facility-cutaway.jpg",
+   "size": "2048x1024",
+   "alpha": false,
+   "use": "mural",
+   "where": "facility-02 reactor wing long wall",
+   "present": true
+  },
+  "decal-grime-sheet": {
+   "file": "decal-grime-sheet.png",
+   "size": "1024x1024",
+   "alpha": true,
+   "use": "decal",
+   "where": "tiling grime and hazard scuffs on walls and floors",
+   "present": true
   }
  },
  "vo": {
