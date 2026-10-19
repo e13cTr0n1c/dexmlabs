@@ -1,0 +1,71 @@
+// Physics checks and an autopilot run on every level, in Node: node docking-run-game/tests/run.mjs
+import * as P from '../js/physics.js';
+import {LEVELS} from '../js/levels.js';
+import {decide} from './pilot.mjs';
+let pass = 0, fail = 0; const ok = (c, m) => { if (c) { pass++; console.log('PASS ' + m); } else { fail++; console.log('FAIL ' + m); } };
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+const n = P.N_LEO;
+ok(near(n, 0.00113, 0.00001), `mean motion at 400 km is ${n.toFixed(6)} rad/s (period ${(2 * Math.PI / n / 60).toFixed(1)} min)`);
+
+// 1. Jet select: rotation groups are pure couples, translation groups push along their axis.
+for (const a of ['rx', 'ry', 'rz']) for (const s of '+-') { const {F, T} = P.groupForceTorque(s + a), k = {rx: 0, ry: 1, rz: 2}[a]; ok(P.len(F) < 1e-9 && Math.sign(T[k]) === (s === '+' ? 1 : -1), `${s}${a} jets give a pure torque, ${T[k].toFixed(2)} N·m per N about the right axis`); }
+for (const a of ['tx', 'ty', 'tz']) for (const s of '+-') { const {F, T} = P.groupForceTorque(s + a), k = {tx: 0, ty: 1, tz: 2}[a]; ok(Math.sign(F[k]) === (s === '+' ? 1 : -1) && near(Math.hypot(...F.filter((_, i) => i !== k)), 0, 1e-9), `${s}${a} jets push along the axis (and couple ${P.len(T).toFixed(3)} N·m/N of torque, off-axis firing)`); }
+
+// 2. Torque-free tumble with no orbit (n = 0): linear momentum, angular momentum and rotational energy are conserved.
+{
+  const sim = P.makeSim(LEVELS[0], {n: 0}); sim.cap.w = [0.05, 0.11, -0.07]; sim.cap.v = [0.3, -0.2, 0.1];
+  const L = s => P.qrot(s.cap.q, P.mat3v(P.CAPSULE.I, s.cap.w)), E = s => 0.5 * P.dot(s.cap.w, P.mat3v(P.CAPSULE.I, s.cap.w)), m = P.capMass(sim);
+  const L0 = L(sim), E0 = E(sim), p0 = P.scl(sim.cap.v, m), x0 = sim.cap.p.slice(), w0 = sim.cap.w.slice();
+  for (let i = 0; i < 600 * 60; i++) P.step(sim, {}, 1 / 60);
+  const L1 = L(sim), dL = P.len(P.sub(L1, L0)) / P.len(L0), dE = Math.abs(E(sim) - E0) / E0, dp = P.len(P.sub(P.scl(sim.cap.v, P.capMass(sim)), p0)) / P.len(p0);
+  ok(dL < 1e-8, `angular momentum vector conserved over 10 min of free tumble (relative drift ${dL.toExponential(2)})`);
+  ok(dE < 1e-8, `rotational kinetic energy conserved (relative drift ${dE.toExponential(2)})`);
+  ok(dp < 1e-12 && near(P.len(P.sub(sim.cap.p, P.add(x0, P.scl(P.sub(sim.cap.v, [0, 0, 0]), 600)))), 0, 1e-6), `linear momentum conserved, straight line motion (relative drift ${dp.toExponential(2)})`);
+  ok(P.len(P.sub(sim.cap.w, w0)) > 0.005, 'with an asymmetric inertia tensor the body rate vector itself wanders (Euler precession) while L stays fixed');
+}
+// 3. Thrusters: a coarse +X burn for 10 s gives the rocket equation delta-v and burns the right propellant.
+{
+  const sim = P.makeSim(LEVELS[3], {n: 0}); sim.cap.w = [0, 0, 0]; sim.cap.v = [0, 0, 0]; const m0 = P.capMass(sim), q0 = sim.cap.q;
+  for (let i = 0; i < 600; i++) P.step(sim, {t: [1, 0, 0]}, 1 / 60);
+  const dv = P.len(sim.cap.v), m1 = P.capMass(sim), ideal = P.ISP * P.G0 * Math.log(m0 / m1), burn = 4 * 130 / (P.ISP * P.G0) * 10;
+  ok(near(dv, ideal, ideal * 0.01), `10 s of +X: ${dv.toFixed(4)} m/s against ${ideal.toFixed(4)} from the rocket equation`);
+  ok(near(m0 - m1, burn, 1e-6), `burned ${(m0 - m1).toFixed(3)} kg of propellant (${burn.toFixed(3)} expected)`);
+  ok(P.len(sim.cap.w) > 1e-4, `the off-centre centre of mass turns a pure translation burn into a slow rotation (${(P.len(sim.cap.w) * P.DEG).toFixed(3)}°/s after 10 s)`);
+  void q0;
+}
+// 4. CW: the integrator matches the closed form, and the classic counterintuitive results hold.
+{
+  const sim = P.makeSim(LEVELS[3]); sim.cap.p = [500, 40, -20]; sim.cap.v = [0.1, -0.05, 0.02];
+  const p0 = sim.cap.p.slice(), v0 = sim.cap.v.slice(), T = 1800;
+  for (let i = 0; i < T * 10; i++) P.step(sim, {}, 0.1);
+  const a = P.cwCoast(p0, v0, n, T); ok(P.len(P.sub(sim.cap.p, a.p)) < 1e-3, `numerical CW coast matches the closed form after 30 min (error ${P.len(P.sub(sim.cap.p, a.p)).toExponential(2)} m)`);
+  const T0 = 2 * Math.PI / n, pro = P.cwCoast([0, 0, 0], [0.1, 0, 0], n, T0), half = P.cwCoast([0, 0, 0], [0.1, 0, 0], n, T0 / 2);
+  ok(pro.p[0] < -10 && half.p[1] > 0, `a prograde burn sends you up and BEHIND: after one orbit ${pro.p[0].toFixed(0)} m along track, ${half.p[1].toFixed(0)} m higher at half an orbit`);
+  const retro = P.cwCoast([0, 0, 0], [-0.1, 0, 0], n, T0); ok(retro.p[0] > 10, `a retrograde burn moves you ahead (${retro.p[0].toFixed(0)} m after one orbit)`);
+  const up = P.cwCoast([0, 0, 0], [0, 0.1, 0], n, T0); ok(P.len(up.p) < 1e-6, `a pure radial burn comes back to the start after one orbit (${P.len(up.p).toExponential(1)} m)`);
+  const upq = P.cwCoast([0, 0, 0], [0, 0.1, 0], n, T0 / 4); ok(upq.p[0] < 0 && upq.p[1] > 0, `a radial up burn first drifts you up and backward (${upq.p[0].toFixed(0)} m, +${upq.p[1].toFixed(0)} m at a quarter orbit)`);
+  const vbar = P.cwCoast([150, 0, 0], [0, 0, 0], n, 3000); ok(P.len(P.sub(vbar.p, [150, 0, 0])) < 1e-9, 'a point on the V-bar is a free hold: no drift');
+  const rbar = P.cwCoast([0, -30, 0], [0, 0, 0], n, 600); ok(rbar.p[0] > 0.5 && rbar.p[1] < -30, `released 30 m below on the R-bar you drift forward (${rbar.p[0].toFixed(2)} m in 10 min) and fall away`);
+  const high = P.cwCoast([0, 100, 0], [-1.5 * n * 100, 0, 0], n, 3000); ok(near(high.p[1], 100, 1e-6), `100 m higher with v = -1.5 n y you stay at 100 m and slide back ${(-high.p[0]).toFixed(0)} m`);
+  const cross = P.cwCoast([0, 0, 10], [0, 0, 0], n, T0 / 2); ok(near(cross.p[2], -10, 1e-6), 'an out of plane offset swings through the station plane every half orbit');
+}
+// 5. The autopilot docks on every level, then soft and hard capture run.
+for (const L of LEVELS) {
+  const sim = P.makeSim(L); let t = 0, cmd = null; const h = 1 / 60;
+  while (sim.t < 6000 && sim.phase !== 'docked' && sim.phase !== 'crash' && sim.phase !== 'lost') { if (t <= 0) { cmd = decide(sim); t = 1 / 30; } P.step(sim, sim.phase === 'fly' ? cmd : {}, h); t -= h; }
+  const s = P.score(sim), c = sim.contact;
+  ok(sim.phase === 'docked', `${L.name}: autopilot ${sim.phase} in ${sim.t.toFixed(0)} s, ${sim.bounces} bounces, ${(sim.prop0 - sim.prop).toFixed(1)} of ${sim.prop0} kg${c ? `, contact ${c.closing.toFixed(3)} m/s, ${c.lat.toFixed(3)} m, ${c.ang.toFixed(2)}°, roll ${c.roll.toFixed(2)}°, ${c.rate.toFixed(3)}°/s` : ''}, score ${s.total}${sim.fault ? ' (' + sim.fault + ')' : ''}`);
+}
+// 6. Docking limits: too fast is refused.
+{
+  const sim = P.makeSim({...LEVELS[0], start: {ax: 0.5, y: 0, z: 0, v: [-0.3, 0, 0], att: [0, 0, 0], rates: [0, 0, 0]}});
+  for (let i = 0; i < 300; i++) P.step(sim, {}, 1 / 60);
+  ok(sim.phase === 'crash', `0.3 m/s into the port is a crash (${sim.fault})`);
+  const s2 = P.makeSim({...LEVELS[0], start: {ax: 0.5, y: 0.2, z: 0, v: [-0.06, 0, 0], att: [0, 0, 0], rates: [0, 0, 0]}});
+  for (let i = 0; i < 900; i++) P.step(s2, {}, 1 / 60);
+  ok(s2.bounces === 1 && s2.phase === 'fly', `0.2 m off the centreline bounces off the ring with no capture (${s2.lastBounce})`);
+  const s3 = P.makeSim({...LEVELS[0], start: {ax: 0.5, y: 0.02, z: -0.01, v: [-0.06, 0, 0], att: [0.5, -0.5, 0.5], rates: [0, 0, 0]}});
+  for (let i = 0; i < 60 * 25; i++) P.step(s3, {}, 1 / 60);
+  ok(s3.phase === 'docked' && s3.events.map(e => e.type).join() === 'soft,retract,hard', `a good contact runs soft capture, retraction and hard capture (${s3.events.map(e => `${e.type} ${e.t.toFixed(1)} s`).join(', ')})`);
+}
+console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
