@@ -157,5 +157,6 @@
     "base rides the lift up with the crate and pushes it onto the dispatch plate",
     "base walks through the dispatch gate",
     "hidden: arm lifts the base onto belt B, belt carries it through the scanner hatch into the crawlspace"
-  ]
+  ],
+  "next": "facility-02"
 }

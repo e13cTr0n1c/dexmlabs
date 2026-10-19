@@ -18,18 +18,24 @@ PNG, or JPG for opaque photo-like art (`poster-*` and `title-bg` ship as `.jpg`;
 | `poster-safety-2.png` | 1024x1536 | no | S wall bay x -4 | wired |
 | `poster-safety-3.png` | 1024x1536 | no | N wall bay x -12 | wired |
 | `poster-wing-intake.png` | 1536x1024 | no | S wall high banner | wired |
-| `poster-wing-processing.png` | 1536x1024 | no | level two | slot reserved, not placed yet |
-| `poster-wing-reactor.png` | 1536x1024 | no | later level | slot reserved, not placed yet |
+| `poster-wing-processing.png` | 1536x1024 | no | facility-02 processing hall, south wall | wired |
+| `poster-wing-reactor.png` | 1536x1024 | no | facility-02 reactor, south wall | wired |
 | `poster-employee-month.png` | 1024x1024 | no | S wall bay x 12 | wired |
 | `sign-stencil-bay-numbers.png` | 2048x512 | yes | N wall low band | wired |
 | `sign-hazard-panel.png` | 1024x512 | yes | N wall bay x 4 | wired |
-| `sign-biohazard-door.png` | 1024x1024 | yes | later level | slot reserved, not placed yet |
-| `screen-boot.png` | 1024x576 | no | control cab monitor while the level loads | slot reserved, not placed yet |
-| `screen-cctv-frame.png` | 1024x576 | yes | reserved | slot reserved, not placed yet |
+| `sign-biohazard-door.png` | 1024x1024 | yes | facility-02 hall, by the observation booth | wired |
+| `screen-boot.png` | 1024x576 | no | facility-02 arrival lock monitor | wired |
+| `screen-cctv-frame.png` | 1024x576 | yes | facility-02 corridor CCTV monitor (frame over a live camera feed) | wired |
 | `screen-status-ok.png` | 1024x576 | no | N wall monitor, normal state | wired |
 | `screen-status-warn.png` | 1024x576 | no | N wall monitor, shown once the lift is powered | wired |
-| `screen-reactor-diagram.png` | 1024x576 | no | later level | slot reserved, not placed yet |
-| `screen-portal-diagram.png` | 1024x576 | no | level two | slot reserved, not placed yet |
+| `sign-portal-test-area.png` | 1024x512 | yes | facility-02 portal room, north wall | wired |
+| `sign-vent-airflow.png` | 1024x512 | yes | facility-02 vent gallery, by vent 3 | wired |
+| `sign-observation-mirror.png` | 1024x512 | yes | facility-02 hall, above the one way mirror | wired |
+| `poster-reactor-core-banner.png` | 2048x512 | no | facility-02 reactor, banner over the entrance door | wired |
+| `poster-reactor-propaganda-1.png` | 1024x1536 | no | facility-02 reactor wing wall | wired |
+| `poster-reactor-propaganda-2.png` | 1024x1536 | no | facility-02 reactor wing wall | wired |
+| `screen-reactor-diagram.png` | 1024x576 | no | facility-02 reactor balcony console | wired |
+| `screen-portal-diagram.png` | 1024x576 | no | facility-02 portal room console | wired |
 | `title-bg.png` | 1920x1080 | no | no title screen yet | wired |
 | `title-logo.png` | 1600x600 | yes | no title screen yet | wired |
 | `title-layer-far.png` | 1920x1080 | yes | no title screen yet | wired |
@@ -73,6 +79,14 @@ Preferred: OGG Vorbis, mono, 44.1 kHz, with an MP3 copy of each line as a fallba
 | `possess_arm_1.ogg`, `possess_arm_2.ogg` | 2 | 4 | player takes the arm |
 | `button_pressed.ogg` | 1 | 4 | the arm presses the heavy button |
 | `panel_zapped.ogg` | 1 | 4 | the drone zaps the panel |
+| `f2_mirror.ogg` | 1 | 6 | processing hall two, first entry |
+| `f2_diverter.ogg` | 1 | 5 | the belt diverter is switched on |
+| `f2_bridge.ogg` | 1 | 7 | the crate lands on the plate behind the glass |
+| `f2_vents_off.ogg` | 1 | 7 | the drone trips the vent breaker |
+| `f2_core.ogg` | 1 | 7 | the reactor room, first entry |
+| `f2_wrong.ogg` | 1 | 6 | a coolant valve is opened out of order |
+| `f2_core_ok.ogg` | 1 | 7 | the third valve opens and the core stabilises |
+| `f2_win.ogg` | 1 | 6 | section two is cleared |
 | `plate_ok.ogg` | 1 | 4 | a crate settles on the plate (gate or door) |
 | `door_open.ogg` | 1 | 4 | the chamber exit opens |
 | `win_1.ogg`, `win_2.ogg`, `win_3.ogg`, `win_4.ogg` | 4 | 6 | a chamber or the hall is cleared |

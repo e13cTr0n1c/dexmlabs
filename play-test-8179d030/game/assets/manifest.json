@@ -38,16 +38,16 @@
    "file": "poster-wing-processing.jpg",
    "size": "1536x1024",
    "alpha": false,
-   "use": "reserved",
-   "where": "level two",
+   "use": "poster",
+   "where": "facility-02 processing hall",
    "present": true
   },
   "poster-wing-reactor": {
    "file": "poster-wing-reactor.jpg",
    "size": "1536x1024",
    "alpha": false,
-   "use": "reserved",
-   "where": "later level",
+   "use": "poster",
+   "where": "facility-02 reactor",
    "present": true
   },
   "poster-employee-month": {
@@ -78,8 +78,8 @@
    "file": "sign-biohazard-door.png",
    "size": "1024x1024",
    "alpha": true,
-   "use": "reserved",
-   "where": "later level",
+   "use": "sign",
+   "where": "facility-02 observation booth door",
    "present": true
   },
   "screen-boot": {
@@ -87,15 +87,15 @@
    "size": "1024x576",
    "alpha": false,
    "use": "screen",
-   "where": "control cab monitor while the level loads",
+   "where": "facility-02 arrival lock monitor",
    "present": true
   },
   "screen-cctv-frame": {
    "file": "screen-cctv-frame.png",
    "size": "1024x576",
    "alpha": true,
-   "use": "reserved",
-   "where": "",
+   "use": "screen",
+   "where": "facility-02 CCTV monitor frame",
    "present": true
   },
   "screen-status-ok": {
@@ -118,16 +118,16 @@
    "file": "screen-reactor-diagram.png",
    "size": "1024x576",
    "alpha": false,
-   "use": "reserved",
-   "where": "later level",
+   "use": "screen",
+   "where": "facility-02 reactor balcony console",
    "present": true
   },
   "screen-portal-diagram": {
    "file": "screen-portal-diagram.png",
    "size": "1024x576",
    "alpha": false,
-   "use": "reserved",
-   "where": "level two",
+   "use": "screen",
+   "where": "facility-02 portal room console",
    "present": true
   },
   "title-bg": {
@@ -336,6 +336,54 @@
    "alpha": true,
    "use": "decal",
    "where": "facility floor, centre",
+   "present": true
+  },
+  "sign-portal-test-area": {
+   "file": "sign-portal-test-area.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 portal room, north wall by the portal pads",
+   "present": true
+  },
+  "sign-vent-airflow": {
+   "file": "sign-vent-airflow.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 vent gallery, south wall by vent 3",
+   "present": true
+  },
+  "sign-observation-mirror": {
+   "file": "sign-observation-mirror.png",
+   "size": "1024x512",
+   "alpha": true,
+   "use": "sign",
+   "where": "facility-02 processing hall, above the one way mirror",
+   "present": true
+  },
+  "poster-reactor-core-banner": {
+   "file": "poster-reactor-core-banner.jpg",
+   "size": "2048x512",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 reactor, banner over the entrance door",
+   "present": true
+  },
+  "poster-reactor-propaganda-1": {
+   "file": "poster-reactor-propaganda-1.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 reactor wing wall",
+   "present": true
+  },
+  "poster-reactor-propaganda-2": {
+   "file": "poster-reactor-propaganda-2.jpg",
+   "size": "1024x1536",
+   "alpha": false,
+   "use": "poster",
+   "where": "facility-02 reactor wing wall",
    "present": true
   }
  },
@@ -595,6 +643,86 @@
    "maxSeconds": 10,
    "found": {
     "outro": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_mirror": {
+   "variants": 1,
+   "maxSeconds": 6,
+   "found": {
+    "f2_mirror": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_diverter": {
+   "variants": 1,
+   "maxSeconds": 5,
+   "found": {
+    "f2_diverter": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_bridge": {
+   "variants": 1,
+   "maxSeconds": 7,
+   "found": {
+    "f2_bridge": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_vents_off": {
+   "variants": 1,
+   "maxSeconds": 7,
+   "found": {
+    "f2_vents_off": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_core": {
+   "variants": 1,
+   "maxSeconds": 7,
+   "found": {
+    "f2_core": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_wrong": {
+   "variants": 1,
+   "maxSeconds": 6,
+   "found": {
+    "f2_wrong": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_core_ok": {
+   "variants": 1,
+   "maxSeconds": 7,
+   "found": {
+    "f2_core_ok": [
+     "mp3",
+     "ogg"
+    ]
+   }
+  },
+  "f2_win": {
+   "variants": 1,
+   "maxSeconds": 6,
+   "found": {
+    "f2_win": [
      "mp3",
      "ogg"
     ]

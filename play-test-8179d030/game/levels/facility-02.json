@@ -1,0 +1,184 @@
+{
+  "id": "facility-02",
+  "title": "FACILITY 02 · SECTION TWO",
+  "kind": "facility",
+  "module": "fac2",
+  "assets": {
+    "glb": "assets/facility2.glb",
+    "layout": "assets/facility2_layout.json",
+    "lightmap": "assets/facility2_lightmap.jpg"
+  },
+  "pa": [
+    "Section two. Portal testing, airflow and the reactor. Please touch nothing you cannot afford."
+  ],
+  "winText": "Section two cleared. The reactor thanks you in the only way it can, by continuing.",
+  "spawn": {
+    "base": [
+      -2.6,
+      0.65,
+      0
+    ],
+    "drone": [
+      49.5,
+      1.1,
+      -2.5
+    ],
+    "arm": [
+      53,
+      0,
+      1.5
+    ],
+    "respawn": [
+      -2.6,
+      0.65,
+      0
+    ],
+    "yaw": -1.5708
+  },
+  "theme": {
+    "wing": "Wing C Reactor",
+    "name": "Section Two",
+    "light": {
+      "color": "#ffd8a8",
+      "intensity": 1,
+      "hemi": "#cfd6d8",
+      "sun": "#fff2d8"
+    },
+    "fog": {
+      "color": "#1d1f1d",
+      "density": 0.008
+    },
+    "wall": "concrete",
+    "floor": "concrete",
+    "dressing": []
+  },
+  "lightmapGain": 2.0,
+  "par": [
+    300,
+    480
+  ],
+  "movers": [
+    {
+      "type": "conveyor",
+      "id": "beltP",
+      "mark": "beltP",
+      "speed": 1.3,
+      "keepEnd": true
+    },
+    {
+      "type": "conveyor",
+      "id": "beltQ",
+      "mark": "beltQ",
+      "speed": 1.3
+    },
+    {
+      "type": "factoryArm",
+      "id": "loaderC",
+      "mark": "armC",
+      "pallet": "palletC",
+      "belt": "beltP",
+      "drop": [
+        18,
+        7.8
+      ],
+      "scale": 0.85,
+      "lift": 0.35,
+      "maxOnBelt": 9
+    },
+    {
+      "type": "factoryArm",
+      "id": "loaderD",
+      "mark": "armD",
+      "pallet": "palletD",
+      "belt": "beltQ",
+      "drop": [
+        30,
+        11.6
+      ],
+      "scale": 0.85,
+      "lift": 0.35,
+      "maxOnBelt": 5
+    },
+    {
+      "type": "diverter",
+      "id": "div",
+      "mark": "div",
+      "switch": "switch"
+    },
+    {
+      "type": "door",
+      "id": "d1",
+      "mark": "d1",
+      "opensWhen": "plate1"
+    },
+    {
+      "type": "portal",
+      "id": "portal",
+      "a": "portalA",
+      "b": "portalB",
+      "power": "portalPower"
+    },
+    {
+      "type": "bridge",
+      "id": "bridge2",
+      "mark": "bridge2",
+      "opensWhen": "plate2"
+    },
+    {
+      "type": "fans",
+      "id": "crosswind",
+      "mark": "crosswind",
+      "breaker": "breaker"
+    },
+    {
+      "type": "updraft",
+      "id": "u1",
+      "mark": "u1"
+    },
+    {
+      "type": "updraft",
+      "id": "u2",
+      "mark": "u2",
+      "needs": "fansOff"
+    },
+    {
+      "type": "shield",
+      "id": "shield",
+      "mark": "ring"
+    },
+    {
+      "type": "bridge",
+      "id": "bridge4",
+      "mark": "bridge4",
+      "opensWhen": "coreStable"
+    }
+  ],
+  "puzzle": {
+    "rooms": [
+      "R0 arrival lock",
+      "C1 corridor",
+      "R1 processing hall",
+      "R2 portal test area",
+      "R3 vent gallery",
+      "R4 reactor"
+    ],
+    "win": {
+      "mark": "access",
+      "needs": "coreStable"
+    },
+    "hidden": {
+      "note": "ride updraft one to the gallery with the fans still on and drop to the exit ledge"
+    }
+  },
+  "solution": [
+    "base steps on the diverter switch; belt P drops a crate down the chute; base pushes it onto plate 1 (door D1 opens)",
+    "drone zaps the portal power coupling high on the north wall of the portal room",
+    "arm takes a crate from the end of belt P and drops it on portal pad A; it falls out of portal B onto the plate in the glass cage; bridge 2 extends",
+    "drone crosses, flies above the crosswind to the gallery and zaps the breaker; fans stop and updraft two gets the pressure",
+    "base crosses the catwalk, rides updraft two to the ledge and goes through door D3",
+    "drone follows and zaps the three coolant valves in the board order, each when the rotating shield gap faces it",
+    "bridge 4 extends; base walks onto the ring and stands on the core access plate",
+    "hidden: with the fans still on, the base rides updraft one to the gallery, walks to the far end and drops onto the exit ledge"
+  ],
+  "winCue": "f2_win"
+}
