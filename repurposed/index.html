@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en-GB"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script>
+<title>Repurposed (beta) / DEXM Labs</title>
+<meta name="description" content="Repurposed is a puzzle game I am building in the browser. You are a maintenance unit in a DEXM facility, and you get through it by taking over the machines around you. Free to play in beta.">
+<link rel="canonical" href="https://dexmlabs.app/repurposed/">
+<meta name="theme-color" content="#0a0b09">
+<meta property="og:type" content="website"><meta property="og:site_name" content="DEXM Labs">
+<meta property="og:title" content="Repurposed (beta) / DEXM Labs"><meta property="og:description" content="Repurposed is a puzzle game I am building in the browser. You are a maintenance unit in a DEXM facility, and you get through it by taking over the machines around you. Free to play in beta.">
+<meta property="og:url" content="https://dexmlabs.app/repurposed/"><meta property="og:image" content="https://dexmlabs.app/repurposed/img/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="The reactor room in Repurposed, a glowing green core inside a steel hall.">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Repurposed (beta) / DEXM Labs"><meta name="twitter:description" content="Repurposed is a puzzle game I am building in the browser. You are a maintenance unit in a DEXM facility, and you get through it by taking over the machines around you. Free to play in beta."><meta name="twitter:image" content="https://dexmlabs.app/repurposed/img/og.jpg">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="icon" href="../assets/favicon-32.png" sizes="32x32" type="image/png"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/dexm-ui.css"><script src="../assets/points.js" defer></script><script src="../assets/theme.js" defer></script>
+<script src="../assets/storage-note.js" data-cookies="../cookies/" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Repurposed","url":"https://dexmlabs.app/repurposed/","description":"Repurposed is a puzzle game I am building in the browser. You are a maintenance unit in a DEXM facility, and you get through it by taking over the machines around you. Free to play in beta.","inLanguage":"en-GB","gamePlatform":"Web browser","applicationCategory":"Game","isAccessibleForFree":true,"image":"https://dexmlabs.app/repurposed/img/reactor.webp","publisher":{"@id":"https://dexmlabs.app/#site"}}</script>
+<style>
+.beta{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:2px solid var(--acid);color:var(--ink);font:900 12px/1 var(--mono,monospace);letter-spacing:.16em}
+.beta.solid{background:var(--acid);color:#0a0b09}
+.rp-hero{position:relative;border:2px solid var(--line);overflow:hidden;margin-top:18px}
+.rp-hero img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+.rp-hero .beta{position:absolute;top:14px;left:14px;background:var(--acid);color:#0a0b09}
+.rp-h1{font:900 clamp(44px,8vw,96px)/.95 var(--head);text-transform:uppercase;margin:18px 14px 8px}
+.rp-intro .lead{margin:0 14px}.rp-intro .rp-cta{margin:22px 14px 16px}
+.rp-cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:22px 0 6px}
+.rp-cta .btn{margin-top:0}
+.rp-shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.rp-shots figure{margin:0;border:2px solid var(--line);background:var(--panel)}
+.rp-shots img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+.rp-shots figcaption{padding:10px 12px;font-size:13px;color:var(--muted)}
+.rp-list{margin:0;padding:14px 16px 14px 34px}.rp-list li{margin:6px 0}
+.rp-keys{padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.rp-keys kbd{font:700 12px/1 var(--mono,monospace);border:1px solid var(--edge);padding:4px 6px;color:var(--ink);border-color:var(--acid);white-space:nowrap}
+dialog.rp-gate{max-width:520px;width:calc(100% - 32px);background:var(--panel);color:var(--ink);border:2px solid var(--acid);padding:22px}
+dialog.rp-gate::backdrop{background:rgba(0,0,0,.72)}
+dialog.rp-gate h2{margin-top:0}
+.rp-gate .row{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+.rp-gate button.ghost{min-height:48px;padding:0 18px;background:transparent;color:var(--ink);border:2px solid var(--edge);font:900 14px/1 var(--head);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+</style>
+</head><body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap"><a class="brand" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect class="frame" x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><path d="M16 8a8 8 0 1 1 0 16a8 8 0 1 1 0-16z" fill="#d6ff00"/><rect x="6" y="15" width="20" height="2.4" fill="#0a0b09"/><rect x="14.8" y="5" width="2.4" height="5" fill="#0a0b09"/></svg><span>DEXM LABS</span></a><nav aria-label="Main"><a href="../">HOME</a><a href="../#games">GAMES</a><a href="../#makes">MAKES</a></nav><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="../points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div></div></header>
+<div class="stripe" aria-hidden="true"></div>
+<main id="main">
+<section class="block"><div class="wrap">
+<div class="plate rp-intro">
+<div class="plate-head"><span class="beta solid">BETA</span><span class="label">PUZZLE / FIRST PERSON / BROWSER</span></div>
+<h1 class="rp-h1">Repurposed</h1>
+<p class="lead">You are D-3X, a small maintenance unit in a DEXM facility that would rather you stayed put. You can't open doors or climb ladders on your own, but you can take over the machines around you: factory arms, drones, a gantry crane and a little spider bot that walks up walls. Every room is a puzzle about which machine to borrow, and when.</p>
+<div class="rp-cta"><a class="btn" href="../play-test-8179d030/game/index.html?level=facility-01" rel="nofollow" data-gate>Enter the facility <span aria-hidden="true">&rarr;</span></a><span class="label">FREE / NO ACCOUNT / KEYBOARD AND MOUSE</span></div>
+</div>
+<div class="rp-hero"><span class="beta">BETA BUILD</span><img src="img/reactor.webp" srcset="img/reactor-720.webp 720w, img/reactor.webp 1440w" sizes="(max-width: 900px) 100vw, 1100px" width="1440" height="810" alt="The reactor room, a tall green core ringed by catwalks under a steel roof." decoding="async" fetchpriority="high"></div>
+</div></section>
+
+<section class="block" aria-labelledby="beta-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">READ THIS FIRST</p><h2 id="beta-h">This is a beta</h2></div><p class="label">THINGS WILL CHANGE</p></div>
+<div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="currentColor"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="currentColor"/></svg><p><strong>Unfinished on purpose</strong>Two facilities are playable now, and I am still building the rest. Expect rough edges, placeholder voices and the odd crate that ends up somewhere it shouldn't. It works best on a desktop or laptop with a keyboard and mouse in a recent version of Chrome, Edge or Firefox. If something breaks, <a href="../contact/">tell me</a> what you were doing and I will fix it.</p></div>
+</div></section>
+
+<section class="block" aria-labelledby="shots-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">SURVEILLANCE STILLS</p><h2 id="shots-h">Inside the facility</h2></div><p class="label">CAPTURED IN GAME</p></div>
+<div class="rp-shots">
+<figure><img src="img/window-ships-720.webp" srcset="img/window-ships-720.webp 720w, img/window-ships.webp 1440w" sizes="(max-width: 700px) 100vw, 360px" width="720" height="405" alt="Ships drifting past a ruined skyline seen through a tall facility window." loading="lazy" decoding="async"><figcaption>The window by the reactor. Don't stare at the ships for too long.</figcaption></figure>
+<figure><img src="img/portal-room-720.webp" srcset="img/portal-room-720.webp 720w, img/portal-room.webp 1440w" sizes="(max-width: 700px) 100vw, 360px" width="720" height="405" alt="The portal room, with a yellow robot arm on a pad beside a caged test area." loading="lazy" decoding="async"><figcaption>The portal room in section two, where the arms do the heavy lifting.</figcaption></figure>
+<figure><img src="img/booth-720.webp" srcset="img/booth-720.webp 720w, img/booth.webp 1440w" sizes="(max-width: 700px) 100vw, 360px" width="720" height="405" alt="Technicians in orange suits behind a one way observation window." loading="lazy" decoding="async"><figcaption>Observation in progress. They can see you. You can see them too.</figcaption></figure>
+<figure><img src="img/processing-hall-720.webp" srcset="img/processing-hall-720.webp 720w, img/processing-hall.webp 1440w" sizes="(max-width: 700px) 100vw, 360px" width="720" height="405" alt="A sodium lit processing hall with conveyor belts, robot arms and a gantry crane." loading="lazy" decoding="async"><figcaption>Processing Hall 02, with the gantry crane overhead and forklifts on patrol.</figcaption></figure>
+<figure><img src="img/window-vista-720.webp" srcset="img/window-vista-720.webp 720w, img/window-vista.webp 1440w" sizes="(max-width: 700px) 100vw, 360px" width="720" height="405" alt="A hazy orange city of towers seen through a gridded window." loading="lazy" decoding="async"><figcaption>The view the facility would rather you didn't have.</figcaption></figure>
+</div>
+</div></section>
+
+<section class="block" aria-labelledby="how-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">OPERATING MANUAL</p><h2 id="how-h">How it plays</h2></div><p class="label">TWO FACILITIES SO FAR</p></div>
+<div class="grid">
+<div class="plate"><div class="plate-head"><span class="label acid">WHAT YOU DO</span></div>
+<ul class="rp-list">
+<li>Look at a machine and possess it, then use what it can do that you can't.</li>
+<li>Arms lift and throw, drones fly and zap panels, the crane lowers crates from above, and the spider bot climbs walls and squeezes into service shafts.</li>
+<li>Some rooms have a second way through. The facility won't point them out.</li>
+</ul></div>
+<div class="plate"><div class="plate-head"><span class="label acid">CONTROLS</span></div>
+<div class="rp-keys"><kbd>W A S D</kbd><span>Move</span><kbd>Mouse</kbd><span>Look</span><kbd>E</kbd><span>Possess the machine you are looking at</span><kbd>Q</kbd><span>Return to D-3X</span><kbd>F or click</kbd><span>Use the machine</span><kbd>Space / C</kbd><span>Up and down, for things that fly or lift</span><kbd>M</kbd><span>Sound on or off</span></div></div>
+</div>
+<div class="rp-cta"><a class="btn" href="../play-test-8179d030/game/index.html?level=facility-01" rel="nofollow" data-gate>Enter the facility <span aria-hidden="true">&rarr;</span></a><span class="beta">BETA</span></div>
+</div></section>
+
+<section class="block" id="support" aria-labelledby="support-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">SUPPLY ROOM</p><h2 id="support-h">Support the lab</h2></div><p class="label">LINK OPENS ANOTHER SITE</p></div>
+<p class="sec-lead">Repurposed is free while I build it. If you enjoyed it and want to help keep the bench light on, a coffee goes a long way.</p>
+<div class="support">
+<a href="https://buymeacoffee.com/arthurdeusexmachina" rel="noopener"><span><b>Buy me a coffee</b><small>Keeps the bench light on.</small></span></a>
+</div>
+</div></section>
+</main>
+<dialog class="rp-gate" id="gate" aria-labelledby="gate-h">
+<h2 id="gate-h">Entering a beta facility</h2>
+<p>Repurposed is unfinished. You'll get two facilities, some placeholder voices and the occasional bug. Nothing is sent anywhere, and the game only keeps a few settings in this browser.</p>
+<p>Use a keyboard and mouse. Click the game to capture the mouse, and press Esc to let go. Turn your sound on for the full effect.</p>
+<div class="row"><a class="btn" id="gate-go" href="../play-test-8179d030/game/index.html?level=facility-01" rel="nofollow">Enter facility <span aria-hidden="true">&rarr;</span></a><button type="button" class="ghost" id="gate-no">Not now</button></div>
+</dialog>
+<footer class="foot"><div class="wrap"><nav aria-label="Policies"><a href="../privacy/">Privacy</a><a href="../cookies/">Cookies &amp; storage</a><a href="../terms/">Terms</a><a href="../disclaimer/">Disclaimer</a><a href="../contact/">Contact</a></nav><div><p><a href="mailto:hello@dexmlabs.app">hello@dexmlabs.app</a></p><p>&copy; 2026 DEXM Labs</p></div></div></footer>
+<script>(function(){var d=document.getElementById('gate');if(!d||!d.showModal)return;document.querySelectorAll('[data-gate]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();d.showModal();document.getElementById('gate-go').focus()})});document.getElementById('gate-no').addEventListener('click',function(){d.close()})})();</script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics -->
+</body></html>
