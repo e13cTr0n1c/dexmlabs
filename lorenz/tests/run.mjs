@@ -341,8 +341,9 @@ await t('Guide: explains the QEP book, the motor logic and chi only mode, with s
 });
 await t('About: only the facts Arthur gave, never says he is licensed', () => {
   const v = visible(dom('about.html'));
-  for (const s of ['RAF Coningsby', 'Raspberry Pi', 'ADS-B', 'Foundation licence', 'Skywave']) assert.ok(v.includes(s), s);
+  for (const s of ['into planes', 'Raspberry Pi', 'ADS-B', 'Foundation licence', 'Skywave']) assert.ok(v.includes(s), s);
   assert.ok(!/\b(licensed|my callsign|I hold|M7\w+|2E0)/i.test(v));
+  assert.ok(!/coningsby|lincoln|woodhall|bucknall|\bLN\d/i.test(v), 'no location');
 });
 await t('Licence: all rights reserved, Skywave wording', () => { assert.match(fs.readFileSync(path.join(ROOT, 'LICENSE'), 'utf8'), /^Copyright \(c\) 2026 DEXM Labs \(Arthur Jones\)\. All rights reserved\./); });
 

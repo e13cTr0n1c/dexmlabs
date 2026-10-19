@@ -4,7 +4,7 @@ import {greatCircleDistance} from './propagation.js';
 /** Approximate operating sites and valid ITU prefix families; suffixes are invented.
  * These are not records of actual licensees, DXCC entities or band plans. */
 export const LOCATIONS = [
-  ['Lincolnshire','England',53.2,-0.3,'G','EU'],['Reykjavik','Iceland',64.1,-21.9,'TF','EU'],
+  ['Eastern England','England',53.2,-0.3,'G','EU'],['Reykjavik','Iceland',64.1,-21.9,'TF','EU'],
   ['Lisbon','Portugal',38.7,-9.1,'CT','EU'],['Tromso','Norway',69.6,19,'LA','EU'],
   ['Rome','Italy',41.9,12.5,'I','EU'],['Athens','Greece',38,23.7,'SV','EU'],
   ['Helsinki','Finland',60.2,24.9,'OH','EU'],['Warsaw','Poland',52.2,21,'SP','EU'],
