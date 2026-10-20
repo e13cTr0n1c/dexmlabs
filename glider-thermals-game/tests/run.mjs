@@ -1,0 +1,42 @@
+// Physics, balance and Daily Drop tests: node glider-thermals-game/tests/run.mjs
+import assert from 'assert/strict'; import fs from 'fs';
+const P = await import('../js/physics.js'), {LEVELS, level} = await import('../js/levels.js'), {fly} = await import('./pilot.mjs');
+const Dd = await import('../js/daily.js'), {dailyLevel} = await import('../js/daily-level.js');
+let pass = 0, fail = 0; const t = async (n, f) => { try { await f(); pass++; console.log('PASS ' + n); } catch (e) { fail++; console.log('FAIL ' + n + '\n  ' + e.message); } };
+const calm = (o = {}) => ({...LEVELS[0], start: {x: -5000, agl: 2000}, wind: {base: 0}, sink: 0, thermals: [], ...o});
+const run = (w, s, n, inp = {}) => { for (let i = 0; i < n && !s.done; i++) P.step(w, s, inp); return s; };
+await t('Polar: best glide about 32:1 near 100 km/h, minimum sink about 0.75 m/s near 75 km/h, stall near 70 km/h', () => {
+  let best = 0, bv = 0; for (let V = 20; V < 60; V += 0.25) { const ld = V / P.sinkRate(V); if (ld > best) { best = ld; bv = V; } }
+  assert.ok(best > 30 && best < 35, 'L/D ' + best); assert.ok(bv * 3.6 > 90 && bv * 3.6 < 110, 'best at ' + bv * 3.6);
+  const ms = P.minSinkSpeed(); assert.ok(P.sinkRate(ms) > 0.65 && P.sinkRate(ms) < 0.85 && ms * 3.6 > 70 && ms * 3.6 < 82, 'min sink ' + P.sinkRate(ms) + ' at ' + ms * 3.6);
+  const st = P.stallSpeed() * 3.6; assert.ok(st > 64 && st < 74, 'stall ' + st); });
+await t('Polar: banking raises the stall speed and the sink, by 1/√cos and more', () => { const a = P.stallSpeed(0), b = P.stallSpeed(0.785); assert.ok(Math.abs(b / a - 1 / Math.sqrt(Math.cos(0.785))) < 0.01); assert.ok(P.sinkRate(28, 0.6) > P.sinkRate(28) * 1.2); });
+await t('Speed to fly: faster with a higher MacCready setting and through sinking air', () => { const a = P.speedToFly(0), b = P.speedToFly(2), c = P.speedToFly(1, 2); assert.ok(b > a + 5 && c > P.speedToFly(1) + 3, [a, b, c].join()); });
+await t('Glide: in still air with the autotrim the glider settles near its best glide and keeps it', () => { const w = P.makeWorld(calm(), 1), s = structuredClone(w.start); run(w, s, 60 * 60); const h0 = s.h, x0 = s.x; run(w, s, 60 * 60); const ld = (s.x - x0) / (h0 - s.h); assert.ok(ld > 26 && ld < 34, 'L/D ' + ld); assert.ok(!s.done); });
+await t('Energy: without the trim, pulling up trades speed for height and the total roughly holds', () => { const w = P.makeWorld(calm({start: {x: -5000, agl: 2000, V: 45}}), 1, {trim: false}), s = structuredClone(w.start); s.V = 45; s.cl = P.clFor(45);
+  const e0 = s.h + s.V * s.V / (2 * P.G); run(w, s, 60 * 3, {pitch: -1}); const e1 = s.h + s.V * s.V / (2 * P.G); assert.ok(s.V < 40 && s.h > w.start.h, 'zoomed ' + s.V + ' ' + s.h); assert.ok(e0 - e1 < 15, 'lost ' + (e0 - e1)); });
+await t('Stall: hauling back without the trim stalls the wing and it drops', () => { const w = P.makeWorld(calm(), 1, {trim: false}), s = structuredClone(w.start); run(w, s, 60 * 12, {pitch: -1}); assert.ok(s.stalls > 0); });
+await t('Thermal: circling in the core climbs; the edge and outside sink', () => { const L = calm({thermals: [{x: 0, r: 230, w: 3, base: 3000}]}), w = P.makeWorld(L, 1);
+  assert.ok(P.lift(w, 0, 0, 1000) > 2.5); assert.ok(P.lift(w, 370, 0, 1000) < 0); const s = structuredClone(w.start); s.x = 0; s.h = 1000; s.phi = 0.7; const h0 = s.h; run(w, s, 60 * 60); assert.ok(s.h > h0 + 40, 'climbed ' + (s.h - h0)); });
+await t('Ridge: lift on the windward face only, and none with no wind', () => { const L = level('ridge'), w = P.makeWorld(L, 1); assert.ok(P.lift(w, 6000, 0, 500) > 2); assert.ok(P.lift(w, 6600, 0, 500) < 0.5); const w0 = P.makeWorld({...L, wind: {base: 0}}, 1); assert.ok(P.lift(w0, 6000, 0, 500) < 0.5); });
+await t('Wave: smooth lift high up behind the mountain', () => { const w = P.makeWorld(level('wave'), 1); assert.ok(P.lift(w, 9500, 0, 2000) > 2.5); assert.ok(P.lift(w, 9500, 0, 600) < 0.5); });
+await t('Vario: total energy, so a pull up in still air shows no false climb', () => { const w = P.makeWorld(calm({start: {x: -5000, agl: 2000, V: 40}}), 1, {trim: false}), s = structuredClone(w.start); s.V = 40; s.cl = P.clFor(40); let mx = -9; for (let i = 0; i < 120; i++) { P.step(w, s, {pitch: -1}); mx = Math.max(mx, s.vario); } assert.ok(mx < 0.7, 'vario ' + mx); });
+await t('Airbrakes steepen the glide to under 10:1', () => { const w = P.makeWorld(calm(), 1), s = structuredClone(w.start); run(w, s, 60 * 20, {brake: true}); const h0 = s.h, x0 = s.x; run(w, s, 60 * 20, {brake: true}); assert.ok((s.x - x0) / (h0 - s.h) < 10); });
+await t('Landing: soft in a field is safe; in trees, hard or banked is not', () => { const w = P.makeWorld(LEVELS[0], 1), s = fly(w); assert.ok(s.ok && s.landed.sink < 2, JSON.stringify(s.landed));
+  const f = (o, inp) => { const w2 = P.makeWorld({...LEVELS[0], surface: [{kind: 'forest', x0: -1e5, x1: 1e5}], ...o}, 1), s2 = structuredClone(w2.start); run(w2, s2, 60 * 400, inp); return s2; };
+  assert.equal(f({}, {}).fault?.k, 'rough'); const w3 = P.makeWorld(LEVELS[0], 1, {trim: false}), s3 = structuredClone(w3.start); run(w3, s3, 60 * 200, {pitch: 1}); assert.ok(['crash', 'vne'].includes(s3.fault?.k), JSON.stringify(s3.fault)); });
+await t('Score: up to 1000 before the multiplier, grades S to D, autotrim off pays ×1.25', () => { const w = P.makeWorld(LEVELS[0], 1), s = fly(w), p = P.parts(s, w); assert.ok(p.base <= 1000 && p.base > 780, p.base);
+  assert.equal(P.grade(950), 'S'); assert.equal(P.grade(800), 'A'); assert.equal(P.grade(700), 'B'); assert.equal(P.grade(500), 'C'); assert.equal(P.grade(100), 'D'); assert.ok(Math.abs(P.parts(s, {...w, assist: {trim: false}}).total / p.total - 1.25) < 0.01); });
+await t('Levels: seven, starting with an easy glide with no wind and no thermal to find, later ones with ridge, wave and a land out', () => { assert.equal(LEVELS.length, 7); assert.equal(LEVELS[0].wind.base, 0); assert.equal(LEVELS[0].thermals.length, 0);
+  assert.ok(LEVELS.some(l => l.ridges?.length) && LEVELS.some(l => l.waves?.length) && LEVELS.some(l => !l.finish)); assert.ok(LEVELS.at(-1).mult >= Math.max(...LEVELS.map(l => l.mult))); });
+await t('Autopilot: completes every level on 3 seeds each', () => { for (const L of LEVELS) for (const k of [1, 2, 3]) { const w = P.makeWorld(L, k * 7919), s = fly(w); assert.ok(s.ok && P.score(s, w) > 0, `${L.id} seed ${k}: ${s.fault?.text}`); } });
+await t('Page: title, structured data, support links, CSP, no dashes, no phone number', () => { const h = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  for (const re of [/<title>Glider Thermals Game/, /"@type": "VideoGame"/, /"@type": "FAQPage"/, /buymeacoffee\.com\/arthurdeusexmachina/, /cults3d\.com/, /og:image/, /Content-Security-Policy/, /dexm-support/]) assert.match(h, re);
+  const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.ok(!/[\u2013\u2014]|\s-\s/.test(text)); assert.ok(!/\+44|\b07\d{3}\s?\d{6}\b/.test(h)); });
+await t('Daily Drop: the UK date, numbers from 2026-10-20, next drop at UK midnight', () => { assert.equal(Dd.ukDate(new Date('2026-10-19T23:30:00Z')), '2026-10-20'); assert.equal(Dd.puzzleNo('2026-10-20'), 0); assert.equal(new Date(Dd.nextDrop(new Date('2026-10-25T12:00:00Z'))).toISOString(), '2026-10-26T00:00:00.000Z'); });
+await t('Daily Drop: the same task all day, a different one tomorrow, levels untouched', () => { const a = dailyLevel('2026-10-21'), b = dailyLevel('2026-10-21'), c = dailyLevel('2026-10-22'); assert.deepEqual(a, b); assert.notDeepEqual(a, c); assert.equal(a.no, 1); assert.ok(!LEVELS.some(L => L.daily)); });
+await t('Daily Drop: one scored try a day is kept', () => { const m = new Map(), ls = {getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, v)}, S = Dd.makeStore('x', ls); assert.equal(S.put('2026-10-21', {score: 900}), true); assert.equal(S.put('2026-10-21', {score: 10}), false); });
+await t('Daily Drop: every kind of task turns up in 60 days, and the autopilot completes all 60', () => { const bad = [], ks = new Set();
+  for (let i = 0; i < 60; i++) { const d = Dd.addDays('2026-10-20', i), L = dailyLevel(d), w = P.makeWorld(L, L.seed), s = fly(w); ks.add(L.kind); if (!s.ok || P.score(s, w) <= 0) bad.push(`${d} ${L.kind} ${s.fault?.k}`); }
+  for (const k of ['out-return', 'goal', 'ridge', 'triangle']) assert.ok(ks.has(k), k); console.log(`    60 drops: ${60 - bad.length} solved`); assert.deepEqual(bad, []); });
+console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
