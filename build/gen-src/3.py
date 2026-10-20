@@ -15,7 +15,7 @@
  ('missions/mmx/','MMX mission explained: interactive simulation','Mission Replays: a time slider through JAXA\'s MMX mission to Phobos, from the H3 launch on 20 October 2026 to the planned sample return in 2031, with a heliocentric view and a Mars and Phobos close view.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 # Pages added since 13 October, with their own lastmod, listed first.
-NEW_PAGES=[('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
+NEW_PAGES=[('hire/','2026-10-20'),('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
 # Game pages that changed in the 20 October tidy, so their lastmod moves on.
 TIDIED={'skywave/','lorenz/','enigma-machine/','chernobyl-reactor-simulator/','apollo-lunar-landing-game/','tolerance/'}
 NEW_URLS={u for u,_ in NEW_PAGES}
@@ -29,6 +29,7 @@ L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
  '## Makes','',f'- [3D models]({A}makes/): Gallery of my {len(MK_MODELS)} printable 3D models, grouped by collection, each linking to its Cults3D page.']+[f'- [{m[2]}]({MK_C}{m[4]}): {m[6]} On Cults3D.' for m in MK_MODELS if MK_C+m[4] not in {u for u,*_ in MAKES}]+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',
  '## Daily puzzle','',f'- [Today\'s Puzzle]({A}puzzle/): One small puzzle a day, by UK date: a rotor cipher, a Morse riddle, an aviation question or a physics and space question. Points and streak stay in your browser.','',
+ '## Hire me','',f'- [Hire me]({A}hire/): Software development for hire: full stack React, C#, Python, SQL, APIs, automation, AI integrations, Power Platform, Dynamics 365, websites and 3D design for printing.','',
  '## Points','',f'- [How points work]({A}points/): Points are earned in the daily games and spent on hints. They stay in your browser.','',
  '## Policies','']+[f'- [{n.replace("&amp;","and")}]({A}{p}/): {POL_DESC[p]}' for p,n in POL]
 (S/'llms.txt').write_text('\n'.join(L)+'\n')

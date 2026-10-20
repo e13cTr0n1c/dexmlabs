@@ -13,6 +13,12 @@
 <p class="mk-more"><a class="btn" href="makes/">See all {len(__import__('makes_data').MODELS)} 3D models</a></p>
 </div></section>
 
+<section class="block" id="hire" aria-labelledby="hire-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">FOR HIRE</p><h2 id="hire-h">Hire me</h2></div><p class="label">CV AVAILABLE ON REQUEST</p></div>
+<p class="sec-lead">I build software from first idea to live release: full stack React, C#, Python and SQL, APIs, automation and AI integrations, Power Platform and Dynamics 365, websites and custom web apps, and 3D models for printing. Everything on this site is my own work.</p>
+<p class="hire-cta"><a class="btn" href="hire/">See what I can do</a><a class="btn ghost" href="mailto:{HIRE_EMAIL}?subject=Work%20enquiry">Email me</a></p>
+</div></section>
+
 <section class="block" id="support" aria-labelledby="support-h"><div class="wrap">
 <div class="sec-head"><div><p class="label acid">SUPPLY ROOM</p><h2 id="support-h">Support the lab</h2></div><p class="label">LINK OPENS ANOTHER SITE</p></div>
 <div class="support">
@@ -21,7 +27,46 @@
 </div></section>
 </main>
 '''+foot('')
-(S/'index.html').write_text(home)
+(S/'index.html').write_text(home.replace('</body>','<script src="assets/reveal.js" defer></script>\n</body>',1))
+# ---------- hire me ----------
+HIRE_SKILLS=[('Full stack development','React, C#, Python, SQL and JavaScript. Front ends, back ends and the database between them.'),
+ ('APIs and automation','REST APIs, system integrations, scheduled jobs and the scripts that save people hours.'),
+ ('AI integrations','Practical AI features wired into real products and business processes.'),
+ ('Power Platform and Dynamics 365','Power Apps, Power Automate and Power BI, with Dataverse and Dynamics 365 behind them.'),
+ ('Websites and web apps','Fast, accessible sites and custom web apps, built, tested and hosted.'),
+ ('3D design for printing','Functional models designed to print cleanly first time, from enclosures to bench tools.')]
+HIRE_WORK=[('booster-landing-game/','Booster','A 3D rocket landing game with throttle, gimbal, grid fins, wind and a moving deck.'),
+ ('enigma-machine/','Enigma','A faithful Enigma I simulator with rotor stepping, rings, plugboard and a daily codebreaking puzzle.'),
+ ('skywave/','Skywave','A daily radio propagation puzzle on a 3D globe, driven by a model of the ionosphere.'),
+ ('missions/mmx/','MMX mission replay','A time slider through a Mars moon sample return mission, with real planet orbits.'),
+ ('https://e13ctr0n1c.github.io/','Plain Sums','UK tax and money calculators: CIS refunds, probate IHT, gift taper, late payment interest and the VAT threshold.'),
+ ('makes/','3D models',f'{len(MK_MODELS)} printable models designed by me and sold on Cults3D.')]
+def _href(u,r): return u if u.startswith('http') else r+u
+hire=head('Hire me / Arthur Jones / DEXM Labs','Hire Arthur Jones for software development: full stack React, C#, Python, SQL, APIs, automation, AI integrations, Power Platform, Dynamics 365, websites and 3D design for printing.','hire/','../')+f'''<main id="main" class="hire">
+<section class="block" aria-labelledby="hire-h"><div class="wrap">
+<p class="label acid">FOR HIRE</p>
+<h1 id="hire-h" class="hire-h">I build software that works.</h1>
+<p class="sec-lead hire-lead">I'm Arthur Jones, a software developer. I take ideas from first sketch to live release, and I test what I ship. Every game and tool on this site is my own work, so you can try it before you get in touch.</p>
+<p class="hire-cta"><a class="btn" href="mailto:{HIRE_EMAIL}?subject=Work%20enquiry">Email me</a></p>
+</div></section>
+<section class="block" aria-labelledby="hire-skills-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">WHAT I DO</p><h2 id="hire-skills-h">Skills</h2></div></div>
+<div class="support hire-grid">
+'''+''.join(f'<div class="hire-item"><b>{n}</b><small>{d}</small></div>\n' for n,d in HIRE_SKILLS)+f'''</div>
+</div></section>
+<section class="block" aria-labelledby="hire-work-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">REAL WORK</p><h2 id="hire-work-h">Examples</h2></div><p class="label">ALL LIVE, TRY THEM</p></div>
+<div class="support hire-grid">
+'''+''.join(f'<a href="{_href(u,"../")}"{" rel=\"noopener\"" if u.startswith("http") else ""}><span><b>{n}</b><small>{d}</small></span></a>\n' for u,n,d in HIRE_WORK)+f'''</div>
+</div></section>
+<section class="block" aria-labelledby="hire-contact-h"><div class="wrap">
+<div class="sec-head"><div><p class="label acid">CONTACT</p><h2 id="hire-contact-h">Let's talk</h2></div></div>
+<p class="sec-lead">CV available on request. Tell me what you need and I'll come back to you.</p>
+<p class="hire-cta"><a class="btn" href="mailto:{HIRE_EMAIL}?subject=Work%20enquiry">Email {HIRE_EMAIL}</a></p>
+</div></section>
+</main>
+'''+foot('../')
+(S/'hire').mkdir(exist_ok=True);(S/'hire'/'index.html').write_text(hire.replace('</body>','<script src="../assets/reveal.js" defer></script>\n</body>',1))
 # the same block on the game title screens
 import re as _re
 _F='<footer class="site-footer"'

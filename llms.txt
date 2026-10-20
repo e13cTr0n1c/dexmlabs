@@ -68,6 +68,10 @@
 
 - [Today's Puzzle](https://dexmlabs.app/puzzle/): One small puzzle a day, by UK date: a rotor cipher, a Morse riddle, an aviation question or a physics and space question. Points and streak stay in your browser.
 
+## Hire me
+
+- [Hire me](https://dexmlabs.app/hire/): Software development for hire: full stack React, C#, Python, SQL, APIs, automation, AI integrations, Power Platform, Dynamics 365, websites and 3D design for printing.
+
 ## Points
 
 - [How points work](https://dexmlabs.app/points/): Points are earned in the daily games and spent on hints. They stay in your browser.

@@ -19,6 +19,8 @@ EFHW='https://cults3d.com/en/3d-model/tool/toroid-box-for-ft240-and-ft140-cores-
 DRILL='https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-239-n-4-hole-flange-and-bnc-d-hole-with'
 CHI='https://cults3d.com/en/3d-model/gadget/lorenz-cipher-chi-wheel-demonstrator-simplified-sz42-teaching-model'
 EMAIL='hello@dexmlabs.app'
+# Work enquiries go to the address on my CV (/cv/).
+HIRE_EMAIL='thearthurjones@outlook.com'
 # Buttondown username for the 'new game' email list. While it's the placeholder, the signup form is built but hidden.
 BUTTONDOWN_USER='dexmlabs'
 SIGNUP_LIVE=BUTTONDOWN_USER!='BUTTONDOWN_USER_TBD'
@@ -62,7 +64,7 @@ def head(title,desc,path,r,og='https://dexmlabs.app/assets/og-image.png',ogalt='
 <script src="{r}assets/storage-note.js" data-cookies="{r}cookies/" defer></script>
 </head><body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap"><a class="brand" href="{r or './'}">{MARK}<span>DEXM LABS</span></a><nav aria-label="Main"><a href="{r or './'}">HOME</a><a href="{r}#games">GAMES</a><a href="{r}#makes">MAKES</a></nav>{tools(r)}</div></header>
+<header class="top"><div class="wrap"><a class="brand" href="{r or './'}">{MARK}<span>DEXM LABS</span></a><nav aria-label="Main"><a href="{r or './'}">HOME</a><a href="{r}#games">GAMES</a><a href="{r}#makes">MAKES</a><a href="{r}hire/">HIRE ME</a></nav>{tools(r)}</div></header>
 <div class="stripe" aria-hidden="true"></div>
 '''
 def foot(r):

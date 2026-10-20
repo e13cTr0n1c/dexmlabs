@@ -15,7 +15,7 @@ var TAX = /tools\/|templates\/|gumroad|LAUNCH25|\bCIS\b|calculator|Inheritance T
 
 t("homepage: games first, then makes, then support", function () {
   var d = dom("index.html");
-  assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["puzzle-today", "hero", "games", "makes", "support"]);
+  assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["puzzle-today", "hero", "games", "makes", "hire", "support"]);
   assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .game-sec"), function (s) { return s.id + ":" + s.querySelector(".sec-h").textContent; }), ["games-physics:Physics & Flight", "games-daily:Daily Puzzles", "games-labs:Labs / Beta", "games-other:Other"], "game sections in order");
   var btns = [].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); });
   assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "repurposed/", "missions/mmx/", "vector/", "orbit/", "chernobyl-reactor-simulator/"]);
@@ -79,10 +79,10 @@ t("Lorenz card wording", function () {
   assert.ok(x.indexOf("the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny") >= 0);
   ["index.html", "llms.txt"].forEach(function (f) { assert.ok(!/teleprinter machine|teleprinter cipher machine/i.test(read(f)), f); });
 });
-t("nav: home, games, makes", function () {
+t("nav: home, games, makes, hire me", function () {
   GENERATED.forEach(function (f) {
     var d = dom(f), nav = [].map.call(d.querySelectorAll(".top nav a"), function (a) { return a.textContent; });
-    assert.deepStrictEqual(nav, ["HOME", "GAMES", "MAKES"], f);
+    assert.deepStrictEqual(nav, ["HOME", "GAMES", "MAKES", "HIRE ME"], f);
   });
 });
 t("no tax, calculator, template or Gumroad content on generated pages", function () {
@@ -126,8 +126,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 29); // Vector and Orbit are listed now
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|missions\/mmx\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 30); // Vector, Orbit and Hire me are listed now
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|hire\/|missions\/mmx\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");
