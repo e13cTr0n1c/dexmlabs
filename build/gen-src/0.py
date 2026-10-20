@@ -39,6 +39,7 @@ MARK='<svg viewBox="0 0 32 32" aria-hidden="true"><rect class="frame" x="2.5" y=
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from shared import THEME_SCRIPT,THEME_HASH,tools,shared_head
+from makes_data import MODELS as MK_MODELS, C as MK_C
 POL=[('privacy','Privacy'),('cookies','Cookies &amp; storage'),('terms','Terms'),('disclaimer','Disclaimer'),('contact','Contact')]
 def head(title,desc,path,r,og='https://dexmlabs.app/assets/og-image.png',ogalt='DEXM Labs. Games and makes.'):
   url='https://dexmlabs.app/'+path

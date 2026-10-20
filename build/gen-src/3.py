@@ -15,7 +15,7 @@
  ('tolerance/','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 # Pages added since 13 October, with their own lastmod, listed first.
-NEW_PAGES=[('repurposed/','2026-10-19'),('booster-landing-game/','2026-10-19'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('tesla-roadster-thruster-game/','2026-10-20'),('docking-run-game/','2026-10-19')]
+NEW_PAGES=[('makes/','2026-10-20'),('repurposed/','2026-10-19'),('booster-landing-game/','2026-10-19'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('tesla-roadster-thruster-game/','2026-10-20'),('docking-run-game/','2026-10-19')]
 NEW_URLS={u for u,_ in NEW_PAGES}
 urls=[('','2026-10-13')]+NEW_PAGES+[(u,'2026-10-13') for u,_,_ in GAME_PAGES if u not in NEW_URLS]+[(u,'2026-10-13') for u in ['points/']+[f'{p}/' for p,_ in POL]]
 (S/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'  <url><loc>https://dexmlabs.app/{u}</loc><lastmod>{d}</lastmod></url>\n' for u,d in urls)+'</urlset>\n')
@@ -25,7 +25,7 @@ A='https://dexmlabs.app/'
 L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, a Chernobyl RBMK reactor simulator, an Apollo lunar landing game, and 3D print designs for the radio bench.','',
  '## Home','',f'- [DEXM Labs]({A}): Homepage with the games and the makes.','',
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
- '## Makes','']+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',
+ '## Makes','',f'- [3D models]({A}makes/): Gallery of my {len(MK_MODELS)} printable 3D models, grouped by collection, each linking to its Cults3D page.']+[f'- [{m[2]}]({MK_C}{m[4]}): {m[6]} On Cults3D.' for m in MK_MODELS if MK_C+m[4] not in {u for u,*_ in MAKES}]+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',
  '## Points','',f'- [How points work]({A}points/): Points are earned in the daily games and spent on hints. They stay in your browser.','',
  '## Policies','']+[f'- [{n.replace("&amp;","and")}]({A}{p}/): {POL_DESC[p]}' for p,n in POL]
 (S/'llms.txt').write_text('\n'.join(L)+'\n')

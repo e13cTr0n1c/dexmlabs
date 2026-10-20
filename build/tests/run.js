@@ -6,7 +6,7 @@ function t(name, fn) { queue.push([name, fn]); }
 function read(f) { return fs.readFileSync(path.join(ROOT, f), "utf8"); }
 function dom(f) { return new jsdom.JSDOM(read(f)).window.document; }
 function visible(d) { var b = d.body.cloneNode(true); [].forEach.call(b.querySelectorAll("script,style"), function (e) { e.remove(); }); return b.textContent; }
-var GENERATED = ["index.html", "points/index.html", "privacy/index.html", "cookies/index.html", "terms/index.html", "disclaimer/index.html", "contact/index.html", "404.html"];
+var GENERATED = ["index.html", "points/index.html", "privacy/index.html", "cookies/index.html", "terms/index.html", "disclaimer/index.html", "contact/index.html", "makes/index.html", "404.html"];
 var NEW = "https://e13ctr0n1c.github.io/";
 var TOOLS = ["cis-refund-estimator", "cis-deduction-calculator", "probate-iht-calculator", "late-payment-interest-calculator", "gift-iht-taper-checker", "vat-threshold-checker"];
 var TEMPLATES = ["cis-subcontractor-tracker", "cis-contractor-tracker", "cis-mileage-lite", "cis-bundle", "probate-tracker", "gifts-iht-tracker", "freelancer-late-payment-tracker", "sales-dashboard-vat-watch"];
@@ -24,12 +24,31 @@ t("homepage: games first, then makes, then support", function () {
   assert.deepStrictEqual(ld.itemListElement.map(function (e) { return e.url; }), btns.map(function (h) { return "https://dexmlabs.app/" + h; }), "ItemList matches the cards");
   assert.strictEqual(ld.numberOfItems, btns.length);
   var makes = [].map.call(d.querySelectorAll("#makes a"), function (a) { return a.getAttribute("href"); });
-  assert.strictEqual(makes.length, 5);
+  assert.strictEqual(makes.length, 6);
+  assert.ok(d.querySelector('#makes a[href="makes/"]'), "links to the 3D models gallery");
   assert.ok(/radar-scope-desk-console/.test(d.querySelector("#makes .make-hero .btn").getAttribute("href")), "Radar Scope Desk Console is the featured make");
   assert.ok(/FIRST SALE/.test(d.querySelector("#makes .make-hero").textContent), "first sale badge");
   assert.ok(makes.some(function (h) { return /cults3d\.com\/.*lorenz-cipher-chi-wheel/.test(h); }), "Lorenz STL on Cults3D");
   assert.strictEqual(makes.filter(function (h) { return /cults3d\.com/.test(h); }).length, 4, "four Cults3D links");
   assert.ok(d.querySelector('#support a[href="https://buymeacoffee.com/arthurdeusexmachina"]'), "BMC button");
+});
+t("makes gallery: live Cults3D models, rocket first, lazy WebP renders", function () {
+  var d = dom("makes/index.html"), cards = [].slice.call(d.querySelectorAll(".mk-card"));
+  assert.ok(cards.length >= 30, "models listed");
+  assert.strictEqual(cards[0].id, "m-moon-rocket", "the rocket cutaway leads");
+  assert.ok(/FIRST SALE/.test(d.getElementById("m-radar-scope").textContent), "first sale badge kept");
+  var seen = {};
+  cards.forEach(function (c) {
+    var href = c.querySelector(".btn").getAttribute("href");
+    assert.ok(/^https:\/\/cults3d\.com\/en\/3d-model\//.test(href), c.id + " links to its Cults3D page");
+    assert.ok(!seen[href], "one card per model " + href); seen[href] = 1;
+    var t = c.querySelector(".card-body p").textContent;
+    assert.ok(!/[\u2013\u2014]| - |\bAI\b/.test(t), c.id + " caption rules");
+  });
+  [].forEach.call(d.querySelectorAll("main img"), function (i) { assert.ok(/\.webp$/.test(i.getAttribute("src")) && i.getAttribute("loading") === "lazy", i.getAttribute("src")); });
+  var ld = [].map.call(d.querySelectorAll('script[type="application/ld+json"]'), function (e) { return JSON.parse(e.textContent); })[0];
+  assert.strictEqual(ld.mainEntity.numberOfItems, cards.length, "structured data matches the cards");
+  assert.ok(/dexmlabs\.app\/makes\//.test(read("sitemap.xml")) && /dexmlabs\.app\/makes\//.test(read("llms.txt")), "sitemap and llms.txt");
 });
 t("the old tagline and the long name are gone everywhere, only DEXM Labs is left", function () {
   // built from parts so this file doesn't match itself
@@ -103,8 +122,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 25);
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|tesla-roadster-thruster-game\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 26);
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|tesla-roadster-thruster-game\/|makes\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");
