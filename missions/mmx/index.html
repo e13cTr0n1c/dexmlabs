@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en-GB"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script><meta name="theme-color" content="#080a08">
+<title>MMX mission explained: interactive simulation</title>
+<meta name="description" content="Scrub through JAXA's MMX mission to Phobos: the H3 launch on 20 October 2026, the trip to Mars, the quasi satellite orbit, landing and sampling, and the sample's return to Earth in 2031. Real dates, planned steps marked.">
+<link rel="canonical" href="https://dexmlabs.app/missions/mmx/"><meta property="og:type" content="website"><meta property="og:site_name" content="DEXM Labs"><meta property="og:title" content="MMX mission explained: interactive simulation"><meta property="og:description" content="JAXA's Phobos sample return mission, from launch to the capsule landing, on one time slider."><meta property="og:url" content="https://dexmlabs.app/missions/mmx/"><meta property="og:image" content="https://dexmlabs.app/assets/og-image.png"><meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kE1co0z749oaTiQdaivkHEhVq9XX5NAlLv+Izxpx4G4=' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./css/style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","@id":"https://dexmlabs.app/missions/mmx/#page","url":"https://dexmlabs.app/missions/mmx/","name":"MMX mission explained: interactive simulation","inLanguage":"en-GB","isAccessibleForFree":true,"about":{"@type":"Thing","name":"Martian Moons eXploration (MMX)"}}</script>
+<script type="module" src="./js/main.mjs"></script>
+<link data-homebar rel="stylesheet" href="../../assets/homebar.css"></head><body>
+<a class="skip-link" href="#main">Skip to the replay</a><nav data-homebar class="dexm-homebar" aria-label="DEXM Labs"><span class="dexm-homebar-game">MMX Replay</span><a href="https://dexmlabs.app/">dexmlabs.app</a></nav>
+<header class="site-header"><span class="wordmark">Mission Replays<span class="header-sub">MMX</span></span></header>
+<main id="main">
+<section class="intro">
+<p class="eyebrow">Mission Replays <span class="beta">Beta</span></p>
+<h1>MMX mission explained: interactive simulation</h1>
+<p>JAXA's Martian Moons eXploration spacecraft left Tanegashima on an H3 rocket on 20 October 2026. It is going to Phobos, the larger moon of Mars, to pick up at least 10&nbsp;g of its surface and bring it home in 2031. I built this replay so I could see the whole trip at once. Drag the slider, or press play.</p>
+</section>
+<section id="replay" class="replay" aria-label="MMX replay" data-phase="launch">
+<div class="rp-views">
+<figure class="rp-view"><canvas id="rp-helio" role="img" aria-label="Heliocentric view: the Sun, the orbits of Earth and Mars and the path of MMX"></canvas><figcaption>Earth and Mars move on their real orbits. The MMX path between them is my sketch of the shape of the trip.</figcaption></figure>
+<figure class="rp-view"><canvas id="rp-close" role="img" aria-label="Close view of the current phase"></canvas><figcaption id="rp-close-cap"></figcaption></figure>
+</div>
+<div class="rp-read" aria-live="polite">
+<div><span class="rp-k">Date</span><b id="rp-date"></b></div>
+<div><span class="rp-k">Mission time</span><b id="rp-elapsed"></b></div>
+<div><span class="rp-k">Phase</span><b id="rp-phase"></b></div>
+<div><span class="rp-k">Status</span><b id="rp-status" class="rp-status"></b></div>
+</div>
+<div class="rp-bar">
+<button type="button" id="rp-play" class="rp-play" aria-pressed="false">Play</button>
+<div class="rp-track"><input type="range" id="rp-slider" min="0" max="1000" value="0" aria-label="Mission time"><div id="rp-ticks" class="rp-ticks" aria-hidden="true"></div></div>
+<label class="rp-speed">Speed <select id="rp-speed"><option value="0.5">Slow</option><option value="1" selected>Normal</option><option value="2">Fast</option></select></label>
+</div>
+<p id="rp-note" class="rp-note"></p>
+<ol id="rp-phases" class="rp-phases" aria-label="Jump to a phase"></ol>
+</section>
+<article class="text">
+<h2>The timeline</h2>
+<table class="tl"><thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Status</th></tr></thead><tbody>
+<tr><td>20 Oct 2026, 04:41:03 JST (19 Oct, 20:41 BST)</td><td>Liftoff on H3 flight 10 from Tanegashima Space Center</td><td>Happened</td></tr>
+<tr><td>About 71 min 13 s after liftoff</td><td>MMX separates and is put on its path to Mars</td><td>Happened</td></tr>
+<tr><td>August 2027</td><td>Mars orbit insertion</td><td>Planned</td></tr>
+<tr><td>September 2027</td><td>Quasi satellite orbit around Phobos begins</td><td>Planned</td></tr>
+<tr><td>Early 2029</td><td>Idefix rover released onto Phobos</td><td>Planned</td></tr>
+<tr><td>2030</td><td>Landing and sampling, planned as two soft landings</td><td>Planned</td></tr>
+<tr><td>2030</td><td>Departure from the Martian sphere, with a look at Deimos</td><td>Planned</td></tr>
+<tr><td>2031</td><td>Return capsule comes down in Australia</td><td>Planned</td></tr>
+</tbody></table>
+<p>Where JAXA or ESA only give a month or a year, I picked a day inside it so the replay can move. Those dates on the read out are mine, and the phase is marked planned.</p>
+<h2>What is a quasi satellite orbit?</h2>
+<p>Phobos is about 26 km across and its gravity is far too weak to hold a spacecraft in an ordinary orbit around it. So MMX orbits Mars instead, on a path that keeps it close to Phobos. Seen from Phobos, MMX seems to loop round the moon in an oval twice as tall as it is wide. That is the small inset in the close view.</p>
+<h2>What is to scale</h2>
+<p>Earth and Mars come from JPL's approximate orbital elements, so where they sit on any date is real. Mars, Phobos and Deimos are drawn to scale in the close view, but the moons move faster than life so you can see them. The transfer paths, the capture orbit, the ascent track and the landing are my drawings of the idea, not flight data.</p>
+<h2 id="sources">Sources</h2>
+<ul class="src">
+<li><a href="https://global.jaxa.jp/press/2026/10/20261020-1_e.html">JAXA: Launch result of the MMX spacecraft aboard H3 Launch Vehicle flight No.10</a> (liftoff time, separation at about 71 min 13 s)</li>
+<li><a href="https://www.jaxa.jp/press/2026/10/files/jaxa20261018-1_01.pdf">JAXA: FY2026 launch plan for H3 and MMX</a>, in Japanese (ascent event times)</li>
+<li><a href="https://www.mmx.jaxa.jp/en/">JAXA: MMX mission site</a> (mission schedule, two soft landings, return in 2031)</li>
+<li><a href="https://www.esa.int/Science_Exploration/Space_Science/Mars_moon_lander_set_to_launch_on_19_October">ESA: Mars moon lander set to launch on 19 October</a> (Mars orbit in August 2027, Phobos from September 2027, Idefix in early 2029, landing in 2030, capsule in Australia)</li>
+<li><a href="https://www.esa.int/ESA_Multimedia/Images/2026/10/MMX_lifts_off_to_Mars_s_moon_Phobos">ESA: MMX lifts off to Mars's moon Phobos</a></li>
+<li><a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html">NASA JPL: Approximate positions of the planets</a> (Earth and Mars orbits)</li>
+<li><a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html">NASA NSSDC: Mars fact sheet</a> (Mars radius, Phobos and Deimos orbits)</li>
+</ul>
+<p>Spot a mistake? <a href="mailto:hello@dexmlabs.app?subject=MMX%20replay">Tell me</a>. More replays are on the way.</p>
+</article>
+<aside class="support-cta" aria-label="Support my work"><p class="support-cta-lead">Enjoyed this? You can support my work:</p><p class="support-cta-links"><a href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener">Buy Me a Coffee</a><span class="support-cta-sep" aria-hidden="true">·</span><a href="https://cults3d.com/en/users/ArthurDeusExMachina/3d-models" target="_blank" rel="noopener">my 3D prints on Cults</a></p></aside>
+</main>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics --></body></html>

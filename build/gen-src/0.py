@@ -110,6 +110,7 @@ GAME_SECTIONS=[
   ('tolerance','tolerance','ENGINEERING','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.','Play Tolerance','live')]),
  ('labs','WORK IN PROGRESS','Labs / Beta',[
   ('repurposed','repurposed','PUZZLE','Repurposed','A first person puzzle game in a facility that would rather you stayed put. Take over arms, drones, a crane and a wall climbing spider bot to get through. Two facilities so far.','See Repurposed','beta'),
+  ('missions/mmx','mission-replays','MISSION REPLAYS','Mission Replays','Real space missions on a time slider. First up is MMX, the Japanese trip to the Mars moon Phobos and back, with real dates and the planned steps marked.','See the MMX replay','beta'),
   (None,None,None,'Next game','In development. Nothing to see yet.',None,'sealed')]),
  ('other','ODDS AND ENDS','Other',[
   ('vector','vector','AIR TRAFFIC CONTROL','Vector','An endless air traffic control game. Route arrivals, sequence the runway and keep aircraft safely separated as your sector gets busier.','Play Vector','live'),

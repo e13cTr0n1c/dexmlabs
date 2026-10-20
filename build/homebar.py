@@ -11,7 +11,7 @@ PAGES = [('apollo-lunar-landing-game/index.html','Apollo'),('booster-landing-gam
  ('chernobyl-reactor-simulator/index.html','RBMK'),('docking-run-game/index.html','Docking Run'),
  ('enigma-machine/index.html','Enigma'),('forge/index.html','FORGE'),('glider-thermals-game/index.html','Glider Thermals'),
  ('grid/index.html','GRID'),('helicopter-sling-load-game/index.html','Sling Load'),('lorenz/index.html','Lorenz'),
- ('mars-base-game/index.html','Mars Base'),('orbit/index.html','Orbit'),('play-test-8179d030/game/index.html','Repurposed beta'),
+ ('mars-base-game/index.html','Mars Base'),('missions/mmx/index.html','MMX Replay'),('orbit/index.html','Orbit'),('play-test-8179d030/game/index.html','Repurposed beta'),
  ('repurposed/index.html','Repurposed'),('rocket-launch-game/index.html','Rocket Launch'),('skywave/index.html','Skywave'),
  ('tesla-roadster-thruster-game/index.html','Roadster Thrusters'),('tolerance/index.html','Tolerance'),('vector/index.html','Vector')]
 # Pages that need the bar placed differently, with why.

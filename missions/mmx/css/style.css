@@ -1,0 +1,32 @@
+:root{--bg:#080a08;--panel:#0f130f;--ink:#ecefe7;--muted:#a0aa9b;--edge:#3a4235;--acid:#d6ff00;--acid-ink:#d6ff00;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--head:"Arial Black",Arial,sans-serif;color-scheme:dark}
+:root[data-theme=light]{--bg:#fbfaf6;--panel:#ffffff;--ink:#15170f;--muted:#4f5747;--edge:#828a78;--acid-ink:#4b5e00;color-scheme:light}
+*{box-sizing:border-box}html{background:var(--bg)}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--mono)}
+a{color:var(--acid-ink)}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acid-ink);outline-offset:2px}
+.skip-link{position:absolute;left:-999px}.skip-link:focus{left:8px;top:40px;background:var(--acid);color:#050705;padding:10px;z-index:60}
+.site-header{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--edge)}
+.wordmark{font:900 18px/1 var(--head)}.header-sub{margin-left:10px;font:700 12px var(--mono);color:var(--muted);letter-spacing:.1em}
+main{max-width:1180px;margin:0 auto;padding:0 16px}
+.intro{max-width:760px;padding:18px 0 6px}.intro h1{font:900 clamp(24px,4.4vw,38px)/1.15 var(--head);margin:4px 0 10px}
+.eyebrow{margin:0;color:var(--acid-ink);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:12px}.beta{border:2px solid var(--acid-ink);padding:1px 6px;margin-left:6px}
+.rp-views{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rp-view{margin:0;min-width:0}.rp-view canvas{display:block;width:100%;aspect-ratio:1/1;max-height:520px;background:var(--panel);border:1px solid var(--edge)}
+.rp-view figcaption{font-size:12px;color:var(--muted);padding-top:6px;min-height:3.2em}
+.rp-read{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.rp-read>div{background:var(--panel);border:1px solid var(--edge);padding:8px 10px;min-width:0}.rp-read b{display:block;font-size:14px;overflow-wrap:anywhere}
+.rp-k{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.rp-status[data-planned="1"]{color:var(--acid-ink)}
+.rp-bar{display:flex;align-items:center;gap:12px}
+.rp-play{min-width:84px;min-height:44px;background:var(--acid);color:#050705;border:0;font:700 14px var(--mono);cursor:pointer}
+.rp-track{position:relative;flex:1;min-width:0}.rp-track input{width:100%;min-height:44px;accent-color:var(--acid);margin:0}
+.rp-ticks{position:absolute;left:8px;right:8px;bottom:2px;height:8px;pointer-events:none}.rp-ticks i{position:absolute;width:2px;height:8px;background:var(--muted)}
+.rp-speed{font-size:12px;color:var(--muted)}.rp-speed select{min-height:44px;background:var(--panel);color:var(--ink);border:1px solid var(--edge);font:inherit}
+.rp-note{min-height:3.4em;max-width:860px}
+.rp-phases{list-style:none;padding:0;margin:0 0 18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.rp-phases button{width:100%;min-height:44px;text-align:left;background:var(--panel);color:var(--ink);border:1px solid var(--edge);padding:8px 10px;font:13px/1.35 var(--mono);cursor:pointer}
+.rp-phases button[aria-current=step]{border-color:var(--acid-ink);box-shadow:inset 3px 0 0 var(--acid-ink)}
+.rp-ph-name{display:block;font-weight:700}.rp-ph-date{font-size:12px;color:var(--muted)}.rp-planned{color:var(--acid-ink);font-style:normal}
+.text{max-width:860px;padding-bottom:10px}.text h2{font:900 20px/1.2 var(--head);margin:26px 0 8px}
+.tl{width:100%;border-collapse:collapse;font-size:13px}.tl th,.tl td{text-align:left;border-bottom:1px solid var(--edge);padding:6px 8px 6px 0;vertical-align:top}
+.src li{margin-bottom:6px}
+.support-cta{max-width:860px;padding:12px 0 24px;border-top:1px solid var(--edge);color:var(--muted);font-size:13px;line-height:1.5}.support-cta p{margin:0}.support-cta-links{display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;margin-top:4px}.support-cta-links a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+@media (max-width:720px){.rp-views{grid-template-columns:1fr}.rp-read{grid-template-columns:1fr 1fr}.rp-phases{grid-template-columns:1fr 1fr}.rp-speed{display:none}.tl{font-size:12px}}
