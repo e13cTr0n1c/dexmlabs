@@ -16,7 +16,7 @@ async function open(viewport, scheme = 'dark') {
   page.on('console', m => { if (m.type() === 'error' && !/cloudflareinsights|ERR_FAILED/.test(m.text() + (m.location()?.url || ''))) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
   page.on('response', r => { if (r.status() >= 400 && r.url().startsWith(BASE)) missing.push(r.url()); });
   await ctx.route(u => !u.href.startsWith(BASE), r => r.abort()); // nothing leaves the box, no analytics from tests
-  await page.goto(BASE + '/docking-run-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.DockingRun && document.querySelectorAll('[data-level]').length === 5);
+  await page.goto(BASE + '/docking-run-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.DockingRun && document.querySelectorAll('[data-level]').length === 6);
   return {ctx, page, errors, missing};
 }
 const key = (page, code, down) => page.evaluate(([c, d]) => window.dispatchEvent(new KeyboardEvent(d ? 'keydown' : 'keyup', {code: c, key: c.replace(/^Key/, '').toLowerCase(), bubbles: true})), [code, down]);
@@ -32,7 +32,9 @@ const tap = async (page, code) => { await key(page, code, true); await key(page,
   ok(await page.evaluate(() => !!document.querySelector('.dexm-support-site') && !!document.querySelector('#result .dexm-support-end')), 'support button above the footer and on the result screen');
   await page.screenshot({path: path.join(shots, '1-title.png')});
   await page.click('[data-level="final"]'); await page.click('#play'); await page.waitForTimeout(1500);
-  ok(await page.isVisible('#keys-overlay'), 'keys overlay is shown over the view');
+  ok(await page.evaluate(() => DockingRun.mode() === 'pilot' && DockingRun.sim().mode.id === 'pilot' && DockingRun.state().assist === true), 'Pilot is the default difficulty, with kill rotation on');
+  ok(!(await page.isVisible('#keys-overlay')) && await page.isVisible('#key-hint') && /^Now: |coasting/.test(await page.textContent('#key-hint')), 'Pilot shows only the keys you need: ' + await page.textContent('#key-hint'));
+  ok(await page.evaluate(() => document.querySelector('#l-close span').textContent === 'Closing 0.01 to 0.25 m/s'), 'docking limits panel shows the Pilot limits');
   await key(page, 'KeyW', true); await page.waitForTimeout(1200);
   const held = await page.evaluate(() => ({on: document.querySelector('kbd[data-key="tx+"]').classList.contains('on'), jets: [...DockingRun.sim().jets].filter(x => x > 0).length}));
   await key(page, 'KeyW', false);
@@ -40,14 +42,19 @@ const tap = async (page, code) => { await key(page, code, true); await key(page,
   ok(held.jets === 4 && held.on, `holding W fires the 4 aft jets and lights the W key in the overlay (${held.jets} jets)`);
   ok(r1.closing > 0.005, `W closes on the port (${r1.closing.toFixed(4)} m/s after ~1 s of fine thrust)`);
   await tap(page, 'KeyT'); ok((await page.evaluate(() => DockingRun.state().fine)) === false, 'T switches fine to coarse');
-  await tap(page, 'KeyH'); ok((await page.evaluate(() => DockingRun.state().assist)) === true, 'H switches kill rotation on');
+  await tap(page, 'KeyH'); await tap(page, 'KeyH'); ok((await page.evaluate(() => DockingRun.state().assist)) === true, 'H switches kill rotation off and on');
   await page.waitForTimeout(2500); const rr = await page.evaluate(() => DockingRun.P.rel(DockingRun.sim()).rate);
-  ok(rr < 0.05, `kill rotation nulls the relative rates (${rr.toFixed(3)}°/s)`); await tap(page, 'KeyH');
+  ok(rr < 0.05, `kill rotation nulls the relative rates (${rr.toFixed(3)}°/s)`);
   await tap(page, 'KeyC'); ok((await page.evaluate(() => DockingRun.state().cam)) === 'chase', 'C switches to the chase camera'); await tap(page, 'KeyC');
   await tap(page, 'KeyP'); const tA = await page.evaluate(() => DockingRun.sim().t); await page.waitForTimeout(400); const tB = await page.evaluate(() => DockingRun.sim().t); ok(tA === tB, 'P pauses'); await tap(page, 'KeyP');
   const b = await page.$('[data-hold="ry+"]'); await b.scrollIntoViewIfNeeded(); const box = await b.boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(300);
   const pad = await page.evaluate(() => DockingRun.state().keys); await page.mouse.up(); ok(pad.includes('ry+'), 'holding a pad button fires (mouse and touch fallback)');
-  await tap(page, 'Slash'); ok(!(await page.isVisible('#keys-overlay')), '? hides the keys overlay'); await tap(page, 'Slash');
+  { const v = await page.$('#view'); await v.scrollIntoViewIfNeeded(); const bb = await v.boundingBox(); await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2); await page.mouse.down(); await page.mouse.move(bb.x + bb.width / 2 + 120, bb.y + bb.height / 2 - 60, {steps: 5});
+    const mr = await page.evaluate(() => { const s = DockingRun.sim(); return [...s.jets].filter(x => x > 0).length; }); await page.waitForTimeout(400); await page.mouse.up(); ok(mr > 0, `dragging the docking camera view rotates the capsule (${mr} jets firing)`); }
+  await tap(page, 'Slash'); ok(await page.isVisible('#keys-overlay') && !(await page.isVisible('#key-hint')), '? swaps the key hint for the full keys overlay'); await tap(page, 'Slash');
+  await page.evaluate(() => { DockingRun.setMode('realistic'); DockingRun.start('final'); }); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => DockingRun.sim().mode.id === 'realistic' && DockingRun.sim().lim.vMax === 0.1 && DockingRun.state().assist === false && document.querySelector('#l-close span').textContent === 'Closing 0.03 to 0.10 m/s'), 'Realistic keeps the real limits with kill rotation off');
+  await page.evaluate(() => DockingRun.setMode('pilot'));
   await page.evaluate(() => DockingRun.start('rendezvous')); await page.waitForTimeout(300);
   for (let i = 0; i < 6; i++) await tap(page, 'BracketRight');
   ok((await page.evaluate(() => DockingRun.state().warp)) === 100, 'time warp goes to 100× at 2 km');
@@ -71,7 +78,7 @@ const PILOT = `(async () => {
 {
   const {ctx, page, errors} = await open({width: 1440, height: 900});
   await page.evaluate(PILOT);
-  for (const id of ['final', 'approach', 'tumble', 'rendezvous', 'night']) {
+  for (const id of ['tutorial', 'final', 'approach', 'tumble', 'rendezvous', 'night']) {
     await page.evaluate(i => { DockingRun.start(i); DockingRun.setScale(i === 'rendezvous' ? 80 : 25); }, id);
     let shot = null; const t0 = Date.now();
     while (Date.now() - t0 < 240000) {
@@ -79,14 +86,16 @@ const PILOT = `(async () => {
       if (id === 'final' && !shot && st.range < 7) { await page.evaluate(() => DockingRun.setScale(0)); await page.waitForTimeout(500); await page.screenshot({path: path.join(shots, '2-docking-camera.png')}); shot = 1; await page.evaluate(() => DockingRun.setScale(25)); }
       if (id === 'rendezvous' && !shot && st.range < 900) { await page.evaluate(() => DockingRun.setScale(0)); await tap(page, 'KeyC'); await page.waitForTimeout(1500); await page.screenshot({path: path.join(shots, '3-rendezvous-chase.png')}); await tap(page, 'KeyC'); shot = 1; await page.evaluate(() => DockingRun.setScale(80)); }
       if (id === 'night' && !shot && st.range < 12) { await page.evaluate(() => DockingRun.setScale(0)); await page.waitForTimeout(500); await page.screenshot({path: path.join(shots, '4-night-pass.png')}); shot = 1; await page.evaluate(() => DockingRun.setScale(25)); }
+      if (id === 'tutorial' && !shot && st.range < 6 && st.phase === 'fly') { await page.evaluate(() => DockingRun.setScale(0)); await page.waitForTimeout(500); await page.screenshot({path: path.join(shots, '7-pilot-guidance.png')}); shot = 1; await page.evaluate(() => DockingRun.setScale(25)); }
+      if (id === 'tutorial' && shot === 1 && st.phase === 'docked') { await page.evaluate(() => DockingRun.setScale(1)); await page.waitForTimeout(1900); await page.screenshot({path: path.join(shots, '8-docked.png')}); shot = 2; }
       if (st.shown) break; await page.waitForTimeout(250);
     }
     const res = await page.evaluate(() => ({phase: DockingRun.sim().phase, head: document.getElementById('result-head').textContent, text: document.getElementById('result-text').textContent, ev: DockingRun.sim().events.map(e => e.type).join(',')}));
-    ok(res.phase === 'docked' && /Hard capture/.test(res.head) && /soft,retract,hard$/.test(res.ev), `${id}: autopilot docked through the keyboard: ${res.head} ${res.text.slice(0, 160)}`);
+    ok(res.phase === 'docked' && /Docked! [★☆]{3}/.test(res.head) && /soft,retract,hard$/.test(res.ev), `${id}: autopilot docked through the keyboard: ${res.head} ${res.text.slice(0, 160)}`);
     if (id === 'tumble') await page.screenshot({path: path.join(shots, '5-hard-capture-result.png')});
   }
-  const best = await page.evaluate(() => JSON.parse(localStorage.getItem('docking:stats')).best);
-  ok(Object.keys(best).length === 5, 'best scores kept locally for all five runs: ' + JSON.stringify(best));
+  const best = await page.evaluate(() => JSON.parse(localStorage.getItem('docking:stats')).bestP);
+  ok(Object.keys(best).length === 6, 'Pilot best scores kept locally for all six runs: ' + JSON.stringify(best));
   ok(!errors.length, `no console errors during the autopilot runs (${errors.join(' | ') || 'clean'})`);
   await ctx.close();
 }

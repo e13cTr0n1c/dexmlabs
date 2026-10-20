@@ -5,6 +5,7 @@ import {LEVELS, byId} from './levels.js';
 import {buildBackground, buildStation, buildCapsule, puffSprite} from './scene.js';
 import {ukDate, countdown, grid, makeStore} from './daily.js';
 import {dailyLevel} from './daily-level.js';
+import {decide as guide} from '../tests/pilot.mjs';
 
 const $ = id => document.getElementById(id);
 const KEY = 'docking:stats';
@@ -13,11 +14,13 @@ const write = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch
 const store = () => { const s = read(); s.best = s.best || {}; s.docks = s.docks || {}; return s; };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const H = 1 / 60;
-const app = {sim: null, level: byId(store().level), keys: new Set(), fine: false, assist: !!store().assist, cam: 'port', warp: 1, paused: false, testScale: 1, acc: 0, last: 0, raf: 0,
+const modeOf = () => P.MODES[store().mode] ? store().mode : 'pilot', assistFor = m => { const a = store().assistBy?.[m]; return a === undefined ? P.MODES[m].assist : a; };
+const app = {sim: null, level: byId(store().level), mode: modeOf(), keys: new Set(), fine: false, assist: assistFor(modeOf()), shake: 0, mouseRot: [0, 0, 0], hint: {}, dockT: 0, zone: '', cam: 'port', warp: 1, paused: false, testScale: 1, acc: 0, last: 0, raf: 0,
   orbit: {yaw: 0, pitch: 0.2, dist: 16}, said: {}, trail: [], prevJets: new Float32Array(P.JETS.length), finished: false, chaseOff: null, chaseUp: null, evIdx: 0, hudT: 0, puffs: [], resultShown: false};
 window.DockingRun = {sim: () => app.sim, start: id => start(byId(id)), setScale: k => { app.testScale = k; }, onStep: null, P, levels: LEVELS,
   orbit: () => app.orbit, setCam: c => { app.cam = c; syncToggles(); }, clean: on => { app.clean = on; over.style.visibility = on ? 'hidden' : ''; $('keys-overlay').style.visibility = on ? 'hidden' : ''; },
   daily: () => dailyLevel(), startDaily: () => startDaily(), dailyRecord: () => DAILY.get(ukDate()), dailyCard: () => { const r = DAILY.get(ukDate()); return r && dailyCard(r); }, last: null,
+  mode: () => app.mode, setMode: m => setMode(m), hint: () => ({...app.hint}),
   state: () => ({phase: app.sim?.phase, warp: app.warp, cam: app.cam, fine: app.fine, assist: app.assist, paused: app.paused, finished: app.finished, keys: [...app.keys]})};
 
 // ---------- renderer and scenes ----------
@@ -28,7 +31,7 @@ function initGL() {
   catch (e) { $('nogl').hidden = false; return false; }
   renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; renderer.autoClear = false;
   scene = new THREE.Scene(); bg = buildBackground(); station = buildStation(); capsule = buildCapsule();
-  scene.add(station.group, capsule.group);
+  scene.add(station.group, capsule.group); buildGuide();
   sunLight = new THREE.DirectionalLight(0xfff6ea, 2.8); scene.add(sunLight, sunLight.target);
   earthshine = new THREE.HemisphereLight(0x000000, 0x4a78b8, 0.8); scene.add(earthshine);
   ambient = new THREE.AmbientLight(0x8090a0, 0.05); scene.add(ambient);
@@ -47,7 +50,8 @@ const CAM_TURN = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1,
 // ---------- a run ----------
 function start(level) {
   cancelAnimationFrame(app.raf); if (!level.daily) { app.level = level; app.daily = null; const st = store(); st.level = level.id; write(st); }
-  app.sim = P.makeSim(level); app.keys.clear(); app.warp = 1; app.paused = false; app.said = {}; app.trail = []; app.finished = false; app.resultShown = false; app.evIdx = 0; app.chaseOff = null; app.acc = 0;
+  const mode = level.daily ? 'pilot' : app.mode; app.sim = P.makeSim(level, {mode}); app.assist = assistFor(mode); app.shake = 0; app.hint = {}; app.dockT = 0; app.zone = ''; app.mouseRot = [0, 0, 0];
+  limitsText(app.sim.lim); $('keys-overlay').hidden = store().keysHidden ?? (mode === 'pilot'); $('key-hint').hidden = !$('keys-overlay').hidden; $('key-hint').textContent = ''; app.prompt = ''; app.hintKeys = []; app.keys.clear(); app.warp = 1; app.paused = false; app.said = {}; app.trail = []; app.finished = false; app.resultShown = false; app.evIdx = 0; app.chaseOff = null; app.acc = 0;
   app.fine = level.start.ax < 60; syncToggles();
   $('flight').hidden = false; $('screen-title').hidden = true; document.body.dataset.screen = 'game'; scrollTo(0, 0); $('result').hidden = true;
   $('flight-h').textContent = level.name + (level.daily && app.daily.practice ? ' (practice)' : ''); $('level-note').textContent = (level.daily ? (app.daily.practice ? 'Practice: this run is not scored. ' : 'Your one scored run today. ') : '') + level.blurb; say('');
@@ -56,7 +60,8 @@ function start(level) {
 }
 function readInput() {
   const k = app.keys, a = (p, m) => (k.has(p) ? 1 : 0) - (k.has(m) ? 1 : 0);
-  return {t: [a('tx+', 'tx-'), a('ty+', 'ty-'), a('tz+', 'tz-')], r: [a('rx+', 'rx-'), a('ry+', 'ry-'), a('rz+', 'rz-')], fine: app.fine, assist: app.assist};
+  const r = [a('rx+', 'rx-'), a('ry+', 'ry-'), a('rz+', 'rz-')].map((v, i) => v || app.mouseRot[i]);
+  return {t: [a('tx+', 'tx-'), a('ty+', 'ty-'), a('tz+', 'tz-')], r, fine: app.fine, assist: app.assist};
 }
 function loop(now) {
   const dt = Math.min(0.1, (now - app.last) / 1000); app.last = now; const sim = app.sim;
@@ -67,7 +72,7 @@ function loop(now) {
     while (app.acc >= H && n < 6000) { if (window.DockingRun.onStep) window.DockingRun.onStep(sim); P.step(sim, readInput(), H); app.acc -= H; n++; }
     if (n >= 6000) app.acc = 0;
     if (!app.trail.length || sim.t - app.trail[app.trail.length - 1].t > Math.max(1, P.rel(sim).range / 50)) { app.trail.push({t: sim.t, p: sim.cap.p.slice()}); if (app.trail.length > 400) app.trail.shift(); }
-    events(); callouts(); sound(dt);
+    if (sim.phase === 'fly') updateHint(sim); else if ($('key-hint').textContent) $('key-hint').textContent = ''; events(); callouts(); sound(dt);
   }
   draw(dt); if (now - app.hudT > 90) { hud(); app.hudT = now; }
   if ((sim.phase === 'docked' || sim.phase === 'crash' || sim.phase === 'lost') && !app.finished) { app.finished = true; setTimeout(finish, sim.phase === 'docked' ? 900 : 1400); }
@@ -77,16 +82,17 @@ function events() {
   const ev = app.sim.events;
   for (; app.evIdx < ev.length; app.evIdx++) {
     const e = ev[app.evIdx];
-    if (e.type === 'soft') { say('Contact. Capture latches engaged: soft capture.'); clunk(0.5); }
+    if (e.type === 'soft') { say('Contact. Capture latches engaged: soft capture.'); clunk(0.7); chime(); app.shake = Math.max(app.shake, 0.9); }
     if (e.type === 'retract') { say('Ring retracting, pulling you in.'); motor(P.CAPTURE.retract); }
-    if (e.type === 'hard') { say('Hooks closed. Hard capture.'); clunk(0.8); setTimeout(() => clunk(0.6), 180); }
-    if (e.type === 'bounce') { say(`Contact, no capture: ${e.why}. The ring's springs pushed you back out.`); clunk(0.35); }
-    if (e.type === 'crash') { clunk(1); }
+    if (e.type === 'hard') { say('Hooks closed. Hard capture. DOCKED!'); app.dockT = performance.now(); app.shake = Math.max(app.shake, 0.6); for (let i = 0; i < 12; i++) setTimeout(() => clunk(0.35 + (i % 3) * 0.1), i * 70); setTimeout(() => { clunk(1); fanfare(); }, 900); }
+    if (e.type === 'bounce') { say(`Contact, no capture: ${e.why}. The ring's springs pushed you back out.`); clunk(0.45); app.shake = Math.max(app.shake, 0.7); }
+    if (e.type === 'crash') { clunk(1); app.shake = 1.6; }
   }
 }
 function callouts() {
   const s = app.sim, r = P.rel(s), c = (k, t) => { if (!app.said[k]) { app.said[k] = 1; say(t); } };
   if (s.phase !== 'fly') return;
+  if (s.level.tutorial) { tutorPrompt(s, r); }
   if (s.prop <= 0) c('dry', 'Propellant depleted. You are coasting now.');
   else if (s.prop < s.prop0 * 0.15) c('low', 'Propellant low: 15% left.');
   if (r.range < 10) c('10', 'Ten metres. Fine mode, and keep the closing rate between 0.03 and 0.1 m/s.');
@@ -95,6 +101,78 @@ function callouts() {
 }
 function say(t) { $('feedback').textContent = t; }
 
+// ---------- guidance: the glowing corridor, the closing speed gauge, correction arrows, prompts ----------
+const ZONE = {green: 0x9dff3a, amber: 0xffb000, red: 0xff4a2a}, ZCSS = {green: '#9dff3a', amber: '#ffb000', red: '#ff4a2a'};
+let guideGrp = null;
+function buildGuide() {
+  guideGrp = new THREE.Group(); const x0 = P.STATION.portFace + P.STATION.ringOut, mat = () => new THREE.MeshBasicMaterial({color: ZONE.green, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false});
+  const line = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 200, 6, 1, true), mat()); line.rotation.z = Math.PI / 2; line.position.x = x0 + 100; line.material.opacity = 0.7; guideGrp.add(line);
+  for (const d of [1, 2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 60, 80, 100, 130, 160, 200]) { const R = 0.05 + 0.03 * d, ring = new THREE.Mesh(new THREE.TorusGeometry(R, Math.max(0.008, R * 0.035), 6, 48), mat()); ring.rotation.y = Math.PI / 2; ring.position.x = x0 + d; ring.userData.d = d; guideGrp.add(ring); }
+  station.group.add(guideGrp);
+}
+function updateGuide(s) {
+  if (!guideGrp) return; const fly = s.phase === 'fly'; guideGrp.visible = fly && !app.clean; if (!fly) return;
+  const r = P.rel(s), z = P.speedZone(r, s.lim), t = performance.now() / 1000, col = ZONE[z];
+  for (const m of guideGrp.children) { m.material.color.setHex(col); const d = m.userData.d; if (d) { const near = Math.abs(d - r.ax) < Math.max(2, r.ax * 0.25); m.material.opacity = (d > r.ax + 2 ? 0.12 : near ? 0.85 : 0.4) * (0.75 + 0.25 * Math.sin(t * 4 - d * 0.6)); } }
+}
+const KEYNAME = {W: 'forward', S: 'brake', R: 'up', F: 'down', A: 'left', D: 'right', I: 'nose down', K: 'nose up', J: 'nose left', L: 'nose right', U: 'roll left', O: 'roll right'};
+function updateHint(sim) {
+  const c = guide(sim), r = P.rel(sim), now = performance.now(), on = k => { app.hint[k] = now; };
+  if (c.t[0] > 0) on('W'); if (c.t[0] < 0) on('S'); if (c.t[1] > 0) on('R'); if (c.t[1] < 0) on('F'); if (c.t[2] > 0) on('D'); if (c.t[2] < 0) on('A');
+  const big = Math.max(Math.abs(r.pitch), Math.abs(r.yaw), Math.abs(r.roll)) > (app.assist ? 1.2 : 0.4);
+  if (big) { if (c.r[2] > 0) on('K'); if (c.r[2] < 0) on('I'); if (c.r[1] > 0) on('J'); if (c.r[1] < 0) on('L'); if (c.r[0] > 0) on('O'); if (c.r[0] < 0) on('U'); }
+  const show = Object.keys(KEYNAME).filter(k => now - (app.hint[k] || -1e9) < 450), el = $('key-hint');
+  const txt = show.length ? 'Now: ' + show.map(k => `${k} ${KEYNAME[k]}`).join(' · ') : 'Hands off: coasting nicely';
+  app.hintKeys = show; if (el && el.textContent !== txt) el.textContent = txt;
+}
+function gauge(rect) {
+  const x = ox, s = app.sim, r = P.rel(s), lim = s.lim, g = P.guideSpeed(r.range, lim), z = P.speedZone(r, lim), top = rect.y + Math.round(rect.w * 0.27 * 9 / 16) + 34, bot = rect.y + rect.h - 64, gx = rect.x + rect.w - 64, gw = 26;
+  if (z !== app.zone) { if (z === 'green' && app.zone) tick(); app.zone = z; }
+  if (bot - top < 120) return; const max = Math.max(0.3, g * 2.6), Y = v => bot - Math.max(0, Math.min(1, v / max)) * (bot - top);
+  const band = r.range < 3 ? [lim.vMin, lim.vMax, lim.vMax * 1.6] : [g * 0.5, g * 1.5, g * 2.2];
+  x.fillStyle = 'rgba(8,10,8,.7)'; x.fillRect(gx - 8, top - 26, gw + 16, bot - top + 70);
+  x.fillStyle = 'rgba(255,74,42,.55)'; x.fillRect(gx, top, gw, bot - top); x.fillStyle = 'rgba(255,176,0,.6)'; x.fillRect(gx, Y(band[2]), gw, bot - Y(band[2]));
+  x.fillStyle = 'rgba(157,255,58,.75)'; x.fillRect(gx, Y(band[1]), gw, Y(band[0]) - Y(band[1]));
+  const my = Y(Math.max(0, r.closing)); x.fillStyle = '#fff'; x.fillRect(gx - 8, my - 2, gw + 16, 4); x.beginPath(); x.moveTo(gx - 10, my - 7); x.lineTo(gx - 2, my); x.lineTo(gx - 10, my + 7); x.fill();
+  x.textAlign = 'center'; x.font = 'bold 11px ui-monospace,Menlo,Consolas,monospace'; x.fillStyle = '#fff'; x.fillText('CLOSING', gx + gw / 2, top - 14);
+  x.font = '900 18px ui-monospace,Menlo,Consolas,monospace'; x.fillStyle = ZCSS[z]; x.fillText(`${(r.closing * 100).toFixed(1)}`, gx + gw / 2, bot + 18); x.font = '10px ui-monospace,Menlo,Consolas,monospace'; x.fillText('cm/s', gx + gw / 2, bot + 34);
+  x.font = '12px ui-monospace,Menlo,Consolas,monospace';
+}
+function arrows(rect, port) {
+  if (!port || !app.hintKeys) return; const x = ox, cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2, R = Math.min(rect.w, rect.h) * 0.2, t = performance.now() / 1000, pulse = 0.65 + 0.35 * Math.sin(t * 8);
+  const arrow = (ax, ay, ang, label) => { x.save(); x.translate(ax, ay); x.rotate(ang); x.globalAlpha = pulse; x.fillStyle = '#9dff3a'; x.beginPath(); x.moveTo(16, 0); x.lineTo(-10, -13); x.lineTo(-4, 0); x.lineTo(-10, 13); x.closePath(); x.fill(); x.restore(); x.globalAlpha = 1;
+    x.font = 'bold 15px ui-monospace,Menlo,Consolas,monospace'; x.textAlign = 'center'; x.fillStyle = '#050705'; const lx = ax + Math.cos(ang) * 30, ly = ay + Math.sin(ang) * 30; x.fillRect(lx - 11, ly - 11, 22, 22); x.fillStyle = '#9dff3a'; x.fillText(label, lx, ly + 1); };
+  const k = new Set(app.hintKeys);
+  if (k.has('R')) arrow(cx, cy - R, -Math.PI / 2, 'R'); if (k.has('F')) arrow(cx, cy + R, Math.PI / 2, 'F'); if (k.has('A')) arrow(cx - R * 1.3, cy, Math.PI, 'A'); if (k.has('D')) arrow(cx + R * 1.3, cy, 0, 'D');
+  x.font = 'bold 14px ui-monospace,Menlo,Consolas,monospace'; x.textAlign = 'center';
+  const rot = ['I', 'K', 'J', 'L', 'U', 'O'].filter(q => k.has(q)); if (rot.length) { x.fillStyle = '#ffd34d'; x.fillText(`↻ ${rot.map(q => `${q} ${KEYNAME[q]}`).join('  ')}  (or drag the view)`, cx, cy + R + 46); }
+  if (k.has('W')) { x.fillStyle = '#9dff3a'; x.fillText('▲ W forward', cx, cy - R - 34); } if (k.has('S')) { x.fillStyle = '#ffb000'; x.fillText('▼ S brake', cx, cy - R - 34); }
+  x.font = '12px ui-monospace,Menlo,Consolas,monospace';
+}
+function tutorPrompt(s, r) {
+  const z = P.speedZone(r, s.lim), g = P.guideSpeed(r.range, s.lim);
+  app.prompt = r.closing < 0.02 && r.range > 1.5 ? 'Hold W to drift forward until the speed gauge on the right turns green.'
+    : z === 'red' && r.closing > g ? 'A bit fast. Tap S to brake back into the green.'
+    : r.range > 3 ? 'Let go of W. You coast in on your own: nothing in space slows you down.' : 'Nearly there. Keep it green and let the ring catch you.';
+}
+function prompt(rect) {
+  if (!app.sim.level.tutorial || !app.prompt) return; const x = ox, cx = rect.x + rect.w / 2, y = rect.y + 84;
+  x.font = 'bold 18px Arial,sans-serif'; const w = Math.min(rect.w - 40, x.measureText(app.prompt).width + 36); x.fillStyle = 'rgba(8,10,8,.82)'; x.fillRect(cx - w / 2, y - 22, w, 44); x.strokeStyle = '#d6ff00'; x.lineWidth = 2; x.strokeRect(cx - w / 2, y - 22, w, 44);
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.fillText(app.prompt, cx, y + 1); x.font = '12px ui-monospace,Menlo,Consolas,monospace';
+}
+function dockedMoment(rect) {
+  const x = ox, t = (performance.now() - app.dockT) / 1000, cx = rect.x + rect.w / 2, cy = rect.y + rect.h * 0.3, sc = P.score(app.sim), k = Math.min(1, t * 5) * (1 + 0.35 * Math.exp(-4 * t) * Math.cos(t * 14));
+  x.save(); x.translate(cx, cy); x.scale(k, k); x.font = '900 72px "Arial Black",Arial,sans-serif'; x.textAlign = 'center'; x.shadowColor = '#d6ff00'; x.shadowBlur = 30; x.fillStyle = '#d6ff00'; x.fillText('DOCKED!', 0, 0); x.restore();
+  x.font = '48px Arial,sans-serif'; x.textAlign = 'center'; for (let i = 0; i < 3; i++) { const on = i < sc.stars, a = Math.min(1, Math.max(0, (t - 0.5 - i * 0.3) * 4)); if (!a) continue; x.globalAlpha = a; x.fillStyle = on ? '#ffd34d' : 'rgba(255,255,255,.3)'; x.fillText(on ? '★' : '☆', cx + (i - 1) * 60, cy + 70 + (1 - a) * 20); }
+  x.globalAlpha = 1; if (t > 1.6 && sc.combo) { x.font = 'bold 20px ui-monospace,Menlo,Consolas,monospace'; x.fillStyle = '#9dff3a'; x.fillText(`Smooth approach combo +${sc.combo}`, cx, cy + 120); }
+  x.font = '12px ui-monospace,Menlo,Consolas,monospace';
+}
+function limitsText(L) {
+  const set = (id, t) => { $(id).querySelector('span').textContent = t; };
+  set('l-close', `Closing ${L.vMin.toFixed(2)} to ${L.vMax.toFixed(2)} m/s`); set('l-lat', `Off centreline under ${L.lat.toFixed(2)} m`); set('l-ang', `Misalignment under ${L.ang}°`); set('l-roll', `Roll under ${L.roll}°`); set('l-rate', `Turning under ${L.rate}°/s`); set('l-slide', `Sliding under ${L.latRate} m/s`);
+}
+function setMode(m) { if (!P.MODES[m]) return; app.mode = m; const st = store(); st.mode = m; write(st); app.assist = assistFor(m); levelList(); }
+
 // ---------- drawing ----------
 const tmpV = new THREE.Vector3();
 function poseObjects(dt) {
@@ -102,6 +180,7 @@ function poseObjects(dt) {
   station.group.quaternion.copy(Q(st.q));
   capsule.group.position.copy(V3(cap.p)); capsule.group.quaternion.copy(Q(cap.q));
   const ring = s.phase === 'fly' || !s.capture ? P.STATION.ringOut : s.capture.ring; station.ring.position.x = P.STATION.portFace + ring;
+  updateGuide(s);
   const hk = s.capture?.hooks || 0; station.hooks.forEach(h => { h.children[0].rotation.z = 1.1 * (1 - hk); });
   const sun = P.sunDir(s), lit = P.sunlit(s), sunB = P.qrotT(st.q, sun);
   for (const w of station.wings) w.rotation.z = Math.atan2(-sunB[0], sunB[1]);
@@ -133,6 +212,8 @@ function placeCameras(dt) {
   if (!app.chaseOff) { app.chaseOff = off.clone(); app.chaseUp = up.clone(); } else { app.chaseOff.lerp(off, k); app.chaseUp.lerp(up, k).normalize(); }
   chaseCam.position.copy(V3(cap.p)).add(app.chaseOff); chaseCam.up.copy(app.chaseUp);
   chaseCam.lookAt(V3(cap.p).add(new THREE.Vector3(5, 0, 0).applyQuaternion(qc)));
+  if (app.shake > 0.01 && !reduced()) { const k = app.shake * app.shake * 0.06, j = () => (Math.random() - 0.5) * k; portCam.position.add(new THREE.Vector3(j(), j(), j())); chaseCam.position.add(new THREE.Vector3(j() * 3, j() * 3, j() * 3)); portCam.rotateZ(j() * 0.4); }
+  app.shake = Math.max(0, app.shake - dt * 1.6);
 }
 function renderView(cam, x, y, w, h) {
   renderer.setViewport(x, y, w, h); renderer.setScissor(x, y, w, h); renderer.setScissorTest(true);
@@ -165,7 +246,7 @@ function overlay(rect, cam, kind, isMain) {
     for (let i = 1; i <= 4; i++) { const t = R * 0.65 * i; x.beginPath(); x.moveTo(cx + t, cy - 4); x.lineTo(cx + t, cy + 4); x.moveTo(cx - t, cy - 4); x.lineTo(cx - t, cy + 4); x.moveTo(cx - 4, cy + t); x.lineTo(cx + 4, cy + t); x.moveTo(cx - 4, cy - t); x.lineTo(cx + 4, cy - t); x.stroke(); }
     // where the target cross is: a diamond, so it can be found at range and at night
     const tp = project(cam, tgtW, rect);
-    if (!tp.behind && Math.abs(tp.nx) < 1 && Math.abs(tp.ny) < 1) { const good = r.lat < P.LIMITS.lat && r.ang < P.LIMITS.ang; x.strokeStyle = good ? LIME : '#fff'; x.lineWidth = 1.5; const k = small ? 6 : 10; x.beginPath(); x.moveTo(tp.x, tp.y - k); x.lineTo(tp.x + k, tp.y); x.lineTo(tp.x, tp.y + k); x.lineTo(tp.x - k, tp.y); x.closePath(); x.moveTo(tp.x - k * 1.8, tp.y); x.lineTo(tp.x - k * 0.5, tp.y); x.moveTo(tp.x + k * 0.5, tp.y); x.lineTo(tp.x + k * 1.8, tp.y); x.stroke(); }
+    if (!tp.behind && Math.abs(tp.nx) < 1 && Math.abs(tp.ny) < 1) { const good = r.lat < s.lim.lat && r.ang < s.lim.ang; x.strokeStyle = good ? LIME : '#fff'; x.lineWidth = 1.5; const k = small ? 6 : 10; x.beginPath(); x.moveTo(tp.x, tp.y - k); x.lineTo(tp.x + k, tp.y); x.lineTo(tp.x, tp.y + k); x.lineTo(tp.x - k, tp.y); x.closePath(); x.moveTo(tp.x - k * 1.8, tp.y); x.lineTo(tp.x - k * 0.5, tp.y); x.moveTo(tp.x + k * 0.5, tp.y); x.lineTo(tp.x + k * 1.8, tp.y); x.stroke(); }
     else edgeArrow(rect, tp, 'TARGET');
     if (!small) {
       x.fillStyle = LIME; x.textAlign = 'left'; const lx = cx + R * 2.8, ly = cy - R * 1.6;
@@ -183,6 +264,7 @@ function overlay(rect, cam, kind, isMain) {
     const tags = [app.fine ? 'FINE' : 'COARSE', app.assist ? 'KILL ROT' : null, app.warp > 1 ? `WARP ${app.warp}×` : null, app.testScale > 1 ? `TEST ${app.testScale}×` : null, app.paused ? 'PAUSED' : null, P.sunlit(s) < 0.5 ? 'NIGHT' : null].filter(Boolean);
     x.fillStyle = LIME; x.fillText(tags.join('  ·  '), rect.x + 10, rect.y + 34); x.fillStyle = 'rgba(255,255,255,.7)'; x.fillText(`T+${fmtTime(s.t)}  ·  fuel ${s.prop.toFixed(1)} kg`, rect.x + 10, rect.y + 52);
     if (rect.w >= 480) hill({x: rect.x + 10, y: rect.y + rect.h - 150, w: 210, h: 140});
+    if (s.phase === 'fly') { gauge(rect); arrows(rect, kind === 'port'); prompt(rect); }
     if (s.phase !== 'fly') banner(rect);
   } else { x.strokeStyle = 'rgba(255,255,255,.4)'; x.lineWidth = 1; x.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1); }
   x.restore();
@@ -194,7 +276,8 @@ function edgeArrow(rect, p, label) {
   x.fillStyle = LIME; x.textAlign = 'center'; x.fillText(label, px - Math.cos(a) * 22, py - Math.sin(a) * 18);
 }
 function banner(rect) {
-  const s = app.sim, x = ox, t = {soft: 'SOFT CAPTURE', hard: 'RETRACTING · HOOKS CLOSING', docked: 'HARD CAPTURE', crash: 'COLLISION', lost: 'LOST CONTACT'}[s.phase];
+  const s = app.sim; if (s.phase === 'docked' && app.dockT) return dockedMoment(rect);
+  const x = ox, t = {soft: 'SOFT CAPTURE', hard: 'RETRACTING · HOOKS CLOSING', docked: 'HARD CAPTURE', crash: 'COLLISION', lost: 'LOST CONTACT'}[s.phase];
   x.font = '900 28px "Arial Black",Arial,sans-serif'; x.textAlign = 'center'; x.fillStyle = s.phase === 'crash' || s.phase === 'lost' ? BAD : LIME; x.fillText(t, rect.x + rect.w / 2, rect.y + rect.h * 0.22);
   x.font = '12px ui-monospace,Menlo,Consolas,monospace';
 }
@@ -215,11 +298,11 @@ function hill(b) {
 const sgn = (v, d) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(d);
 const fmtRange = m => m >= 1000 ? `${(m / 1000).toFixed(2)} km` : m >= 100 ? `${m.toFixed(0)} m` : `${m.toFixed(2)} m`;
 const fmtTime = t => { t = Math.floor(t); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); };
-const closingOk = r => r.range > 5 || app.sim?.phase !== 'fly' || (r.closing >= P.LIMITS.vMin - 0.005 && r.closing <= P.LIMITS.vMax);
+const closingOk = r => r.range > 5 || app.sim?.phase !== 'fly' || (r.closing >= app.sim.lim.vMin - 0.005 && r.closing <= app.sim.lim.vMax);
 
 // ---------- HUD ----------
 function hud() {
-  const s = app.sim; if (!s) return; const r = P.rel(s), L = P.LIMITS, set = (id, t, warn) => { const e = $(id); e.textContent = t; e.parentElement.classList.toggle('warn', !!warn); };
+  const s = app.sim; if (!s) return; const r = P.rel(s), L = s.lim, set = (id, t, warn) => { const e = $(id); e.textContent = t; e.parentElement.classList.toggle('warn', !!warn); };
   set('h-range', fmtRange(r.range)); set('h-closing', `${r.closing >= 0 ? '' : '−'}${Math.abs(r.closing).toFixed(3)} m/s`, !closingOk(r));
   set('h-y', `${sgn(r.y, 2)} m`, r.range < 5 && Math.abs(r.y) > L.lat); set('h-z', `${sgn(-r.z, 2)} m`, r.range < 5 && Math.abs(r.z) > L.lat);
   set('h-dy', `${sgn(r.dy, 3)} / ${sgn(-r.dz, 3)}`, r.range < 5 && r.latRate > L.latRate);
@@ -246,11 +329,11 @@ function finish() {
   $('daily-result').hidden = true;
   $('result').hidden = false; const c = s.contact;
   if (ok) {
-    const prev = st.best[L.id] || 0, nb = sc.total > prev; if (nb) st.best[L.id] = sc.total; st.docks[L.id] = (st.docks[L.id] || 0) + 1; write(st);
-    $('result-head').textContent = `Hard capture. ${sc.total} points: ${P.rank(sc.total)}.`;
+    const bk = app.mode === 'pilot' ? 'bestP' : 'best'; st[bk] = st[bk] || {}; const prev = st[bk][L.id] || 0, nb = sc.total > prev; if (nb) st[bk][L.id] = sc.total; st.docks[L.id] = (st.docks[L.id] || 0) + 1; write(st);
+    $('result-head').textContent = `Docked! ${'★'.repeat(sc.stars)}${'☆'.repeat(3 - sc.stars)} ${sc.total} points: ${P.rank(sc.total)}.`;
     $('result-text').textContent = `Contact at ${c.closing.toFixed(3)} m/s, ${(c.lat * 100).toFixed(1)} cm off the centreline, ${c.ang.toFixed(2)}° off axis, ${c.roll.toFixed(2)}° of roll, turning at ${c.rate.toFixed(2)}°/s, after ${fmtTime(c.t)} with ${s.prop.toFixed(1)} kg of propellant left${s.bounces ? ` and ${s.bounces} bounce${s.bounces > 1 ? 's' : ''} off the ring` : ''}.${nb ? ' A new best for this run.' : ` Your best here is ${prev}.`}`;
-    const p = sc.parts; $('result-parts').innerHTML = [['Closing rate', p.speed], ['Centreline', p.centre], ['Alignment', p.align], ['Rates', p.rates], ['Fuel', p.fuel], ['Time', p.time]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join(''); $('result-parts').hidden = false;
-    app.share = `Docking Run, ${L.name}: hard capture, ${sc.total} points (${P.rank(sc.total)}). ${c.closing.toFixed(3)} m/s, ${(c.lat * 100).toFixed(1)} cm off, ${c.ang.toFixed(2)}°. https://dexmlabs.app/docking-run-game/`;
+    const p = {...sc.parts, combo: sc.combo}; $('result-parts').innerHTML = [['Closing rate', p.speed], ['Centreline', p.centre], ['Alignment', p.align], ['Rates', p.rates], ['Fuel', p.fuel], ['Time', p.time], ['Smooth combo', p.combo]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join(''); $('result-parts').hidden = false;
+    app.share = `Docking Run (${P.MODES[app.mode].name}), ${L.name}: docked ${'★'.repeat(sc.stars)}, ${sc.total} points (${P.rank(sc.total)}). ${c.closing.toFixed(3)} m/s, ${(c.lat * 100).toFixed(1)} cm off, ${c.ang.toFixed(2)}°. https://dexmlabs.app/docking-run-game/`;
   } else {
     $('result-head').textContent = s.phase === 'lost' ? 'Lost the station.' : 'Collision.'; $('result-text').textContent = s.fault || ''; $('result-parts').hidden = true;
     app.share = `Docking Run, ${L.name}: ${s.phase === 'lost' ? 'lost the station' : 'collision'}. https://dexmlabs.app/docking-run-game/`;
@@ -271,9 +354,9 @@ function finishDaily(s, L, sc, ok) {
     : {no: L.no, docked: false, score: 0, lost: s.phase === 'lost' ? 'Lost the station.' : 'Collision.'};
   $('result').hidden = false;
   const scored = !app.daily.practice && DAILY.put(L.date, rec); app.daily.practice = true;
-  $('result-head').textContent = ok ? `Hard capture. ${sc.total} points: ${P.rank(sc.total)}.` : rec.lost;
+  $('result-head').textContent = ok ? `Docked! ${'★'.repeat(sc.stars)}${'☆'.repeat(3 - sc.stars)} ${sc.total} points: ${P.rank(sc.total)}.` : rec.lost;
   $('result-text').textContent = (ok ? `Contact at ${c.closing.toFixed(3)} m/s, ${(c.lat * 100).toFixed(1)} cm off the centreline, ${c.ang.toFixed(2)}° off axis, with ${s.prop.toFixed(1)} kg of propellant left.` : (s.fault || '')) + (scored ? ' That was your scored run for today. Fly again to practise.' : ' Practice run, not scored.');
-  if (ok) { const p = sc.parts; $('result-parts').innerHTML = [['Closing rate', p.speed], ['Centreline', p.centre], ['Alignment', p.align], ['Rates', p.rates], ['Fuel', p.fuel], ['Time', p.time]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join(''); }
+  if (ok) { const p = {...sc.parts, combo: sc.combo}; $('result-parts').innerHTML = [['Closing rate', p.speed], ['Centreline', p.centre], ['Alignment', p.align], ['Rates', p.rates], ['Fuel', p.fuel], ['Time', p.time], ['Smooth combo', p.combo]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join(''); }
   $('result-parts').hidden = !ok; $('next').hidden = true;
   const today = DAILY.get(L.date); app.share = today ? dailyCard(today) : `Docking Run, ${L.name} (practice). ${SITE}?daily`; $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result'; showDailyResult(today);
   window.DockingRun.last = {daily: true, docked: ok, score: sc.total || 0}; levelList(); renderDaily(); $('again').focus({preventScroll: true});
@@ -303,6 +386,8 @@ function sound(dt, off) {
   if (edges && app.warp <= 5) puff(Math.min(1, edges / 4) * (app.fine ? 0.5 : 1));
 }
 function puff(k) { const a = audio, t = a.ac.currentTime, src = a.ac.createBufferSource(); src.buffer = a.noise; const f = a.ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2400; const g = a.ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35 * k + 0.02, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14); src.connect(f).connect(g).connect(a.ac.destination); src.start(t, Math.random() * 0.5); src.stop(t + 0.16); }
+function notes(fs, len = 0.18, gap = 0.11, g0 = 0.12) { const a = store().sound ? ensureAudio() : null; if (!a) return; fs.forEach((f, i) => { const t = a.ac.currentTime + i * gap, o = a.ac.createOscillator(), g = a.ac.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(g0, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + len); o.connect(g).connect(a.ac.destination); o.start(t); o.stop(t + len + 0.02); }); }
+const chime = () => notes([880, 1320], 0.3, 0.09), fanfare = () => notes([523, 659, 784, 1047], 0.35, 0.12, 0.14), tick = () => notes([1200], 0.06, 0, 0.04);
 function clunk(k) { const a = store().sound ? ensureAudio() : null; if (!a) return; const t = a.ac.currentTime, o = a.ac.createOscillator(), g = a.ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.25); g.gain.setValueAtTime(0.5 * k, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35); o.connect(g).connect(a.ac.destination); o.start(t); o.stop(t + 0.4); }
 function motor(len) { const a = store().sound ? ensureAudio() : null; if (!a) return; const t = a.ac.currentTime, o = a.ac.createOscillator(), f = a.ac.createBiquadFilter(), g = a.ac.createGain(); o.type = 'sawtooth'; o.frequency.value = 95; f.type = 'lowpass'; f.frequency.value = 400; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.3); g.gain.setValueAtTime(0.05, t + len - 0.3); g.gain.linearRampToValueAtTime(0.0001, t + len); o.connect(f).connect(g).connect(a.ac.destination); o.start(t); o.stop(t + len); }
 
@@ -315,10 +400,10 @@ const inFlight = () => app.sim && !$('flight').hidden;
 function setWarp(dir) { const r = P.rel(app.sim), mw = P.maxWarp(r.range), i = P.WARPS.indexOf(app.warp), nw = P.WARPS[Math.max(0, Math.min(P.WARPS.length - 1, i + dir))]; if (nw > mw) { say(`Time warp is limited to ${mw}× at ${fmtRange(r.range)}.`); app.warp = mw; } else app.warp = nw; syncToggles(); }
 function toggle(what) {
   if (what === 'fine') app.fine = !app.fine;
-  if (what === 'assist') { app.assist = !app.assist; const st = store(); st.assist = app.assist; write(st); }
+  if (what === 'assist') { app.assist = !app.assist; const st = store(), m = app.sim?.mode.id || app.mode; st.assistBy = {...st.assistBy, [m]: app.assist}; write(st); }
   if (what === 'cam') app.cam = app.cam === 'port' ? 'chase' : 'port';
   if (what === 'pause') app.paused = !app.paused;
-  if (what === 'keys') { const k = $('keys-overlay'); k.hidden = !k.hidden; const st = store(); st.keysHidden = k.hidden; write(st); }
+  if (what === 'keys') { const k = $('keys-overlay'); k.hidden = !k.hidden; $('key-hint').hidden = !k.hidden; const st = store(); st.keysHidden = k.hidden; write(st); }
   syncToggles();
 }
 addEventListener('keydown', e => {
@@ -341,8 +426,8 @@ $('t-warp-up').addEventListener('click', () => setWarp(1)); $('t-warp-down').add
 // chase camera: drag to orbit, wheel or pinch to zoom
 let drag = null;
 view.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, yaw: app.orbit.yaw, pitch: app.orbit.pitch}; view.focus({preventScroll: true}); });
-addEventListener('pointermove', e => { if (!drag || app.cam !== 'chase') return; app.orbit.yaw = drag.yaw + (e.clientX - drag.x) * 0.008; app.orbit.pitch = Math.max(-1.3, Math.min(1.3, drag.pitch + (e.clientY - drag.y) * 0.006)); });
-addEventListener('pointerup', () => { drag = null; });
+addEventListener('pointermove', e => { if (drag && app.cam === 'port' && app.sim?.phase === 'fly') { const f = v => Math.abs(v) < 6 ? 0 : Math.max(-1, Math.min(1, v / 90)); app.mouseRot = [0, f(-(e.clientX - drag.x)), f(-(e.clientY - drag.y))]; return; } if (!drag || app.cam !== 'chase') return; app.orbit.yaw = drag.yaw + (e.clientX - drag.x) * 0.008; app.orbit.pitch = Math.max(-1.3, Math.min(1.3, drag.pitch + (e.clientY - drag.y) * 0.006)); });
+addEventListener('pointerup', () => { drag = null; app.mouseRot = [0, 0, 0]; }); addEventListener('pointercancel', () => { drag = null; app.mouseRot = [0, 0, 0]; });
 view.addEventListener('wheel', e => { if (app.cam !== 'chase') return; e.preventDefault(); app.orbit.dist = Math.max(6, Math.min(120, app.orbit.dist * Math.exp(e.deltaY * 0.001))); }, {passive: false});
 const again = () => app.daily ? startDaily() : start(app.level);
 $('again').addEventListener('click', again); $('daily-play').addEventListener('click', startDaily); $('daily-copy').addEventListener('click', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); $('daily-share').addEventListener('click', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); $('next').addEventListener('click', next);
@@ -352,15 +437,16 @@ $('back').addEventListener('click', () => { cancelAnimationFrame(app.raf); sound
 
 // ---------- title screen ----------
 function levelList() {
-  const st = store(), box = $('levels'); box.innerHTML = '';
+  const st0 = store(), st = {...st0, best: (app.mode === 'pilot' ? st0.bestP : st0.best) || {}}, box = $('levels'); box.innerHTML = '';
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === app.mode)));
   for (const L of LEVELS) { const b = document.createElement('button'); b.type = 'button'; b.dataset.level = L.id; b.setAttribute('aria-pressed', String(L.id === app.level.id)); b.innerHTML = `${L.name} <em>${L.short}</em><small>${st.best[L.id] ? `Best ${st.best[L.id]} · ${P.rank(st.best[L.id])}` : 'Not docked yet'}</small>`; b.addEventListener('click', () => { app.level = L; const s = store(); s.level = L.id; write(s); levelList(); }); b.addEventListener('dblclick', () => start(L)); box.appendChild(b); }
   $('play').innerHTML = `Fly: ${app.level.name} <span aria-hidden="true">&rarr;</span>`; $('play-blurb').textContent = app.level.blurb;
   const total = LEVELS.reduce((a, L) => a + (st.best[L.id] || 0), 0), n = LEVELS.filter(L => st.best[L.id]).length;
   $('best').textContent = n ? `Docked ${n} of ${LEVELS.length} runs. Best scores add up to ${total}.` : 'Your best scores are kept in this browser.';
 }
-$('play').addEventListener('click', () => start(app.level));
+$('play').addEventListener('click', () => start(app.level)); document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 $('sound').checked = !!store().sound; $('sound').addEventListener('change', e => { const st = store(); st.sound = e.target.checked; write(st); if (!st.sound && audio) audio.g.gain.value = 0; });
-if (store().keysHidden) $('keys-overlay').hidden = true;
+
 levelList(); syncToggles();
 renderDaily(); tickDaily(); setInterval(tickDaily, 1000);
 if (new URLSearchParams(location.search).has('daily')) startDaily();

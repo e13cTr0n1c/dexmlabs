@@ -15,6 +15,12 @@ export const G0 = 9.80665, ISP = 290;              // cold-ish storable bipropel
 export const THRUST = {coarse: 130, fine: 26};     // N per jet, primary and vernier jets
 export const LIMITS = {vMin: 0.03, vMax: 0.1, lat: 0.1, ang: 4, roll: 4, rate: 0.4, latRate: 0.04};
 export const DEG = 180 / Math.PI, RAD = Math.PI / 180;
+// Two difficulties. Realistic uses the real docking system limits above. Pilot keeps the same physics but a forgiving
+// capture ring, more propellant, kill rotation on by default and, on the early runs, the orbital (CW) drift turned down.
+export const MODES = {
+  realistic: {id: 'realistic', name: 'Realistic', limits: LIMITS, fuelK: 1, cwEarly: 1, cwTutorial: 1, crashV: 0.25, crashLat: 0.35, assist: false},
+  pilot: {id: 'pilot', name: 'Pilot', limits: {vMin: 0.01, vMax: 0.25, lat: 0.3, ang: 10, roll: 10, rate: 1.2, latRate: 0.12}, fuelK: 1.6, cwEarly: 0.3, cwTutorial: 0.05, crashV: 0.5, crashLat: 0.6, assist: true}
+};
 
 // ---------- small vector and quaternion helpers ----------
 export const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -125,8 +131,8 @@ function rk4Rot(b, I, Iinv, tauB, n, h) {
   b.w = [0, 1, 2].map(i => w[i] + h / 6 * (w1[i] + 2 * w2[i] + 2 * w3[i] + w4[i]));
 }
 const add4 = (q, d, k) => [q[0] + d[0] * k, q[1] + d[1] * k, q[2] + d[2] * k, q[3] + d[3] * k];
-function rk4Trans(b, aT, n, h) {
-  const f = (p, v) => [v, add(aT, cwAccel(p, v, n))], {p, v} = b;
+function rk4Trans(b, aT, n, h, k = 1) {
+  const f = (p, v) => [v, add(aT, scl(cwAccel(p, v, n), k))], {p, v} = b;
   const [p1, v1] = f(p, v), [p2, v2] = f(add(p, scl(p1, h / 2)), add(v, scl(v1, h / 2))), [p3, v3] = f(add(p, scl(p2, h / 2)), add(v, scl(v2, h / 2))), [p4, v4] = f(add(p, scl(p3, h)), add(v, scl(v3, h)));
   b.p = [0, 1, 2].map(i => p[i] + h / 6 * (p1[i] + 2 * p2[i] + 2 * p3[i] + p4[i]));
   b.v = [0, 1, 2].map(i => v[i] + h / 6 * (v1[i] + 2 * v2[i] + 2 * v3[i] + v4[i]));
@@ -138,7 +144,7 @@ function rk4Trans(b, aT, n, h) {
 export function makeSim(level, opts = {}) {
   const n = opts.n ?? N_LEO, st = level.station || {};
   const station = {q: [1, 0, 0, 0], w: [0, 0, 0], held: !st.spin};
-  const s0 = level.start, sim = {t: 0, n, level, station, phase: 'fly', prop: level.fuel, prop0: level.fuel, jets: new Float32Array(JETS.length), events: [], bounces: 0, warp: 1, fineUsed: 0, log: []};
+  const mode = MODES[opts.mode] || MODES.realistic, fuel = level.fuel * mode.fuelK, s0 = level.start, sim = {t: 0, n, level, mode, lim: mode.limits, cwK: level.tutorial ? mode.cwTutorial : level.early ? mode.cwEarly : 1, smooth: 0, rough: 0, station, phase: 'fly', prop: fuel, prop0: fuel, jets: new Float32Array(JETS.length), events: [], bounces: 0, warp: 1, fineUsed: 0, log: []};
   station.w = qrotT(station.q, frameRate(n)); // a held station turns with LVLH once an orbit
   if (st.spin) station.w = add(station.w, scl(st.spin, RAD));
   // Desired capsule attitude: nose (+X) down the port axis (-X of the port), tops aligned.
@@ -184,13 +190,18 @@ export function step(sim, input, h) {
   for (let i = 0; i < L.length; i++) if (L[i]) { const f = L[i] * thrust; F = add(F, scl(JETS[i].dir, f)); T = add(T, scl(LEVER[i], f)); total += f; }
   const mdot = total / (ISP * G0), m = capMass(sim);
   if (input.fine && total) sim.fineUsed += h;
-  rk4Trans(cap, scl(qrot(cap.q, F), 1 / m), n, h);
+  rk4Trans(cap, scl(qrot(cap.q, F), 1 / m), n, h, sim.cwK ?? 1);
   rk4Rot(cap, CAPSULE.I, I_CAP_INV, T, n, h);
   sim.prop = Math.max(0, sim.prop - mdot * h);
+  smoothness(sim);
   contact(sim);
   return sim;
 }
-function coast(sim, h) { rk4Trans(sim.cap, [0, 0, 0], sim.n, h); rk4Rot(sim.cap, CAPSULE.I, I_CAP_INV, [0, 0, 0], sim.n, h); }
+// The combo: time inside the last 15 m spent on the guide line at a green closing speed, with no wobble.
+export function guideSpeed(range, lim) { const lo = Math.max(lim.vMin, 0.03), hi = Math.min(lim.vMax, 0.1); return Math.min(range > 60 ? 1.2 : 0.6, lo + (hi - lo) / 2 + 0.012 * Math.max(0, range - 1.2)); }
+export function speedZone(r, lim) { const g = guideSpeed(r.range, lim), c = r.closing; if (r.range < 3) return c >= lim.vMin && c <= lim.vMax ? 'green' : c > lim.vMax * 1.6 || c < 0 ? 'red' : 'amber'; const e = Math.abs(c - g) / g; return e < 0.5 ? 'green' : e < 1.2 ? 'amber' : 'red'; }
+function smoothness(sim) { const r = rel(sim); if (r.range > 15) return; const h = 1 / 60, good = r.lat < 0.05 + 0.03 * r.ax && speedZone(r, sim.lim) !== 'red' && r.rate < 0.5; if (good) sim.smooth += h; else sim.rough += h; }
+function coast(sim, h) { rk4Trans(sim.cap, [0, 0, 0], sim.n, h, sim.cwK ?? 1); rk4Rot(sim.cap, CAPSULE.I, I_CAP_INV, [0, 0, 0], sim.n, h); }
 
 // Everything the HUD, the pilot and the docking check need, relative to the station port.
 export function rel(sim) {
@@ -211,11 +222,11 @@ function contact(sim) {
   const r = rel(sim), prev = sim.prevAx; sim.prevAx = r.ax;
   if (prev > 0 && r.ax <= 0 && r.lat < 0.6) {
     const c = {closing: r.closing, lat: r.lat, ang: r.ang, roll: Math.abs(r.roll), rate: r.rate, latRate: r.latRate, t: sim.t};
-    const ok = c.closing >= LIMITS.vMin && c.closing <= LIMITS.vMax && c.lat < LIMITS.lat && c.ang < LIMITS.ang && c.roll < LIMITS.roll && c.rate < LIMITS.rate && c.latRate < LIMITS.latRate;
+    const Lm = sim.lim || LIMITS, ok = c.closing >= Lm.vMin && c.closing <= Lm.vMax && c.lat < Lm.lat && c.ang < Lm.ang && c.roll < Lm.roll && c.rate < Lm.rate && c.latRate < Lm.latRate;
     sim.contact = c;
     if (ok) { startCapture(sim); sim.events.push({type: 'soft', t: sim.t}); return; }
-    const why = reasons(c);
-    if (c.closing > 0.25 || c.lat > 0.35) { sim.phase = 'crash'; sim.fault = `Hit the docking mechanism at ${c.closing.toFixed(2)} m/s, ${c.lat.toFixed(2)} m off the centreline. ${why}`; sim.events.push({type: 'crash', t: sim.t}); return; }
+    const why = reasons(c, Lm), md = sim.mode || MODES.realistic;
+    if (c.closing > md.crashV || c.lat > md.crashLat) { sim.phase = 'crash'; sim.fault = `Hit the docking mechanism at ${c.closing.toFixed(2)} m/s, ${c.lat.toFixed(2)} m off the centreline. ${why}`; sim.events.push({type: 'crash', t: sim.t}); return; }
     // No capture: the ring's springs push the capsule back out. Lose most of the closing speed.
     sim.bounces++; sim.events.push({type: 'bounce', t: sim.t, why});
     const axW = qrot(sim.station.q, [1, 0, 0]), dv = (1 + 0.4) * Math.max(0, c.closing);
@@ -233,7 +244,7 @@ function contact(sim) {
   }
   if (r.range > (sim.level.lost || 3000)) { sim.phase = 'lost'; sim.fault = 'Drifted out of range of the station.'; }
 }
-export function reasons(c) {
+export function reasons(c, LIMITS = MODES.realistic.limits) {
   const out = [];
   if (c.closing < LIMITS.vMin) out.push(`too slow to trip the capture latches (${c.closing.toFixed(3)} m/s, needs ${LIMITS.vMin})`);
   if (c.closing > LIMITS.vMax) out.push(`too fast (${c.closing.toFixed(3)} m/s, limit ${LIMITS.vMax})`);
@@ -272,19 +283,21 @@ function capture(sim, h) {
 // Score a docking: precision, fuel and time, less a little for every bounce.
 export function score(sim) {
   if (sim.phase !== 'docked' && sim.phase !== 'hard' && sim.phase !== 'soft') return {total: 0};
-  const c = sim.contact, cl = x => Math.max(0, Math.min(1, x));
+  const c = sim.contact, cl = x => Math.max(0, Math.min(1, x)), LIMITS = sim.lim || MODES.realistic.limits, half = LIMITS.vMax > 0.1 ? 0.1 : 0.035;
   const parts = {
-    speed: Math.round(250 * cl(1 - Math.abs(c.closing - 0.065) / 0.035)),
+    speed: Math.round(250 * cl(1 - Math.abs(c.closing - 0.065) / half)),
     centre: Math.round(250 * cl(1 - c.lat / LIMITS.lat)),
     align: Math.round(150 * cl(1 - c.ang / LIMITS.ang) + 50 * cl(1 - c.roll / LIMITS.roll)),
     rates: Math.round(100 * cl(1 - c.rate / LIMITS.rate)),
     fuel: Math.round(250 * cl(sim.prop / sim.prop0)),
     time: Math.round(200 * cl(1.5 - c.t / sim.level.par))
   };
-  const total = Math.max(0, parts.speed + parts.centre + parts.align + parts.rates + parts.fuel + parts.time - 100 * sim.bounces);
-  return {parts, total};
+  const base = Math.max(0, parts.speed + parts.centre + parts.align + parts.rates + parts.fuel + parts.time - 100 * sim.bounces);
+  const f = (sim.smooth || 0) / Math.max(1e-9, (sim.smooth || 0) + (sim.rough || 0)), combo = sim.smooth > 0 ? Math.round(200 * cl((f - 0.5) / 0.45)) : 0;
+  return {parts, base, combo, smoothFrac: f, total: base + combo, stars: stars(base + combo)};
 }
 export function rank(total) { return total >= 1050 ? 'Flawless' : total >= 850 ? 'Clean capture' : total >= 600 ? 'Captured' : 'Docked, just'; }
+export const stars = total => total >= 1050 ? 3 : total >= 750 ? 2 : total > 0 ? 1 : 0;
 
 // Time warp allowed at this range. The last 8 m are flown in real time.
 export const WARPS = [1, 2, 5, 10, 25, 50, 100];
