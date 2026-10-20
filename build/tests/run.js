@@ -24,9 +24,11 @@ t("homepage: games first, then makes, then support", function () {
   assert.deepStrictEqual(ld.itemListElement.map(function (e) { return e.url; }), btns.map(function (h) { return "https://dexmlabs.app/" + h; }), "ItemList matches the cards");
   assert.strictEqual(ld.numberOfItems, btns.length);
   var makes = [].map.call(d.querySelectorAll("#makes a"), function (a) { return a.getAttribute("href"); });
-  assert.strictEqual(makes.length, 4);
+  assert.strictEqual(makes.length, 5);
+  assert.ok(/radar-scope-desk-console/.test(d.querySelector("#makes .make-hero .btn").getAttribute("href")), "Radar Scope Desk Console is the featured make");
+  assert.ok(/FIRST SALE/.test(d.querySelector("#makes .make-hero").textContent), "first sale badge");
   assert.ok(makes.some(function (h) { return /cults3d\.com\/.*lorenz-cipher-chi-wheel/.test(h); }), "Lorenz STL on Cults3D");
-  assert.strictEqual(makes.filter(function (h) { return /cults3d\.com/.test(h); }).length, 3, "three Cults3D links");
+  assert.strictEqual(makes.filter(function (h) { return /cults3d\.com/.test(h); }).length, 4, "four Cults3D links");
   assert.ok(d.querySelector('#support a[href="https://buymeacoffee.com/arthurdeusexmachina"]'), "BMC button");
 });
 t("the old tagline and the long name are gone everywhere, only DEXM Labs is left", function () {

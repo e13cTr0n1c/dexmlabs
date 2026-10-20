@@ -65,6 +65,7 @@ section.block{padding:40px 0;border-bottom:1px solid var(--edge)}
 .dot{width:9px;height:9px;background:var(--acid);display:inline-block}
 .dot.off{background:transparent;border:1px solid var(--muted)}
 /* support */
+.make-hero{margin-bottom:14px}.make-hero .status{white-space:nowrap}.make-hero .card-body{max-width:760px}
 .support{display:grid;gap:12px}
 .support a{display:grid;grid-template-columns:1fr;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--edge);background:var(--panel);color:var(--ink);text-decoration:none}
 .support a:hover{border-color:var(--acid)}

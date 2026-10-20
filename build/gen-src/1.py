@@ -4,8 +4,12 @@
 <section class="block" id="makes" aria-labelledby="makes-h"><div class="wrap">
 <div class="sec-head"><div><p class="label acid">WORKBENCH</p><h2 id="makes-h">Makes</h2></div><p class="label">LINKS OPEN OTHER SITES</p></div>
 <p class="sec-lead">Printable models and bench gear I've designed. The files and the mat are sold on Cults3D and Fourthwall.</p>
+<article class="card make-hero" id="make-featured">
+<div class="plate-head"><span class="label acid status" style="border:2px solid var(--acid);padding:3px 8px;letter-spacing:.16em">FIRST SALE</span><span class="label">RADIO AND RADAR</span></div>
+<div class="card-body"><h3>{MAKES[0][1]}</h3><p>{MAKES[0][2]}</p><a class="btn" href="{MAKES[0][0]}" rel="noopener">See it on {MAKES[0][3]}</a></div>
+</article>
 <div class="support">
-'''+''.join(f'<a href="{u}" rel="noopener"><span><b>{n}</b><small>{d}</small></span></a>\n' for u,n,d,_ in MAKES)+f'''</div>
+'''+''.join(f'<a href="{u}" rel="noopener"><span><b>{n}</b><small>{d}</small></span></a>\n' for u,n,d,_ in MAKES[1:])+f'''</div>
 </div></section>
 
 <section class="block" id="support" aria-labelledby="support-h"><div class="wrap">

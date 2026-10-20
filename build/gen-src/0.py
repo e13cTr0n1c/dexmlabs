@@ -84,7 +84,10 @@ def doc(slug,title,label,desc,body,updated='7 October 2026'):
 
 
 # ---------- homepage ----------
-MAKES=[(CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for showing how Lorenz works.','Cults3D'),
+SCOPE='https://cults3d.com/en/3d-model/gadget/radar-scope-desk-console-for-round-raspberry-pi-displays-for-waveshare-5in-and'
+# The first entry is the featured make, shown on its own above the rest.
+MAKES=[(SCOPE,'Radar Scope Desk Console','3D print housing that turns a round Raspberry Pi display into a retro radar scope for an ADS-B receiver. Fits the Waveshare 5 inch and 4 inch round screens.','Cults3D'),
+ (CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for showing how Lorenz works.','Cults3D'),
  (EFHW,'EFHW toroid box','3D print for FT240 and FT140 cores.','Cults3D'),
  (DRILL,'RF panel drill guide','3D print for SO-239, N and BNC holes.','Cults3D'),
  (MAT,'Band plan desk mat','UK ham bands, 160m to 70cm.','Fourthwall')]
