@@ -126,7 +126,7 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 27);
+  assert.strictEqual(locs.length, 29); // Vector and Orbit are listed now
   locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|missions\/mmx\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));

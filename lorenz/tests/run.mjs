@@ -298,7 +298,7 @@ await t('STL: shown on the title screen, the decoded card and the about page, wi
     assert.equal(a.getAttribute('href'), CULTS); assert.equal(a.getAttribute('target'), '_blank'); assert.equal(a.getAttribute('rel'), 'noopener');
     assert.equal(a.querySelector('.stl-label').textContent, 'Support me: download the free chi wheel model (STL)'); assert.equal(a.querySelector('.stl-sub').textContent, 'Free to download, tip if you like.');
     assert.equal(p.hidden, false); assert.equal(p.textContent, 'Also on Printables'); assert.equal(p.getAttribute('href'), PRINTABLES); assert.equal(p.getAttribute('target'), '_blank'); assert.equal(p.getAttribute('rel'), 'noopener'); }
-  const t1 = dom('index.html'); assert.ok(t1.querySelector('.signed-note + [data-stl=title]'), 'right under my note'); assert.ok(!t1.querySelector('.hero-buttons + [data-stl]'), 'not under the play buttons any more');
+  const t1 = dom('index.html'); assert.ok(t1.querySelector('.signed-wrap + [data-stl=title]'), 'right under my note, which now sits in a closed section'); assert.ok(!t1.querySelector('.hero-buttons + [data-stl]'), 'not under the play buttons any more');
   assert.equal((fs.readFileSync(path.join(ROOT, 'js/main.js'), 'utf8').match(/\$\{stlSlotHTML\('card'\)\}`;\n  applyPrintLink\(card\);/g) || []).length, 2, 'normal and hard cards');
   assert.match(html['about.html'], /<script type="module" src="\.\/js\/about\.js"><\/script>/);
 });

@@ -21,7 +21,7 @@ class Page(HTMLParser):
         if tag=='label':self.label_depth+=1
         if tag in ['input','select']:a['_wrapped_label']=self.label_depth>0
         self.tags.append((tag,a))
-        if tag=='script' and 'src' not in a:self.capture=[]
+        if tag=='script' and 'src' not in a and a.get('type')!='application/ld+json':self.capture=[]  # JSON-LD is data, the browser never runs it
     def handle_data(self,data):
         if self.capture is not None:self.capture.append(data)
     def handle_endtag(self,tag):

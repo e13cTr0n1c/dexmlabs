@@ -15,9 +15,11 @@
  ('missions/mmx/','MMX mission explained: interactive simulation','Mission Replays: a time slider through JAXA\'s MMX mission to Phobos, from the H3 launch on 20 October 2026 to the planned sample return in 2031, with a heliocentric view and a Mars and Phobos close view.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 # Pages added since 13 October, with their own lastmod, listed first.
-NEW_PAGES=[('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-19'),('booster-landing-game/','2026-10-19'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-19')]
+NEW_PAGES=[('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
+# Game pages that changed in the 20 October tidy, so their lastmod moves on.
+TIDIED={'skywave/','lorenz/','enigma-machine/','chernobyl-reactor-simulator/','apollo-lunar-landing-game/','tolerance/'}
 NEW_URLS={u for u,_ in NEW_PAGES}
-urls=[('','2026-10-13')]+NEW_PAGES+[(u,'2026-10-13') for u,_,_ in GAME_PAGES if u not in NEW_URLS]+[(u,'2026-10-13') for u in ['points/']+[f'{p}/' for p,_ in POL]]
+urls=[('','2026-10-13')]+NEW_PAGES+[(u,'2026-10-20' if u in TIDIED else '2026-10-13') for u,_,_ in GAME_PAGES if u not in NEW_URLS]+[(u,'2026-10-13') for u in ['points/']+[f'{p}/' for p,_ in POL]]
 (S/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'  <url><loc>https://dexmlabs.app/{u}</loc><lastmod>{d}</lastmod></url>\n' for u,d in urls)+'</urlset>\n')
 print('sitemap',len(urls))
 (S/'robots.txt').write_text('User-agent: *\nAllow: /\n\nSitemap: https://dexmlabs.app/sitemap.xml\n')
