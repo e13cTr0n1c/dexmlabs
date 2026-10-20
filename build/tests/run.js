@@ -16,7 +16,13 @@ var TAX = /tools\/|templates\/|gumroad|LAUNCH25|\bCIS\b|calculator|Inheritance T
 t("homepage: games first, then makes, then support", function () {
   var d = dom("index.html");
   assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["hero", "games", "makes", "support"]);
-  assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); }), ["skywave/", "lorenz/", "tolerance/", "vector/", "orbit/", "enigma-machine/", "chernobyl-reactor-simulator/", "apollo-lunar-landing-game/"]);
+  assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .game-sec"), function (s) { return s.id + ":" + s.querySelector(".sec-h").textContent; }), ["games-physics:Physics & Flight", "games-daily:Daily Puzzles", "games-labs:Labs / Beta", "games-other:Other"], "game sections in order");
+  var btns = [].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); });
+  assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "tesla-roadster-thruster-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "repurposed/", "vector/", "orbit/", "chernobyl-reactor-simulator/"]);
+  assert.strictEqual(d.querySelector(".bignum").textContent, String(btns.length), "games live counter matches the cards");
+  var ld = [].map.call(d.querySelectorAll('script[type="application/ld+json"]'), function (e) { return JSON.parse(e.textContent); }).filter(function (j) { return j["@type"] === "ItemList"; })[0];
+  assert.deepStrictEqual(ld.itemListElement.map(function (e) { return e.url; }), btns.map(function (h) { return "https://dexmlabs.app/" + h; }), "ItemList matches the cards");
+  assert.strictEqual(ld.numberOfItems, btns.length);
   var makes = [].map.call(d.querySelectorAll("#makes a"), function (a) { return a.getAttribute("href"); });
   assert.strictEqual(makes.length, 4);
   assert.ok(makes.some(function (h) { return /cults3d\.com\/.*lorenz-cipher-chi-wheel/.test(h); }), "Lorenz STL on Cults3D");
@@ -76,7 +82,7 @@ t("Cloudflare beacon once on every generated page, never on redirects", function
 });
 t("cookies table lists every storage key, hard and realistic rows after lorenz:stats", function () {
   var keys = [].map.call(dom("cookies/index.html").querySelectorAll("tbody tr td:first-child"), function (td) { return td.textContent; });
-  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "vector:settings", "vector:stats", "orbit:settings", "orbit:stats", "forge-shift-v1", "grid:power:v2", "grid:sound", "enigma:round:<date>", "enigma:stats", "rbmk:stats", "apollo:stats", "rocket:stats", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
+  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "vector:settings", "vector:stats", "orbit:settings", "orbit:stats", "forge-shift-v1", "grid:power:v2", "grid:sound", "enigma:round:<date>", "enigma:stats", "rbmk:stats", "apollo:stats", "booster:stats", "docking:stats", "glider:stats", "glider:daily", "sling:stats", "sling:daily", "roadster:stats", "roadster:daily", "rocket:stats", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
 });
 t("old tool and template URLs are bare redirects to the new site", function () {
   MOVED.forEach(function (u) {
@@ -95,8 +101,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 19);
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 25);
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|tesla-roadster-thruster-game\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");

@@ -45,6 +45,8 @@ a:hover{text-decoration-thickness:2px}
 section.block{padding:40px 0;border-bottom:1px solid var(--edge)}
 .sec-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
 .sec-head h2{font:900 clamp(26px,5vw,44px)/1 var(--head);text-transform:uppercase;margin:6px 0 0;letter-spacing:-.01em}
+.game-sec{margin-top:34px}.game-sec:first-of-type{margin-top:8px}.game-sec .sec-head{margin-bottom:14px}
+.sec-head h3.sec-h{font:900 clamp(20px,3.4vw,30px)/1 var(--head);text-transform:uppercase;margin:6px 0 0;letter-spacing:-.01em}
 .grid{display:grid;gap:16px}
 .card{border:1px solid var(--edge);background:var(--panel);display:flex;flex-direction:column;min-height:100%}
 .card .plate-head{background:var(--panel2)}

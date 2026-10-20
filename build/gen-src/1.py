@@ -1,27 +1,3 @@
-<a class="thumb" href="orbit/" tabindex="-1" aria-hidden="true"><img src="assets/orbit-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Orbit</h3><p>Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.</p><a class="btn" href="orbit/">Play Orbit</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">CIPHER</span></div>
-<a class="thumb" href="enigma-machine/" tabindex="-1" aria-hidden="true"><img src="assets/enigma-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Enigma</h3><p>A working Enigma I simulator and a daily intercept. Set the rotors from the key sheet, find the smudged cable and read the message.</p><a class="btn" href="enigma-machine/">Play Enigma</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">REACTOR</span></div>
-<a class="thumb" href="chernobyl-reactor-simulator/" tabindex="-1" aria-hidden="true"><img src="assets/chernobyl-reactor-simulator-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>RBMK</h3><p>A simplified RBMK-1000 control desk. Hold power through a xenon pit or run the rundown test, and know when to press AZ-5.</p><a class="btn" href="chernobyl-reactor-simulator/">Play RBMK</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">SPACE</span></div>
-<a class="thumb" href="apollo-lunar-landing-game/" tabindex="-1" aria-hidden="true"><img src="assets/apollo-lunar-landing-game-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Apollo</h3><p>Fly the last 200 metres of an Apollo landing with real lunar gravity and a fuel gauge that won't wait. A new site every day.</p><a class="btn" href="apollo-lunar-landing-game/">Play Apollo</a></div>
-</article>
-<article class="card sealed">
-<div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
-<div class="thumb" aria-hidden="true"><span>SEALED</span></div>
-<div class="card-body"><h3>Next game</h3><p>In development. Nothing to see yet.</p></div>
-</article>
-</div>
 '''+signup('home')+f'''
 </div></section>
 
@@ -117,6 +93,14 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>enigma:stats</code></td><td>Your Enigma results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>rbmk:stats</code></td><td>Your RBMK results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>apollo:stats</code></td><td>Your Apollo results and streak</td><td>Until you clear it</td></tr>
+<tr><td><code>booster:stats</code></td><td>Your Booster best scores and landings by level, the last level you picked and whether sound is on</td><td>Until you clear it</td></tr>
+<tr><td><code>docking:stats</code></td><td>Your Docking Run best scores and dockings by run, the last run you picked, and whether sound, kill rotation and the keys overlay are on</td><td>Until you clear it</td></tr>
+<tr><td><code>glider:stats</code></td><td>Your Glider Thermals best scores and grades by flight, the last flight you picked, the time speed, and whether sound and the autotrim are on</td><td>Until you clear it</td></tr>
+<tr><td><code>glider:daily</code></td><td>Your one scored Glider Thermals Daily Drop result for each day</td><td>Until you clear it</td></tr>
+<tr><td><code>sling:stats</code></td><td>Your Sling Load best scores and grades by job, the last job you picked, and whether sound, hover hold and the swing damper are on</td><td>Until you clear it</td></tr>
+<tr><td><code>sling:daily</code></td><td>Your one scored Sling Load Daily Drop result for each day</td><td>Until you clear it</td></tr>
+<tr><td><code>roadster:stats</code></td><td>Your Roadster Thrusters best scores and grades by level, the last level you picked, and whether sound is on</td><td>Until you clear it</td></tr>
+<tr><td><code>roadster:daily</code></td><td>Your one scored Roadster Thrusters Daily Drop result for each day</td><td>Until you clear it</td></tr>
 <tr><td><code>rocket:stats</code></td><td>Your Rocket Launch results and streak</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>

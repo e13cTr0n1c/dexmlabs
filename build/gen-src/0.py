@@ -89,46 +89,74 @@ MAKES=[(CHI,'Lorenz chi wheel','3D print of a simplified SZ42 chi wheel, for sho
  (DRILL,'RF panel drill guide','3D print for SO-239, N and BNC holes.','Cults3D'),
  (MAT,'Band plan desk mat','UK ham bands, 160m to 70cm.','Fourthwall')]
 LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Bletchley Park called Tunny. Find the settings in the key book, set twelve wheels and decode the tape.'
-home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector, Orbit and Enigma, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n</head>',1)+f'''<main id="main">
+
+# Homepage game cards, in sections. Strongest first in each section.
+# (slug, thumb, tag, title, blurb, button, status) status: 'live' or 'beta'
+GAME_SECTIONS=[
+ ('physics','SIMULATORS','Physics &amp; Flight',[
+  ('booster-landing-game','booster-landing-game','ROCKETRY','Booster','Land a Falcon 9 style booster on a ship at sea, or catch a Super Heavy style booster with the tower arms. Throttle, gimbal, grid fins, wind and swell. Fan-made.','Play Booster','live'),
+  ('docking-run-game','docking-run-game','SPACE','Docking Run','Dock a crew capsule to a space station by hand, with real thrusters, real orbital mechanics and real docking limits. From 30 m out to a 2 km rendezvous.','Play Docking Run','live'),
+  ('helicopter-sling-load-game','helicopter-sling-load-game','HEAVY LIFT','Sling Load','Fly a heavy lift helicopter with a load swinging on a rope. Set crates on the mark, an AC unit on a roof, a bridge on its piers, and put out a fire. A new job every day.','Play Sling Load','live'),
+  ('apollo-lunar-landing-game','apollo-lunar-landing-game','SPACE','Apollo',"Fly the last 200 metres of an Apollo landing with real lunar gravity and a fuel gauge that won't wait. A new site every day.",'Play Apollo','live'),
+  ('glider-thermals-game','glider-thermals-game','SOARING','Glider Thermals','Fly a sailplane with no engine on a summer evening. Circle in thermals with the birds, soar a ridge, climb in mountain wave and land out safely. A new task every day.','Play Glider Thermals','live'),
+  ('tesla-roadster-thruster-game','tesla-roadster-thruster-game','THRUSTERS','Roadster Thrusters','A fan-made Tesla Roadster game. Drag launch on a cold gas boost, hop between platforms and land flat, then drift past Earth and Mars. A new run every day. Not affiliated with Tesla or SpaceX.','Play Roadster Thrusters','live')]),
+ ('daily','ONE A DAY','Daily Puzzles',[
+  ('skywave','skywave','HF RADIO','Skywave','A daily ham radio puzzle. Read the sun, pick the band and bounce your signal off the ionosphere to reach ten stations before the day runs out.','Play Skywave','live'),
+  ('lorenz','lorenz','CIPHER','Lorenz',LORENZ_LINE,'Play Lorenz','live'),
+  ('enigma-machine','enigma','CIPHER','Enigma','A working Enigma I simulator and a daily intercept. Set the rotors from the key sheet, find the smudged cable and read the message.','Play Enigma','live'),
+  ('tolerance','tolerance','ENGINEERING','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.','Play Tolerance','live')]),
+ ('labs','WORK IN PROGRESS','Labs / Beta',[
+  ('repurposed','repurposed','PUZZLE','Repurposed','A first person puzzle game in a facility that would rather you stayed put. Take over arms, drones, a crane and a wall climbing spider bot to get through. Two facilities so far.','See Repurposed','beta'),
+  (None,None,None,'Next game','In development. Nothing to see yet.',None,'sealed')]),
+ ('other','ODDS AND ENDS','Other',[
+  ('vector','vector','AIR TRAFFIC CONTROL','Vector','An endless air traffic control game. Route arrivals, sequence the runway and keep aircraft safely separated as your sector gets busier.','Play Vector','live'),
+  ('orbit','orbit','ORBITAL FLIGHT','Orbit','Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.','Play Orbit','live'),
+  ('chernobyl-reactor-simulator','chernobyl-reactor-simulator','REACTOR','RBMK','A simplified RBMK-1000 control desk. Hold power through a xenon pit or run the rundown test, and know when to press AZ-5.','Play RBMK','live')])]
+GAMES=[g for _,_,_,gs in GAME_SECTIONS for g in gs if g[6]!='sealed']
+LIVE=len(GAMES)
+def game_card(g):
+  slug,thumb,tag,title,blurb,btn,status=g
+  if status=='sealed':
+    return f'''<article class="card sealed">
+<div class="plate-head"><span class="label status"><span class="dot off" aria-hidden="true"></span>IN DEVELOPMENT</span></div>
+<div class="thumb" aria-hidden="true"><span>SEALED</span></div>
+<div class="card-body"><h3>{title}</h3><p>{blurb}</p></div>
+</article>
+'''
+  st='<span class="label acid status" style="border:2px solid var(--acid);padding:3px 8px;letter-spacing:.16em">BETA</span>' if status=='beta' else '<span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span>'
+  return f'''<article class="card">
+<div class="plate-head">{st}<span class="label">{tag}</span></div>
+<a class="thumb" href="{slug}/" tabindex="-1" aria-hidden="true"><img src="assets/{thumb}-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
+<div class="card-body"><h3>{title}</h3><p>{blurb}</p><a class="btn" href="{slug}/">{btn}</a></div>
+</article>
+'''
+def games_html():
+  out=[]
+  for sid,label,name,gs in GAME_SECTIONS:
+    n=sum(1 for g in gs if g[6]!='sealed')
+    out.append(f'''<div class="game-sec" id="games-{sid}" role="group" aria-labelledby="games-{sid}-h">
+<div class="sec-head"><div><p class="label acid">{label}</p><h3 class="sec-h" id="games-{sid}-h">{name}</h3></div><p class="label">{n} {'GAME' if n==1 else 'GAMES'}</p></div>
+<div class="grid">
+'''+''.join(game_card(g) for g in gs)+'</div>\n</div>\n')
+  return ''.join(out)
+GAMES_HTML=games_html()
+import json as _json
+GAMES_LD=_json.dumps({"@context":"https://schema.org","@type":"ItemList","@id":"https://dexmlabs.app/#games","name":"DEXM Labs games","itemListOrder":"https://schema.org/ItemListOrderAscending","numberOfItems":LIVE,"itemListElement":[{"@type":"ListItem","position":i+1,"name":g[3],"url":f"https://dexmlabs.app/{g[0]}/"} for i,g in enumerate(GAMES)]},separators=(',',':'))
+home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector, Orbit and Enigma, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n<script type="application/ld+json">'+GAMES_LD+'</script>\n</head>',1)+f'''<main id="main">
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>
 <h1><span>DEXM</span><span>Labs</span></h1>
 <p class="tagline">Deus ex machina</p>
 <p class="lead">Small free games that run in your browser, and things I design for the radio bench and the 3D printer. I build them in my home lab, one at a time, and put them here when they work.</p>
-<div class="meta"><div><strong>9</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
+<div class="meta"><div><strong>{LIVE}</strong><span class="label">GAMES LIVE</span></div><div><strong>{len(MAKES)}</strong><span class="label">MAKES</span></div><div><strong>0</strong><span class="label">ACCOUNTS NEEDED</span></div></div>
 </div>
 <div class="side">
-<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">9</div></div>
+<div class="plate"><div class="plate-head"><span class="label">GAMES LIVE</span></div><div class="bignum" aria-hidden="true">{LIVE}</div></div>
 <div class="warn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 38 36H2Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="miter"/><rect x="18.4" y="14" width="3.2" height="12" fill="currentColor"/><rect x="18.4" y="29" width="3.2" height="3.2" fill="currentColor"/></svg><p><strong>Work in progress</strong>Things here change. If something breaks, <a href="contact/">tell me</a>.</p></div>
 </div>
 </div></section>
 
 <section class="block" id="games" aria-labelledby="games-h"><div class="wrap">
 <div class="sec-head"><div><p class="label acid">TEST CHAMBERS</p><h2 id="games-h">Games</h2></div><p class="label">PLAYS IN THE BROWSER / FREE</p></div>
-<div class="grid">
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">HF RADIO</span></div>
-<a class="thumb" href="skywave/" tabindex="-1" aria-hidden="true"><img src="assets/skywave-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Skywave</h3><p>A daily ham radio puzzle. Read the sun, pick the band and bounce your signal off the ionosphere to reach ten stations before the day runs out.</p>
-<a class="btn" href="skywave/">Play Skywave</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">CIPHER</span></div>
-<a class="thumb" href="lorenz/" tabindex="-1" aria-hidden="true"><img src="assets/lorenz-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Lorenz</h3><p>{LORENZ_LINE}</p>
-<a class="btn" href="lorenz/">Play Lorenz</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">ENGINEERING</span></div>
-<a class="thumb" href="tolerance/" tabindex="-1" aria-hidden="true"><img src="assets/tolerance-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Tolerance</h3><p>A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.</p>
-<a class="btn" href="tolerance/">Play Tolerance</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">AIR TRAFFIC CONTROL</span></div>
-<a class="thumb" href="vector/" tabindex="-1" aria-hidden="true"><img src="assets/vector-thumb.webp" width="480" height="300" alt="" loading="lazy" decoding="async"></a>
-<div class="card-body"><h3>Vector</h3><p>An endless air traffic control game. Route arrivals, sequence the runway and keep aircraft safely separated as your sector gets busier.</p><a class="btn" href="vector/">Play Vector</a></div>
-</article>
-<article class="card">
-<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>LIVE</span><span class="label">ORBITAL FLIGHT</span></div>
+{GAMES_HTML}
