@@ -243,6 +243,7 @@ function finish() {
   const s = app.sim, L = s.level, sc = P.score(s), st = store(); app.resultShown = true; sound(0, true);
   const ok = s.phase === 'docked';
   if (L.daily) return finishDaily(s, L, sc, ok);
+  $('daily-result').hidden = true;
   $('result').hidden = false; const c = s.contact;
   if (ok) {
     const prev = st.best[L.id] || 0, nb = sc.total > prev; if (nb) st.best[L.id] = sc.total; st.docks[L.id] = (st.docks[L.id] || 0) + 1; write(st);
@@ -268,12 +269,13 @@ function startDaily() { const L = dailyLevel(), done = DAILY.get(L.date); app.da
 function finishDaily(s, L, sc, ok) {
   const c = s.contact, rec = ok ? {no: L.no, docked: true, score: sc.total, closing: c.closing, lat: c.lat, fuelPct: Math.round(s.prop / s.prop0 * 100), grid: [sc.parts.speed / 250, sc.parts.centre / 250, sc.parts.align / 200, sc.parts.rates / 100, sc.parts.fuel / 250, sc.parts.time / 200]}
     : {no: L.no, docked: false, score: 0, lost: s.phase === 'lost' ? 'Lost the station.' : 'Collision.'};
+  $('result').hidden = false;
   const scored = !app.daily.practice && DAILY.put(L.date, rec); app.daily.practice = true;
   $('result-head').textContent = ok ? `Hard capture. ${sc.total} points: ${P.rank(sc.total)}.` : rec.lost;
   $('result-text').textContent = (ok ? `Contact at ${c.closing.toFixed(3)} m/s, ${(c.lat * 100).toFixed(1)} cm off the centreline, ${c.ang.toFixed(2)}° off axis, with ${s.prop.toFixed(1)} kg of propellant left.` : (s.fault || '')) + (scored ? ' That was your scored run for today. Fly again to practise.' : ' Practice run, not scored.');
   if (ok) { const p = sc.parts; $('result-parts').innerHTML = [['Closing rate', p.speed], ['Centreline', p.centre], ['Alignment', p.align], ['Rates', p.rates], ['Fuel', p.fuel], ['Time', p.time]].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join(''); }
   $('result-parts').hidden = !ok; $('next').hidden = true;
-  const today = DAILY.get(L.date); app.share = today ? dailyCard(today) : `Docking Run, ${L.name} (practice). ${SITE}?daily`; $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result';
+  const today = DAILY.get(L.date); app.share = today ? dailyCard(today) : `Docking Run, ${L.name} (practice). ${SITE}?daily`; $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result'; showDailyResult(today);
   window.DockingRun.last = {daily: true, docked: ok, score: sc.total || 0}; levelList(); renderDaily(); $('again').focus({preventScroll: true});
 }
 function renderDaily() {
@@ -282,7 +284,8 @@ function renderDaily() {
   $('daily-status').textContent = pre ? 'Practise the preview now. Scoring starts with #0.' : rec ? (rec.docked ? `Today: ${rec.score} points. Practice runs don't count.` : `Today: ${rec.lost} Practice runs don't count.`) : 'One scored run today, the same for everyone. Then practise as much as you like.';
   $('daily-play').innerHTML = `${rec || pre ? 'Practise today\'s drop' : 'Fly today\'s drop'} <span aria-hidden="true">&rarr;</span>`; $('daily-share').hidden = !rec; $('daily').classList.toggle('played', !!rec);
 }
-function tickDaily() { $('daily-next').textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
+function showDailyResult(rec) { const b = $('daily-result'); b.hidden = !rec; if (rec) { $('daily-card').textContent = dailyCard(rec); $('daily-result-next').textContent = `Next drop in ${countdown()}`; } }
+function tickDaily() { $('daily-next').textContent = `Next drop in ${countdown()}`; if (!$('daily-result').hidden) $('daily-result-next').textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
 function copyShare(text) { app.share = text; navigator.clipboard?.writeText(text).then(() => say('Result copied.'), () => { $('share-text').hidden = false; $('share-text').value = text; }); }
 
 // ---------- sound: off unless switched on ----------
@@ -342,7 +345,7 @@ addEventListener('pointermove', e => { if (!drag || app.cam !== 'chase') return;
 addEventListener('pointerup', () => { drag = null; });
 view.addEventListener('wheel', e => { if (app.cam !== 'chase') return; e.preventDefault(); app.orbit.dist = Math.max(6, Math.min(120, app.orbit.dist * Math.exp(e.deltaY * 0.001))); }, {passive: false});
 const again = () => app.daily ? startDaily() : start(app.level);
-$('again').addEventListener('click', again); $('daily-play').addEventListener('click', startDaily); $('daily-share').addEventListener('click', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); $('next').addEventListener('click', next);
+$('again').addEventListener('click', again); $('daily-play').addEventListener('click', startDaily); $('daily-copy').addEventListener('click', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); $('daily-share').addEventListener('click', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); $('next').addEventListener('click', next);
 function next() { const i = LEVELS.indexOf(app.level); start(LEVELS[Math.min(LEVELS.length - 1, i + 1)]); }
 $('share').addEventListener('click', () => copyShare(app.share));
 $('back').addEventListener('click', () => { cancelAnimationFrame(app.raf); sound(0, true); app.sim = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; levelList(); renderDaily(); scrollTo(0, 0); });

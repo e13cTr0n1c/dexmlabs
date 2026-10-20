@@ -122,3 +122,5 @@ body[data-screen=game] .support-cta{display:none}
 @media(max-width:760px){.title-copy{width:auto}.mission{grid-template-columns:72px 1fr}.preview{width:72px;height:144px}}
 .daily-card{max-width:640px;margin:0 0 18px;padding:16px 18px;border:2px solid var(--acid);background:var(--panel)}.daily-card h2{margin:4px 0 6px;font-size:26px}.daily-card .eyebrow{margin:0}.daily-card .hero-buttons{margin-top:10px}.daily-next{margin:10px 0 0;font-variant-numeric:tabular-nums}
 .daily-card [hidden]{display:none!important}
+
+.daily-result{margin:14px 0;padding:14px 16px;border:2px solid var(--acid);background:var(--panel)}.daily-result[hidden]{display:none!important}.daily-result .eyebrow{margin:0 0 6px}.daily-result pre{white-space:pre-wrap;word-break:break-word;font:14px/1.5 var(--mono);margin:0 0 10px}.daily-result .primary{width:100%}

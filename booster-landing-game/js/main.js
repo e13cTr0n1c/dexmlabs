@@ -43,7 +43,8 @@ function renderDaily() {
   $('daily-play').innerHTML = `${rec || pre ? 'Practise today\'s drop' : 'Fly today\'s drop'} <span aria-hidden="true">&rarr;</span>`;
   $('daily-share').hidden = !rec; box.classList.toggle('played', !!rec);
 }
-function tickDaily() { const e = $('daily-next'); if (e) e.textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
+function showDailyResult(rec) { const b = $('daily-result'); b.hidden = !rec; if (rec) { $('daily-card').textContent = dailyCard(rec); $('daily-result-next').textContent = `Next drop in ${countdown()}`; } }
+function tickDaily() { const e = $('daily-next'); if (e) e.textContent = `Next drop in ${countdown()}`; if (!$('daily-result').hidden) $('daily-result-next').textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
 function copyShare(text) { app.share = text; navigator.clipboard?.writeText(text).then(() => say('Result copied.'), () => { $('share-text').hidden = false; $('share-text').value = text; }); }
 function start(id = app.level, seed = Math.floor(Math.random() * 2 ** 31)) {
   cancelAnimationFrame(app.raf); const L = typeof id === 'object' ? id : level(id); if (!L.daily) { app.level = id; app.daily = null; } const w = makeWorld(L, seed, {assist: L.daily ? false : app.assist});
@@ -285,7 +286,7 @@ function finish() {
   const i = LEVELS.findIndex(l => l.id === L.id), nx = LEVELS[i + 1]; $('next').hidden = L.daily || !s.landed || !nx || nx.mission !== L.mission; if (!$('next').hidden) $('next').textContent = `Next: ${nx.name} (N)`;
   $('replay').hidden = app.rec.length < 10;
   app.share = `Booster landing, ${L.name}\n${s.landed ? `${tower ? 'Caught' : 'Recovered'}, ${sc} points, ${t.dist.toFixed(1)} m from centre at ${t.impact.toFixed(1)} m/s` : 'Lost'}\nhttps://dexmlabs.app/booster-landing-game/`;
-  const today = L.daily && DAILY.get(L.date); if (today) app.share = dailyCard(today); $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result';
+  const today = L.daily && DAILY.get(L.date); if (today) app.share = dailyCard(today); $('share').textContent = today ? 'Copy Daily Drop card' : 'Copy result'; showDailyResult(today);
   renderMissions(); setLevel(app.level); renderDaily(); $('again').focus({preventScroll: true});
   window.BoosterGame.last = {daily: !!L.daily, landed: !!s.landed, caught: !!s.caught, score: sc, fault: s.fault?.k || null, touch: s.touch || null};
 }
@@ -342,7 +343,7 @@ const tap = (id, f) => $(id).addEventListener('click', f);
 tap('th-up', () => thr(throttleUp)); tap('th-down', () => thr(throttleDown)); tap('th-full', () => thr(() => 1)); tap('th-cut', () => thr(() => 0)); tap('legs', legs); tap('pause', () => pause()); tap('resume', () => pause(false));
 function next() { const i = LEVELS.findIndex(l => l.id === app.level); start(LEVELS[Math.min(LEVELS.length - 1, i + 1)].id); }
 const again = () => app.daily ? startDaily() : start(app.level);
-tap('again', again); tap('daily-play', startDaily); tap('daily-share', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); tap('next', next); tap('play', () => start(app.level)); tap('replay', startReplay);
+tap('again', again); tap('daily-play', startDaily); tap('daily-copy', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); tap('daily-share', () => { const r = DAILY.get(ukDate()); if (r) copyShare(dailyCard(r)); }); tap('next', next); tap('play', () => start(app.level)); tap('replay', startReplay);
 tap('share', () => copyShare(app.share));
 tap('back', () => { cancelAnimationFrame(app.raf); if (app.audio) app.audio.out.gain.value = 0; app.s = null; app.replay = null; $('flight').hidden = true; $('screen-title').hidden = false; document.body.dataset.screen = 'title'; renderMissions(); setLevel(app.level); renderDaily(); scrollTo(0, 0); });
 $('sound').checked = !!store().sound; $('sound').addEventListener('change', e => { const st = store(); st.sound = e.target.checked; write(KEY, st); if (e.target.checked && app.s) sound(); });

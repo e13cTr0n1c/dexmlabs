@@ -111,6 +111,7 @@ const PILOT = `(async () => {
   await page.evaluate(PILOT); await page.evaluate(() => DockingRun.setScale(25));
   await page.waitForFunction(() => DockingRun.last, null, {timeout: 240000, polling: 250});
   const card = await page.evaluate(() => DockingRun.dailyCard()); console.log(card);
+  await page.waitForTimeout(1200); ok(await page.evaluate(() => { const b = document.getElementById('daily-result'); return !b.hidden && b.offsetHeight > 0 && document.getElementById('daily-card').textContent === window.DockingRun.dailyCard() && /^Next drop in \d+:\d\d:\d\d$/.test(document.getElementById('daily-result-next').textContent) && document.getElementById('daily-copy').offsetHeight > 0; }), 'result screen shows the card, a Copy share card button and the countdown');
   ok(/^DEXM Docking #1 🛰️ Docked [\d.]+ cm\/s · [\d.]+ cm off · \d+% fuel\n[🟩🟨🟧🟥]{6} \d+ pts\nhttps:\/\/dexmlabs\.app\/docking-run-game\/\?daily$/u.test(card || ''), 'scored run docked and the share card is built');
   const first = await page.evaluate(() => DockingRun.dailyRecord().score); await page.evaluate(() => { DockingRun.last = null; document.getElementById('again').click(); });
   ok(await page.evaluate(() => /practice/.test(document.getElementById('flight-h').textContent)), 'flying again is practice');

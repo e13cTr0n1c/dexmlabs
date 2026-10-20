@@ -106,6 +106,7 @@ const SHIFT = `(() => { const off = Date.parse('2026-10-21T09:00:00Z') - Date.no
   await pg.evaluate(PILOT); await pg.waitForFunction(() => window.BoosterGame.last, null, {timeout: 150000, polling: 250});
   const r = await pg.evaluate(() => window.BoosterGame.last); console.log('daily', JSON.stringify(r));
   ok(r.daily && r.landed, 'the keyboard pilot solves today\'s drop');
+  await pg.waitForTimeout(1200); ok(await pg.evaluate(() => { const b = document.getElementById('daily-result'); return !b.hidden && b.offsetHeight > 0 && document.getElementById('daily-card').textContent === window.BoosterGame.dailyCard() && /^Next drop in \d+:\d\d:\d\d$/.test(document.getElementById('daily-result-next').textContent) && document.getElementById('daily-copy').offsetHeight > 0; }), 'result screen shows the card, a Copy share card button and the countdown');
   if (pre) ok(await pg.evaluate(() => !window.BoosterGame.dailyRecord()), 'before launch the preview is not scored');
   else { const card = await pg.evaluate(() => window.BoosterGame.dailyCard()); console.log(card); ok(/^DEXM Booster #\d+ (🚀 Landed|🗼 Caught) [\d.]+ m\/s · [\d.]+ m off · \d+% fuel\n[🟩🟨🟧🟥]{5} \d+ pts\nhttps:\/\/dexmlabs\.app\/booster-landing-game\/\?daily$/u.test(card), 'share card');
     const first = await pg.evaluate(() => window.BoosterGame.dailyRecord().score); await pg.evaluate(() => window.BoosterGame.last = null); await pg.keyboard.press('r'); await pg.waitForFunction(() => window.BoosterGame.state()?.t > 0.2);
