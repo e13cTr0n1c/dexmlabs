@@ -102,8 +102,7 @@ GAME_SECTIONS=[
   ('docking-run-game','docking-run-game','SPACE','Docking Run','Dock a crew capsule to a space station by hand, with real thrusters, real orbital mechanics and real docking limits. From 30 m out to a 2 km rendezvous.','Play Docking Run','live'),
   ('helicopter-sling-load-game','helicopter-sling-load-game','HEAVY LIFT','Sling Load','Fly a heavy lift helicopter with a load swinging on a rope. Set crates on the mark, an AC unit on a roof, a bridge on its piers, and put out a fire. A new job every day.','Play Sling Load','live'),
   ('apollo-lunar-landing-game','apollo-lunar-landing-game','SPACE','Apollo',"Fly the last 200 metres of an Apollo landing with real lunar gravity and a fuel gauge that won't wait. A new site every day.",'Play Apollo','live'),
-  ('glider-thermals-game','glider-thermals-game','SOARING','Glider Thermals','Fly a sailplane with no engine on a summer evening. Circle in thermals with the birds, soar a ridge, climb in mountain wave and land out safely. A new task every day.','Play Glider Thermals','live'),
-  ('tesla-roadster-thruster-game','tesla-roadster-thruster-game','THRUSTERS','Roadster Thrusters','A fan-made Tesla Roadster game. Drag launch on a cold gas boost, hop between platforms and land flat, then drift past Earth and Mars. A new run every day. Not affiliated with Tesla or SpaceX.','Play Roadster Thrusters','live')]),
+  ('glider-thermals-game','glider-thermals-game','SOARING','Glider Thermals','Fly a sailplane with no engine on a summer evening. Circle in thermals with the birds, soar a ridge, climb in mountain wave and land out safely. A new task every day.','Play Glider Thermals','live')]),
  ('daily','ONE A DAY','Daily Puzzles',[
   ('skywave','skywave','HF RADIO','Skywave','A daily ham radio puzzle. Read the sun, pick the band and bounce your signal off the ionosphere to reach ten stations before the day runs out.','Play Skywave','live'),
   ('lorenz','lorenz','CIPHER','Lorenz',LORENZ_LINE,'Play Lorenz','live'),
@@ -134,13 +133,16 @@ def game_card(g):
 <div class="card-body"><h3>{title}</h3><p>{blurb}</p><a class="btn" href="{slug}/">{btn}</a></div>
 </article>
 '''
+CHEV='<svg class="sec-chev" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"/></svg>'
 def games_html():
+  # Each category is a button and a grid. The page ships them open, so with no JS nothing is hidden.
+  # assets/games-collapse.js closes them on load and opens the one named in the URL hash.
   out=[]
   for sid,label,name,gs in GAME_SECTIONS:
     n=sum(1 for g in gs if g[6]!='sealed')
     out.append(f'''<div class="game-sec" id="games-{sid}" role="group" aria-labelledby="games-{sid}-h">
-<div class="sec-head"><div><p class="label acid">{label}</p><h3 class="sec-h" id="games-{sid}-h">{name}</h3></div><p class="label">{n} {'GAME' if n==1 else 'GAMES'}</p></div>
-<div class="grid">
+<h3 class="sec-title"><button type="button" class="sec-toggle" id="games-{sid}-h" aria-expanded="true" aria-controls="games-{sid}-grid"><span class="sec-text"><span class="label acid">{label}</span><span class="sec-h">{name}</span></span><span class="label sec-count">{n} {'GAME' if n==1 else 'GAMES'}</span>{CHEV}</button></h3>
+<div class="grid" id="games-{sid}-grid">
 '''+''.join(game_card(g) for g in gs)+'</div>\n</div>\n')
   return ''.join(out)
 GAMES_HTML=games_html()
@@ -170,4 +172,4 @@ home=head('DEXM Labs / Games and makes','Free browser games from a home lab in t
 
 <section class="block" id="games" aria-labelledby="games-h"><div class="wrap">
 <div class="sec-head"><div><p class="label acid">TEST CHAMBERS</p><h2 id="games-h">Games</h2></div><p class="label">PLAYS IN THE BROWSER / FREE</p></div>
-{GAMES_HTML}
+{GAMES_HTML}<script src="assets/games-collapse.js"></script>

@@ -18,7 +18,7 @@ t("homepage: games first, then makes, then support", function () {
   assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["puzzle-today", "hero", "games", "makes", "support"]);
   assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .game-sec"), function (s) { return s.id + ":" + s.querySelector(".sec-h").textContent; }), ["games-physics:Physics & Flight", "games-daily:Daily Puzzles", "games-labs:Labs / Beta", "games-other:Other"], "game sections in order");
   var btns = [].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); });
-  assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "tesla-roadster-thruster-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "repurposed/", "vector/", "orbit/", "chernobyl-reactor-simulator/"]);
+  assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "repurposed/", "vector/", "orbit/", "chernobyl-reactor-simulator/"]);
   assert.strictEqual(d.querySelector(".bignum").textContent, String(btns.length), "games live counter matches the cards");
   var ld = [].map.call(d.querySelectorAll('script[type="application/ld+json"]'), function (e) { return JSON.parse(e.textContent); }).filter(function (j) { return j["@type"] === "ItemList"; })[0];
   assert.deepStrictEqual(ld.itemListElement.map(function (e) { return e.url; }), btns.map(function (h) { return "https://dexmlabs.app/" + h; }), "ItemList matches the cards");
@@ -126,11 +126,91 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 27);
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|tesla-roadster-thruster-game\/|makes\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 26);
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");
+});
+t("Roadster Thrusters is unlisted: still playable, noindex, no inbound links", function () {
+  var R = "tesla-roadster-thruster-game";
+  ["index.html", "sitemap.xml", "llms.txt"].forEach(function (f) { assert.ok(!/roadster|tesla/i.test(read(f)), f); });
+  var d = dom(R + "/index.html");
+  assert.ok(/noindex/.test(d.querySelector('meta[name="robots"]').getAttribute("content")));
+  assert.ok(!d.querySelector('meta[http-equiv="refresh"]') && d.querySelector("canvas, #game, main"), "the game itself is still there");
+  assert.ok(fs.existsSync(path.join(ROOT, R + "/js/main.js")), "game code kept");
+  (function walk(dir) {
+    fs.readdirSync(path.join(ROOT, dir)).forEach(function (f) {
+      var rel = dir ? dir + "/" + f : f;
+      if (/^(\.git|node_modules|build|tesla-roadster-thruster-game)$/.test(f)) return;
+      if (fs.statSync(path.join(ROOT, rel)).isDirectory()) return walk(rel);
+      if (/\.(html|xml|txt|js|json|md)$/.test(f)) assert.ok(!/href=["'][^"']*tesla-roadster-thruster-game/.test(read(rel)), rel + " links to Roadster");
+    });
+  })("");
+});
+var GAME_PAGES = ["apollo-lunar-landing-game", "booster-landing-game", "chernobyl-reactor-simulator", "docking-run-game", "enigma-machine", "forge", "glider-thermals-game", "grid", "helicopter-sling-load-game", "lorenz", "mars-base-game", "orbit", "play-test-8179d030/game", "puzzle", "repurposed", "rocket-launch-game", "skywave", "tesla-roadster-thruster-game", "tolerance", "vector"];
+t("every game page has the home bar: its own name on the left, a keyboard link to dexmlabs.app", function () {
+  GAME_PAGES.forEach(function (g) {
+    var f = g + "/index.html", d = dom(f), bar = d.body.firstElementChild;
+    if (bar && /\bskip/.test(bar.className)) bar = bar.nextElementSibling;
+    assert.ok(bar && bar.classList.contains("dexm-homebar") && bar.tagName === "NAV", f + " bar is first in the body, after any skip link");
+    var a = bar.querySelector('a[href="https://dexmlabs.app/"]');
+    assert.ok(a && a.textContent === "dexmlabs.app" && !a.hasAttribute("tabindex"), f + " home link");
+    assert.ok(bar.querySelector(".dexm-homebar-game").textContent.trim(), f + " game name");
+    assert.strictEqual(d.querySelectorAll(".dexm-homebar").length, 1, f);
+    assert.ok(d.querySelector('link[rel="stylesheet"][href$="assets/homebar.css"]'), f + " stylesheet");
+  });
+  var css = read("assets/homebar.css");
+  assert.ok(/\.dexm-homebar\{[^}]*height:32px[^}]*white-space:nowrap/.test(css), "slim, one line");
+  assert.ok(/\.dexm-homebar a:focus-visible\{outline:3px/.test(css), "visible focus");
+  assert.ok(/:fullscreen \.dexm-homebar/.test(css), "hidden in fullscreen");
+});
+function home(hash) {
+  var html = read("index.html").replace(/<script src="assets\/games-collapse\.js"><\/script>/, "<script>" + read("assets/games-collapse.js") + "</script>");
+  var w = new jsdom.JSDOM(html, { runScripts: "dangerously", url: "https://dexmlabs.app/" + (hash || ""), pretendToBeVisual: true, beforeParse: function (w) { w.Element.prototype.scrollIntoView = function () { w.__scrolled = this.id; }; } }).window;
+  return w;
+}
+function key(w, el, k) { var e = new w.KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }); el.dispatchEvent(e); return e; }
+var SECS = ["games-physics", "games-daily", "games-labs", "games-other"];
+t("game categories: real buttons, open in the HTML so no JS hides nothing", function () {
+  var d = dom("index.html");
+  SECS.forEach(function (id) {
+    var sec = d.getElementById(id), b = sec.querySelector("button.sec-toggle"), g = d.getElementById(b.getAttribute("aria-controls"));
+    assert.ok(b && b.getAttribute("type") === "button", id + " button");
+    assert.strictEqual(b.getAttribute("aria-expanded"), "true", id + " open without JS");
+    assert.ok(g && sec.contains(g) && !g.hidden && g.querySelector(".card"), id + " grid");
+    assert.ok(/\d+ GAMES?/.test(b.querySelector(".sec-count").textContent) && b.querySelector(".label.acid").textContent && b.querySelector(".sec-chev"), id + " header parts");
+  });
+  assert.ok(/\.game-sec \.grid\[hidden\]\{display:none\}/.test(read("assets/site.css")), "hidden grid really hides");
+  assert.ok(/\.sec-toggle:focus-visible\{outline:3px solid/.test(read("assets/site.css")), "visible focus");
+  assert.ok(!d.querySelector("#puzzle-today[hidden], #puzzle-today .grid[hidden], #makes [hidden]"), "puzzle card and makes never hidden");
+});
+t("game categories: closed with JS, click and keyboard toggle", function () {
+  var w = home(), d = w.document;
+  SECS.forEach(function (id) {
+    var b = d.querySelector("#" + id + " .sec-toggle"), g = d.getElementById(b.getAttribute("aria-controls"));
+    assert.strictEqual(b.getAttribute("aria-expanded"), "false", id); assert.ok(g.hidden, id + " hidden");
+  });
+  assert.ok(d.querySelector("[data-puzzle-card]") && !d.querySelector("#puzzle-today").closest("[hidden]"), "Today's Puzzle visible");
+  assert.ok(!d.querySelector("#makes").closest("[hidden]") && !d.querySelector("#makes [hidden]"), "Makes visible");
+  var b = d.querySelector("#games-daily .sec-toggle"), g = d.getElementById("games-daily-grid");
+  b.click(); assert.ok(!g.hidden && b.getAttribute("aria-expanded") === "true", "click opens");
+  b.click(); assert.ok(g.hidden && b.getAttribute("aria-expanded") === "false", "click closes");
+  assert.ok(key(w, b, "Enter").defaultPrevented); assert.ok(!g.hidden, "Enter opens");
+  key(w, b, " "); assert.ok(g.hidden, "Space closes");
+  key(w, b, "Tab"); assert.ok(g.hidden, "other keys do nothing");
+  var ld = [].map.call(d.querySelectorAll('script[type="application/ld+json"]'), function (e) { return JSON.parse(e.textContent); }).filter(function (j) { return j["@type"] === "ItemList"; })[0];
+  assert.strictEqual(ld.itemListElement.length, d.querySelectorAll("#games .btn").length, "ItemList still lists every game");
+  assert.strictEqual(d.querySelector(".bignum").textContent, String(ld.itemListElement.length));
+});
+t("game categories: a URL hash opens and scrolls to its category, also on hashchange", function () {
+  var w = home("#games-labs"), d = w.document;
+  assert.ok(!d.getElementById("games-labs-grid").hidden && d.getElementById("games-physics-grid").hidden);
+  assert.strictEqual(w.__scrolled, "games-labs");
+  w.location.hash = "#games-other"; w.dispatchEvent(new w.HashChangeEvent("hashchange"));
+  assert.ok(!d.getElementById("games-other-grid").hidden, "hashchange opens");
+  assert.strictEqual(w.__scrolled, "games-other");
+  var w2 = home("#games"); assert.ok(w2.document.getElementById("games-physics-grid").hidden, "#games alone opens nothing");
 });
 t("internal links on generated pages resolve", function () {
   GENERATED.filter(function (f) { return f !== "404.html"; }).forEach(function (f) {

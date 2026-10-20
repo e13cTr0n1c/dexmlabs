@@ -1,0 +1,20 @@
+/* Slim bar at the top of every game page: the game's name on the left, a link home beside it. Inserted by build/homebar.py. */
+.dexm-homebar{box-sizing:border-box;position:relative;z-index:50;display:flex;align-items:center;gap:12px;height:32px;margin:0;padding:0 12px;background:#0a0b09;border-bottom:1px solid #4a5141;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.dexm-homebar-game{color:#ecebe3;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dexm-homebar a{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 8px;color:#d6ff00!important;text-decoration:none;text-transform:none;letter-spacing:.02em;border:1px solid #4a5141}
+.dexm-homebar a:hover{border-color:#d6ff00}
+.dexm-homebar a:focus-visible{outline:3px solid #d6ff00;outline-offset:-3px}
+:root[data-theme=light] .dexm-homebar{background:#fbfaf6;border-bottom-color:#828a78}
+:root[data-theme=light] .dexm-homebar-game{color:#15170f}
+:root[data-theme=light] .dexm-homebar a{color:#4b5e00!important;border-color:#828a78}
+:root[data-theme=light] .dexm-homebar a:focus-visible{outline-color:#4b5e00}
+:fullscreen .dexm-homebar,:root:fullscreen .dexm-homebar{display:none}
+/* Pages that need the bar placed differently (see SPECIAL in build/homebar.py). */
+.dexm-homebar--fixed{position:fixed;top:0;left:0;right:0;z-index:1000}
+/* skywave and lorenz: fixed stages are placed from --header, so the bar becomes part of it */
+html:has(.dexm-homebar--hdr){--header:100px}
+@media(max-width:760px){html:has(.dexm-homebar--hdr){--header:89px}}
+@media(max-width:930px) and (orientation:landscape) and (max-height:560px){html:has(.dexm-homebar--hdr){--header:77px}}
+html:has(.dexm-homebar--hdr) .site-header{box-sizing:border-box;padding-top:32px}
+/* Repurposed beta: full window canvas, so the HUD moves down below the bar */
+html:has(.dexm-homebar--overlay) #top{top:40px}

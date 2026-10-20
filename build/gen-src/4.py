@@ -83,5 +83,7 @@ puzzle_page=head("Today's Puzzle / DEXM Labs",PZ_DESC,'puzzle/','../').replace('
 </div></section>
 </main>
 '''+foot('../')
+# The same slim home bar as the hand written game pages (build/homebar.py).
+puzzle_page=puzzle_page.replace('</head>','<link rel="stylesheet" href="../assets/homebar.css"></head>',1).replace('<a class="skip" href="#main">Skip to content</a>','<a class="skip" href="#main">Skip to content</a><nav class="dexm-homebar" aria-label="DEXM Labs"><span class="dexm-homebar-game">Today\'s Puzzle</span><a href="https://dexmlabs.app/">dexmlabs.app</a></nav>',1)
 (S/'puzzle'/'index.html').write_text(puzzle_page)
 print('puzzle',len(PZ_LIST))
