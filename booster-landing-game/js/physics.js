@@ -1,11 +1,11 @@
 // Booster landing, the last few kilometres. SI units. x along the ground or sea, y up from the surface,
 // angle in radians (0 upright, + tilts the thrust towards +x). Same conventions as the Apollo game.
 export const G = 9.81, G0 = 9.80665, SOUND = 340, DEG = 180 / Math.PI, D = Math.PI / 180;
-// Two vehicles. The Super Heavy style booster is nine times the mass with nine times the thrust and drag,
+// Two vehicles. The giant stainless booster is nine times the mass with nine times the thrust and drag,
 // so it flies with the same feel, only bigger and slower to turn.
 export const VEHICLES = {
-  f9: {id: 'f9', name: 'Falcon 9 booster', short: 'Falcon 9', dry: 20000, thrust: 440000, isp: 300, axial: 19, legsDrag: 5, side: 90, fins: 33, rate: 14 * D, acc: 32 * D, rcsFlow: 0.9, height: 42.5, radius: 1.85, legs: true},
-  sh: {id: 'sh', name: 'Super Heavy booster', short: 'Super Heavy', dry: 180000, thrust: 3960000, isp: 300, axial: 171, legsDrag: 0, side: 810, fins: 297, rate: 10 * D, acc: 20 * D, rcsFlow: 0.9, height: 71, radius: 4.5, legs: false, pin: 63}
+  f9: {id: 'f9', name: 'Slim booster', short: 'Slim', dry: 20000, thrust: 440000, isp: 300, axial: 19, legsDrag: 5, side: 90, fins: 33, rate: 14 * D, acc: 32 * D, rcsFlow: 0.9, height: 42.5, radius: 1.85, legs: true},
+  sh: {id: 'sh', name: 'Giant booster', short: 'Giant', dry: 180000, thrust: 3960000, isp: 300, axial: 171, legsDrag: 0, side: 810, fins: 297, rate: 10 * D, acc: 20 * D, rcsFlow: 0.9, height: 71, radius: 4.5, legs: false, pin: 63}
 };
 const V0 = VEHICLES.f9;
 export const DRY = V0.dry, THRUST = V0.thrust, ISP = V0.isp;

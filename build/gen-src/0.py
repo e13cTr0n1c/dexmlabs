@@ -98,7 +98,7 @@ LORENZ_LINE='A daily cipher puzzle on the Lorenz SZ40/42 cipher machine that Ble
 # (slug, thumb, tag, title, blurb, button, status) status: 'live' or 'beta'
 GAME_SECTIONS=[
  ('physics','SIMULATORS','Physics &amp; Flight',[
-  ('booster-landing-game','booster-landing-game','ROCKETRY','Booster','Land a Falcon 9 style booster on a ship at sea, or catch a Super Heavy style booster with the tower arms. Throttle, gimbal, grid fins, wind and swell. Fan-made.','Play Booster','live'),
+  ('booster-landing-game','booster-landing-game','ROCKETRY','Booster','Land a slim DEXM Labs booster on a ship at sea, or catch a giant stainless one with the tower arms. Throttle, gimbal, grid fins, wind and swell. Fan-made.','Play Booster','live'),
   ('docking-run-game','docking-run-game','SPACE','Docking Run','Dock a crew capsule to a space station by hand, with real thrusters, real orbital mechanics and real docking limits. From 30 m out to a 2 km rendezvous.','Play Docking Run','live'),
   ('helicopter-sling-load-game','helicopter-sling-load-game','HEAVY LIFT','Sling Load','Fly a heavy lift helicopter with a load swinging on a rope. Set crates on the mark, an AC unit on a roof, a bridge on its piers, and put out a fire. A new job every day.','Play Sling Load','live'),
   ('apollo-lunar-landing-game','apollo-lunar-landing-game','SPACE','Apollo',"Fly the last 200 metres of an Apollo landing with real lunar gravity and a fuel gauge that won't wait. A new site every day.",'Play Apollo','live'),

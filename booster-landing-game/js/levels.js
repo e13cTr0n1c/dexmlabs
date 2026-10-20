@@ -1,6 +1,6 @@
 // Seven levels in two missions. start: where the booster comes in. sea: heave in metres, pitch in radians,
 // period in seconds. wind: base and gust in m/s along x, turb in degrees a second of buffeting.
-// Fuel is for the Falcon 9 style booster; the Super Heavy style one carries nine times as much.
+// Fuel is for the slim booster; the giant stainless one carries nine times as much.
 const D = Math.PI / 180, flat = {heave: 0, pitch: 0, period: 9};
 export const LEVELS = [
   {id: 'calm', mission: 'ship', kind: 'ship', vehicle: 'f9', name: 'Calm', blurb: 'Flat sea, light air. Learn the burn.', mult: 1, fuel: 4600, rcs: 100,
@@ -19,7 +19,7 @@ export const LEVELS = [
     start: {x: 520, y: 4200, vx: -8, vy: -170, jitter: 140}, sea: flat, wind: {base: 4, gust: 6, turb: 0.6}, sky: 'night'}
 ];
 export const MISSIONS = [
-  {id: 'ship', name: 'Drone ship landing', vehicle: 'f9', blurb: 'Falcon 9 style booster. White body, nine engines, four legs. Land on a ship that heaves and pitches with the swell.'},
-  {id: 'tower', name: 'Tower catch', vehicle: 'sh', blurb: 'Super Heavy style booster. Stainless steel, thirty three engines, no legs. Hover it between the chopstick arms and let them close.'}
+  {id: 'ship', name: 'Drone ship landing', vehicle: 'f9', blurb: 'Slim DEXM Labs booster. White body, nine engines, four legs. Land on a ship that heaves and pitches with the swell.'},
+  {id: 'tower', name: 'Tower catch', vehicle: 'sh', blurb: 'Giant DEXM Labs booster. Stainless steel, thirty three engines, no legs. Hover it between the chopstick arms and let them close.'}
 ];
 export const level = id => LEVELS.find(l => l.id === id) || LEVELS[0];

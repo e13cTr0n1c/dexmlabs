@@ -27,7 +27,7 @@ function soot(x, k, r, bot, o, height) {
 function vtext(x, k, txt, cx, cy, size, col, spacing = 0.15) { if (size * k < 5) return; x.save(); x.translate(cx * k, cy * k); x.rotate(-Math.PI / 2); x.fillStyle = col; x.font = `900 ${size * k}px "Arial Black",Arial,sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; if ('letterSpacing' in x) x.letterSpacing = `${spacing * size * k}px`; x.fillText(txt, 0, 0); x.restore(); }
 function puff(x, k, side, y, r, len) { const g = x.createRadialGradient(side * (r + len * 0.5) * k, y * k, 0, side * (r + len * 0.5) * k, y * k, len * 0.6 * k); g.addColorStop(0, 'rgba(255,255,255,.85)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(side * r * k, (y - 0.25) * k); x.lineTo(side * (r + len) * k, (y - len * 0.35) * k); x.lineTo(side * (r + len) * k, (y + len * 0.35) * k); x.lineTo(side * r * k, (y + 0.25) * k); x.fill(); }
 
-// Falcon 9 style first stage: white body, black interstage, four grid fins, four carbon legs, nine engines.
+// Slim white first stage: white body, black interstage, four grid fins, four carbon legs, nine engines.
 export function drawF9(x, k, o) {
   const r = 1.85, bodyBot = -2.6, interTop = -42.5, interBot = -36.3, lg = o.legsBroken ? 0 : o.legs, fin = o.fins ?? 1, night = o.night;
   const carbon = night ? '#24272b' : '#1b1c1f', carbonHi = night ? '#3a3f45' : '#34363a';
@@ -56,7 +56,7 @@ export function drawF9(x, k, o) {
   soot(x, k, r, bodyBot, o, 26);
   if (o.heat > 25) { const hg = x.createLinearGradient(0, bodyBot * k, 0, (bodyBot - 8) * k); hg.addColorStop(0, `rgba(255,120,40,${Math.min(0.85, (o.heat - 25) / 80)})`); hg.addColorStop(1, 'rgba(255,120,40,0)'); x.fillStyle = hg; x.fillRect(-(r + 0.4) * k, (bodyBot - 8) * k, 2 * (r + 0.4) * k, 9 * k); }
   // Livery: the name down the side, a DEXM band and stencil
-  vtext(x, k, 'SPACEX', 0, -22, 2.2, night ? '#15181b' : '#16191c', 0.08);
+  vtext(x, k, 'DEXM LABS', 0, -22, 2.2, night ? '#15181b' : '#16191c', 0.08);
   x.fillStyle = '#d6ff00'; x.fillRect(-r * k, -33.2 * k, 2 * r * k, 0.45 * k);
   vtext(x, k, 'DEXM', -0.9, -9.5, 0.8, '#4a5056', 0.1);
   // Front leg on top of the body
@@ -72,7 +72,7 @@ export function drawF9(x, k, o) {
   // the front fin, seen face on when stowed and edge on when out
   const fwF = 1.3 * (1 - fin * 0.85); lattice(x, -0.65 * k, (fy - fh * (1 - fin * 0.2)) * k, 1.3 * k, fh * (1 - fin * 0.7) * k, 5, titan, line); void fwF;
 }
-// Super Heavy style booster: stainless steel, 33 engines, four big grid fins, catch pins under them, no legs.
+// Giant stainless booster: stainless steel, 33 engines, four big grid fins, catch pins under them, no legs.
 export function drawSH(x, k, o) {
   const r = 4.5, bodyBot = -5.8, top = -71, night = o.night, fin = o.fins ?? 1;
   x.save(); x.translate(0, -2.4 * k); x.rotate(o.gimbal || 0); x.translate(0, 2.4 * k);
@@ -90,7 +90,7 @@ export function drawSH(x, k, o) {
   soot(x, k, r, bodyBot, o, 18);
   if (o.heat > 25) { const hg = x.createLinearGradient(0, bodyBot * k, 0, (bodyBot - 10) * k); hg.addColorStop(0, `rgba(255,120,40,${Math.min(0.85, (o.heat - 25) / 80)})`); hg.addColorStop(1, 'rgba(255,120,40,0)'); x.fillStyle = hg; x.fillRect(-r * k, (bodyBot - 10) * k, 2 * r * k, 10 * k); }
   // DEXM stencil and acid band
-  vtext(x, k, 'DEXM', -2.4, -16, 1.6, night ? '#20252a' : '#3b4248', 0.1); vtext(x, k, 'SPACEX', -1.2, -40, 2.2, night ? '#1a1f24' : '#2b3137', 0.12); x.fillStyle = '#d6ff00'; x.fillRect(-r * k, -8.2 * k, 2 * r * k, 0.5 * k);
+  vtext(x, k, 'DEXM', -2.4, -16, 1.6, night ? '#20252a' : '#3b4248', 0.1); vtext(x, k, 'DEXM LABS', -1.2, -40, 2.2, night ? '#1a1f24' : '#2b3137', 0.12); x.fillStyle = '#d6ff00'; x.fillRect(-r * k, -8.2 * k, 2 * r * k, 0.5 * k);
   // Hot staging ring with vents, and the top dome
   cyl(x, r, k, -69.6, -67.2, [[0, '#1d2023'], [0.5, '#3c4146'], [1, '#15171a']]);
   x.fillStyle = 'rgba(255,170,90,.15)'; for (let i = 0; i < 10; i++) { const vx = -r + 0.45 + i * 0.9; x.fillRect(vx * k, -69.1 * k, 0.45 * k, 1.4 * k); }

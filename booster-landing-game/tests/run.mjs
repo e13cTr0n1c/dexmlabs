@@ -35,10 +35,10 @@ await t('Tower: the arms close on the pins inside the window, miss and reopen ou
   let c = P.closeArms(hov({y: P.TOWER.armY - w.v.pin + 10})); for (let i = 0; i < 60 && !c.done; i++) { c.throttle = P.hoverThrottle(w.v.dry + c.fuel, w.v); c = P.step(w, c); } assert.equal(c.fault?.k, 'clip'); });
 await t('Arm assist closes the arms for you and pays less', () => { const L = level('catch-calm'), a = P.makeWorld(L, 3, {assist: true}), m = P.makeWorld(L, 3); const sa = fly(a), sm = fly(m); assert.ok(sa.caught && sm.caught); assert.ok(P.score(sa, a) < P.score(sm, m)); });
 await t('Every level has 25 to 30% more fuel than the first version', () => { const old = {calm: 3600, windy: 3800, night: 4600, storm: 5400}; for (const [id, f] of Object.entries(old)) { const r = level(id).fuel / f; assert.ok(r >= 1.25 && r <= 1.3, id + r); } });
-await t('Page: title, structured data, support links, the trademark notice and no dashes', () => { const h = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+await t('Page: title, structured data, support links, the fan-made notice and no dashes', () => { const h = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   for (const re of [/<title>Booster Landing Game/, /"@type": "VideoGame"/, /"@type": "FAQPage"/, /buymeacoffee\.com\/arthurdeusexmachina/, /cults3d\.com/, /og:image/, /Content-Security-Policy/, /cloudflareinsights/]) assert.match(h, re);
-  const note = 'Fan-made game. Not affiliated with, endorsed or sponsored by SpaceX. SpaceX, Falcon 9 and Starship are trademarks of Space Exploration Technologies Corp.';
-  assert.ok(h.split(note).length - 1 >= 3, 'notice on the title, in the about text and the footer'); assert.match(h, /class="footer-disclaimer">Fan-made game/);
+  const note = 'Independent fan-made game inspired by real reusable rockets. Not affiliated with or endorsed by SpaceX.';
+  assert.ok(h.split(note).length - 1 >= 2, 'notice on the title and the footer'); assert.match(h, /class="footer-disclaimer">Independent fan-made game/); assert.ok(!/spacex/i.test(h.split(note).join('')), 'SpaceX only in the notice');
   const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.ok(!/[\u2013\u2014]|\s-\s/.test(text)); });
 // Daily Drop
 const Dd = await import('../js/daily.js'), {dailyLevel} = await import('../js/daily-level.js');

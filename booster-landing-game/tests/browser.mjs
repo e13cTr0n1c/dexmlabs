@@ -41,14 +41,14 @@ ok(D.errors.length === 0, 'desktop loads with no console errors ' + JSON.stringi
 ok(D.missing.length === 0, 'every local file resolves ' + JSON.stringify(D.missing));
 ok(await D.page.evaluate(() => !!document.querySelector('.dexm-support-site') && !!document.querySelector('#result .dexm-support')), 'support buttons on the page and on the finish screen');
 ok(await D.page.evaluate(() => document.querySelectorAll('.mission').length === 2 && document.querySelectorAll('.mission canvas').length === 2 && !!document.getElementById('assist')), 'mission select shows both vehicles, their levels and the arm assist switch');
-const note = 'Fan-made game. Not affiliated with, endorsed or sponsored by SpaceX. SpaceX, Falcon 9 and Starship are trademarks of Space Exploration Technologies Corp.';
-ok(await D.page.evaluate(n => document.querySelector('.site-footer').textContent.includes(n) && document.querySelector('.disclaimer').textContent.includes(n) && document.body.textContent.split(n).length > 3, note), 'trademark notice on the title, in the about text and the footer');
+const note = 'Independent fan-made game inspired by real reusable rockets. Not affiliated with or endorsed by SpaceX.';
+ok(await D.page.evaluate(n => document.querySelector('.site-footer').textContent.includes(n) && document.querySelector('.disclaimer').textContent.includes(n) && document.body.textContent.split(n).length > 2 && !/spacex/i.test(document.body.textContent.split(n).join('')), note), 'fan-made notice on the title and the footer, SpaceX nowhere else');
 await D.page.screenshot({path: path.join(shots, '1-missions.png')});
 // 2. Scripted landing on Calm through the keyboard.
 await D.page.evaluate(() => { document.querySelector('[data-level="calm"]').click(); document.getElementById('play').click(); });
 await D.page.waitForFunction(() => window.BoosterGame.state()?.t > 0.2); await D.page.evaluate(PILOT);
 await D.page.waitForFunction(() => { const s = window.BoosterGame.state(), d = window.BoosterGame.deck(); return s.done || (s.throttle > 0 && s.legsOut && s.y - d.y < 24); }, null, {timeout: 120000, polling: 50});
-await D.page.locator('#sky').screenshot({path: path.join(shots, '2-falcon-landing.png')});
+await D.page.locator('#sky').screenshot({path: path.join(shots, '2-ship-landing.png')});
 await D.page.waitForFunction(() => window.BoosterGame.last, null, {timeout: 120000, polling: 250});
 const calm = await D.page.evaluate(() => window.BoosterGame.last); console.log('calm result', JSON.stringify(calm));
 ok(calm.landed && calm.score > 0, 'scripted keyboard pilot lands Calm');
