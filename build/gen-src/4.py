@@ -46,3 +46,42 @@ makes_page=head('3D models / DEXM Labs',MAKES_DESC,'makes/','../',og='https://de
 '''+foot('../')
 (S/'makes').mkdir(exist_ok=True); (S/'makes'/'index.html').write_text(makes_page)
 print('makes',len(MK_MODELS))
+
+# ---------- /puzzle/ Today's Puzzle (puzzles in build/puzzles.json, format in build/PUZZLES.md; script in assets/puzzle.js) ----------
+from makes_data import MODELS as _PZM
+PZ_CIPHER_SET=MK_C+[m for m in _PZM if m[0]=='cipher-set'][0][4]
+PZ_LIST=_json.loads((S/'build'/'puzzles.json').read_text())
+PZ_KEYS={'date','id','type','title','prompt','hint','hash','cipher','rings','start','morse'}
+for _p in PZ_LIST:
+  assert set(_p)<=PZ_KEYS and _p['type'] in ('cipher','morse','aviation','physics'), _p.get('id')
+  assert len(_p['hash'])==64 and all(c in '0123456789abcdef' for c in _p['hash']), _p['id']
+assert len({_p['date'] for _p in PZ_LIST})==len(PZ_LIST), 'one puzzle per date'
+(S/'puzzle').mkdir(exist_ok=True)
+(S/'puzzle'/'puzzles.json').write_text(_json.dumps(sorted(PZ_LIST,key=lambda p:p['date']),separators=(',',':'))+'\n')
+PZ_DESC="One small puzzle a day, by UK date: a rotor cipher, a Morse riddle, an aviation question or a physics and space question. Points and streaks stay in your browser."
+PZ_LD=_json.dumps({"@context":"https://schema.org","@type":"WebPage","@id":"https://dexmlabs.app/puzzle/#page","url":"https://dexmlabs.app/puzzle/","name":"Today's Puzzle","description":PZ_DESC,"inLanguage":"en-GB","isPartOf":{"@id":"https://dexmlabs.app/#site"},"isAccessibleForFree":True},separators=(',',':'))
+puzzle_page=head("Today's Puzzle / DEXM Labs",PZ_DESC,'puzzle/','../').replace('</head>',f'<script src="../assets/puzzle.js" defer></script><script type="application/ld+json">{PZ_LD}</script>\n</head>',1)+f'''<main id="main">
+<section class="block" aria-labelledby="pz-h"><div class="wrap pz-page" data-puzzle-page data-src="puzzles.json" data-cipher-set="{PZ_CIPHER_SET}">
+<div class="sec-head"><div><p class="label acid" data-pz-kind>DAILY</p><h1 id="pz-h">Today's Puzzle</h1></div><p class="label" data-pz-date></p></div>
+<div data-pz-body><p>Loading today's puzzle.</p></div>
+<form class="pz-form" data-pz-form autocomplete="off"><label class="dexm-sr" for="pz-answer">Your answer</label><input id="pz-answer" spellcheck="false" placeholder="Your answer" maxlength="60"><button type="submit">Check</button></form>
+<p class="pz-msg" data-pz-msg aria-live="polite"></p>
+<button type="button" class="pz-ghost" data-pz-hint>Show a hint (costs 10 points)</button><p data-pz-hinttext hidden></p>
+<div data-pz-result hidden>
+<h2>Solved</h2>
+<p data-pz-stats></p>
+<pre class="pz-share" data-pz-share></pre>
+<p><button type="button" class="pz-ghost" data-pz-copy>Copy my result</button></p>
+<p class="pz-upsell" data-pz-upsell hidden>Enjoyed the rotor cipher? I designed a <a href="{PZ_CIPHER_SET}" rel="noopener">Cipher Set</a> you can print: my field cipher machine, the rotor demonstrator and the Lorenz wheel on one plinth.</p>
+<form class="pz-nick" data-pz-nickform data-pz-nickrow hidden><label for="pz-nick">Put my time on the top 10 as</label><span class="dexm-signup-row"><input id="pz-nick" maxlength="16" placeholder="Nickname, 3 to 16 letters"><button type="submit">Send my time</button></span><small data-pz-sent aria-live="polite"></small></form>
+</div>
+<div class="pz-board" data-pz-board hidden><h2>Today</h2><p data-pz-count></p><ol data-pz-top></ol></div>
+<h2>How it works</h2>
+<p>A new puzzle goes up at midnight UK time. They take turns: a word on my three rotor machine, a riddle in Morse, an aviation question, then one on physics or space. Type your answer and press Check. Capitals and spaces at the ends don't matter.</p>
+<p>A first try solve is worth 50 points, then 10 fewer per extra try, down to 10. A hint takes 10 off. Solve on days in a row to build a streak. Your points, streak and history stay in this browser only.</p>
+<p>Your answer is checked in your browser against a fingerprint, so the answers are never in the page. If you send your time, only your nickname, the time and that fingerprint go to my counter.</p>
+</div></section>
+</main>
+'''+foot('../')
+(S/'puzzle'/'index.html').write_text(puzzle_page)
+print('puzzle',len(PZ_LIST))

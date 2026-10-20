@@ -28,13 +28,14 @@
 
 ## Makes
 
-- [3D models](https://dexmlabs.app/makes/): Gallery of my 31 printable 3D models, grouped by collection, each linking to its Cults3D page.
+- [3D models](https://dexmlabs.app/makes/): Gallery of my 32 printable 3D models, grouped by collection, each linking to its Cults3D page.
 - [Moon Rocket Cutaway](https://cults3d.com/en/3d-model/various/moon-rocket-cutaway-desk-model-saturn-v-style): My Saturn V style rocket stands about 300 mm tall. The stages lift apart and a window down the front shows the fuel tanks, the engines and the little lunar lander tucked inside. On Cults3D.
 - [Space Shuttle Stack Cutaway](https://cults3d.com/en/3d-model/various/space-shuttle-stack-cutaway-desk-model-space-shuttle-style): The orbiter, the big tank and both boosters on one stand. I cut a window in the tank so you can see the two propellant tanks, and the payload bay opens. On Cults3D.
 - [First Satellite](https://cults3d.com/en/3d-model/various/first-satellite-desk-model-sputnik-style): A polished Sputnik style sphere with its four swept antennas, held nose up on a round stand. I added a cutaway half if you want to see inside. On Cults3D.
 - [Deep Space Probe](https://cults3d.com/en/3d-model/various/deep-space-probe-desk-model-voyager-style): My Voyager style probe, with the big dish, the golden record and the scan platform out on its boom. On Cults3D.
 - [Lunar Lander](https://cults3d.com/en/3d-model/various/lunar-lander-desk-model-apollo-era-style): An Apollo era lander with the ascent stage sitting on the gold descent stage, ladder and all. On Cults3D.
 - [Lunar Rover](https://cults3d.com/en/3d-model/various/lunar-rover-desk-model-apollo-era-style): The moon buggy to park next to my lander, with the seats, the antennas and the big wheels. On Cults3D.
+- [Radar Desk Bundle](https://cults3d.com/en/3d-model/various/radar-desk-bundle-radar-station-desk-model-and-radar-scope-desk-console-with-di): My radar station and my radar scope console together on one matching display tray. A desk set for anyone who tracks aircraft at home. On Cults3D.
 - [Air Defence Radar Station](https://cults3d.com/en/3d-model/various/air-defence-radar-station-desk-model-cold-war-style): A Cold War style radar site with the big dish and the height finder. There is an option to make the dish turn with a small motor. On Cults3D.
 - [1090 MHz Ground Plane Hub](https://cults3d.com/en/3d-model/tool/1090-mhz-adsb-ground-plane-antenna-hub-for-so239-n-chassis-sockets-parametric): The hub I use to build a quick aircraft band ground plane antenna on an SO239 or N socket. Free to print. On Cults3D.
 - [Mast Coax Clip](https://cults3d.com/en/3d-model/gadget/ads-b-piaware-mast-coax-strain-relief-clip-20-25-32-mm-pole-5-mm-sma-pigta): A small clip that takes the strain off the coax at the top of my receiver mast. Sizes for 20, 25 and 32 mm poles. On Cults3D.
@@ -62,6 +63,10 @@
 - [RF panel drill guide](https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-239-n-4-hole-flange-and-bnc-d-hole-with): 3D print for SO-239, N and BNC holes. On Cults3D.
 - [Band plan desk mat](https://arthurdeusexmachina-shop.fourthwall.com/products/uk-ham-radio-band-plan-desk-mat-160m-to-70cm): UK ham bands, 160m to 70cm. On Fourthwall.
 - [Buy me a coffee](https://buymeacoffee.com/arthurdeusexmachina): Support the lab.
+
+## Daily puzzle
+
+- [Today's Puzzle](https://dexmlabs.app/puzzle/): One small puzzle a day, by UK date: a rotor cipher, a Morse riddle, an aviation question or a physics and space question. Points and streak stay in your browser.
 
 ## Points
 

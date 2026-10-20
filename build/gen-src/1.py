@@ -107,6 +107,8 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>roadster:stats</code></td><td>Your Roadster Thrusters best scores and grades by level, the last level you picked, and whether sound is on</td><td>Until you clear it</td></tr>
 <tr><td><code>roadster:daily</code></td><td>Your one scored Roadster Thrusters Daily Drop result for each day</td><td>Until you clear it</td></tr>
 <tr><td><code>rocket:stats</code></td><td>Your Rocket Launch results and streak</td><td>Until you clear it</td></tr>
+<tr><td><code>puzzle:stats</code></td><td>Your Today's Puzzle points, streak and history of solved days</td><td>Until you clear it</td></tr>
+<tr><td><code>puzzle:nick</code></td><td>The nickname you chose for the Today's Puzzle top 10, if you sent a time</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:storage-note-dismissed</code></td><td>Hides the storage notice once you close it</td><td>Until you clear it</td></tr>
 <tr><td><code>dexm:points</code></td><td>Your points: what you earned and spent, shared by every game</td><td>Until you clear it, last 200 lines</td></tr>
 <tr><td><code>dexm:theme</code></td><td>Light or dark mode, if you picked one</td><td>Until you clear it</td></tr>

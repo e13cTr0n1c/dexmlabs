@@ -1,0 +1,242 @@
+[
+ {
+  "date": "2026-10-21",
+  "id": "p-001",
+  "type": "cipher",
+  "title": "Rotor cipher",
+  "prompt": "I set my three rotor machine to rotors I II III, reflector B, ring settings AAA and start positions DEX, then typed one word. Decode it.",
+  "cipher": "LNANUUR",
+  "rings": "AAA",
+  "start": "DEX",
+  "hint": "The machine works both ways: with the same settings, typing the cipher gives the word back.",
+  "hash": "07f15cde5b181425db8524becd96263d600c9652c7de5b89fe1a644f8fd0724b"
+ },
+ {
+  "date": "2026-10-22",
+  "id": "p-002",
+  "type": "morse",
+  "title": "Morse riddle",
+  "prompt": "Read the Morse, then answer the riddle in one word.",
+  "morse": ".. / .... .- ...- . / -.- . -.-- ... / -... ..- - / -. --- / .-.. --- -.-. -.- ... / .- -. -.. / .. / -- .- -.- . / -- ..- ... .. -.-.",
+  "hint": "A slash is a gap between words.",
+  "hash": "1d78e018e405ef26b7f7581336a2a4c556c3783eaa763978cbd7d2ddd0adb3ad"
+ },
+ {
+  "date": "2026-10-23",
+  "id": "p-003",
+  "type": "aviation",
+  "title": "Aviation",
+  "prompt": "In the ICAO phonetic alphabet, which word stands for the letter Q?",
+  "hint": "One word. The spelling ICAO uses has no K in it.",
+  "hash": "b24384fa9a20ad2d83459d0d9e3e405c0ea2a17b1cbfc159d88f3f47feed64f1"
+ },
+ {
+  "date": "2026-10-24",
+  "id": "p-004",
+  "type": "physics",
+  "title": "Physics and space",
+  "prompt": "Which planet in the Solar System has the shortest day, at a little under ten hours?",
+  "hint": "One word.",
+  "hash": "1e9cc37678c0112d7a394909256c2a5998a6e57e2b0d82209900e1456e51b7eb"
+ },
+ {
+  "date": "2026-10-25",
+  "id": "p-005",
+  "type": "cipher",
+  "title": "Rotor cipher",
+  "prompt": "I set my three rotor machine to rotors I II III, reflector B, ring settings AAA and start positions LAB, then typed one word. Decode it.",
+  "cipher": "DIMUYQL",
+  "rings": "AAA",
+  "start": "LAB",
+  "hint": "The machine works both ways: with the same settings, typing the cipher gives the word back.",
+  "hash": "c5220b3c4266890f047190c18dc4243e0dac079d43ca8065899c4f9f3cf124ef"
+ },
+ {
+  "date": "2026-10-26",
+  "id": "p-006",
+  "type": "morse",
+  "title": "Morse riddle",
+  "prompt": "Read the Morse, then answer the riddle in one word.",
+  "morse": ".. / .... .- ...- . / .... .- -. -.. ... / .- -. -.. / .- / ..-. .- -.-. . / -... ..- - / .. / -.-. .- -. -. --- - / -.-. .-.. .- .--.",
+  "hint": "A slash is a gap between words.",
+  "hash": "d8198efa3604d164853468608c55efa148bc56e3564d5a30232bf98b8ab43aeb"
+ },
+ {
+  "date": "2026-10-27",
+  "id": "p-007",
+  "type": "aviation",
+  "title": "Aviation",
+  "prompt": "Which transponder code does a pilot squawk for a general emergency?",
+  "hint": "Four digits.",
+  "hash": "6b6c0168bc7929abce425fdec4183d44aa421aafa6415dd54ded055801d083d2"
+ },
+ {
+  "date": "2026-10-28",
+  "id": "p-008",
+  "type": "physics",
+  "title": "Physics and space",
+  "prompt": "What is the largest moon in the Solar System?",
+  "hint": "One word. It is bigger than Mercury.",
+  "hash": "b2eb8398853615ed0b34d19970b8e4c3b5d85334cda957d0e2404588c6724586"
+ },
+ {
+  "date": "2026-10-29",
+  "id": "p-009",
+  "type": "cipher",
+  "title": "Rotor cipher",
+  "prompt": "I set my three rotor machine to rotors I II III, reflector B, ring settings BBB and start positions QEV, then typed one word. Decode it.",
+  "cipher": "GQBETOR",
+  "rings": "BBB",
+  "start": "QEV",
+  "hint": "The machine works both ways: with the same settings, typing the cipher gives the word back.",
+  "hash": "d1068beeb96a6a79937661d5cc9f290dddaa5730e64b7ab2b238078a1194c614"
+ },
+ {
+  "date": "2026-10-30",
+  "id": "p-010",
+  "type": "morse",
+  "title": "Morse riddle",
+  "prompt": "Read the Morse, then answer the riddle in one word.",
+  "morse": "- .... . / -- --- .-. . / -.-- --- ..- / - .- -.- . / - .... . / -- --- .-. . / -.-- --- ..- / .-.. . .- ...- . / -... . .... .. -. -..",
+  "hint": "A slash is a gap between words.",
+  "hash": "1a11a5a27be607e96d0205aa1304d7f39c97416ab35892049129d3f6eafa90fb"
+ },
+ {
+  "date": "2026-10-31",
+  "id": "p-011",
+  "type": "aviation",
+  "title": "Aviation",
+  "prompt": "ADS-B Extended Squitter, the signal my radar scope picks up, is sent on which frequency in MHz?",
+  "hint": "A whole number of MHz.",
+  "hash": "b7768fbb1847758d75c3ee28c3e2391e70c6ee29f7ce19847822bd5a7381ac67"
+ },
+ {
+  "date": "2026-11-01",
+  "id": "p-012",
+  "type": "physics",
+  "title": "Physics and space",
+  "prompt": "Which element makes up most of the Sun by mass?",
+  "hint": "One word.",
+  "hash": "e7f90b0310363d697e83711832881d3aabd37e3e8c25efe3883ed8de0c4c29fb"
+ },
+ {
+  "date": "2026-11-02",
+  "id": "p-013",
+  "type": "cipher",
+  "title": "Rotor cipher",
+  "prompt": "I set my three rotor machine to rotors I II III, reflector B, ring settings AAA and start positions MUD, then typed one word. Decode it.",
+  "cipher": "PNYYXQC",
+  "rings": "AAA",
+  "start": "MUD",
+  "hint": "The machine works both ways: with the same settings, typing the cipher gives the word back.",
+  "hash": "aa74f6fd03bf68be7e0f4bd06cae61a72ab8025b50d00888f3e1068f22067463"
+ },
+ {
+  "date": "2026-11-03",
+  "id": "p-014",
+  "type": "morse",
+  "title": "Morse riddle",
+  "prompt": "Read the Morse, then answer the riddle in one word.",
+  "morse": ".-- .... .- - / --. . - ... / .-- . - - . .-. / - .... . / -- --- .-. . / .. - / -.. .-. .. . ...",
+  "hint": "A slash is a gap between words.",
+  "hash": "10ca50a8a7148afd6d2a563e8ef8e05cfedd17fc97a6a5327cf9e5300b933e4b"
+ },
+ {
+  "date": "2026-11-04",
+  "id": "p-015",
+  "type": "aviation",
+  "title": "Aviation",
+  "prompt": "Which transponder code means the aircraft has lost its radio?",
+  "hint": "Four digits.",
+  "hash": "c18da8721686119d700c7def51b098d14e2e1858564616d3971c089081b83509"
+ },
+ {
+  "date": "2026-11-05",
+  "id": "p-016",
+  "type": "physics",
+  "title": "Physics and space",
+  "prompt": "What is the SI unit of frequency, equal to one cycle per second?",
+  "hint": "One word.",
+  "hash": "e333c47e4b5ce74c6916d4d7ce2d39879d59e6319bcc41875b966936ad13a4f7"
+ },
+ {
+  "date": "2026-11-06",
+  "id": "p-017",
+  "type": "cipher",
+  "title": "Rotor cipher",
+  "prompt": "I set my three rotor machine to rotors I II III, reflector B, ring settings CAB and start positions ZZZ, then typed one word. Decode it.",
+  "cipher": "OGQAKSV",
+  "rings": "CAB",
+  "start": "ZZZ",
+  "hint": "The machine works both ways: with the same settings, typing the cipher gives the word back.",
+  "hash": "9149a4a2c2c78eacd782a5735821aa0a19708bb305c49530c474b37dd9aa6a46"
+ },
+ {
+  "date": "2026-11-07",
+  "id": "p-018",
+  "type": "morse",
+  "title": "Morse riddle",
+  "prompt": "Read the Morse, then answer the riddle in one word.",
+  "morse": ".. / .... .- ...- . / .- -. / . -.-- . / -... ..- - / .. / -.-. .- -. -. --- - / ... . . / .- -. -.. / .. / .--. ..- .-.. .-.. / .- / - .... .-. . .- -..",
+  "hint": "A slash is a gap between words.",
+  "hash": "09881f6ed93360a2f6ad81f435a8ca51ca4575d0f954f197ff8f7d16c6565562"
+ },
+ {
+  "date": "2026-11-08",
+  "id": "p-019",
+  "type": "aviation",
+  "title": "Aviation",
+  "prompt": "Which transponder code means unlawful interference, in other words a hijack?",
+  "hint": "Four digits.",
+  "hash": "04d901cdcc744547648b1942b9ecb2ad2b6a4af2a98be503d39cacd3e88da431"
+ },
+ {
+  "date": "2026-11-09",
+  "id": "p-020",
+  "type": "physics",
+  "title": "Physics and space",
+  "prompt": "Light from the Sun takes how many seconds to reach Earth, on average, to the nearest whole second?",
+  "hint": "A whole number, a bit over eight minutes.",
+  "hash": "db3defda18fafc0c197740438051c690d98b551a7e449d66390d38fa2db09b77"
+ },
+ {
+  "date": "2026-11-10",
+  "id": "p-021",
+  "type": "cipher",
+  "title": "Rotor cipher",
+  "prompt": "I set my three rotor machine to rotors I II III, reflector B, ring settings AAA and start positions KEY, then typed one word. Decode it.",
+  "cipher": "WVXQRMNY",
+  "rings": "AAA",
+  "start": "KEY",
+  "hint": "The machine works both ways: with the same settings, typing the cipher gives the word back.",
+  "hash": "b6c4ac412ac8822355239dd717c11ca5b07373e4db550d0423c1b6aeceef8493"
+ },
+ {
+  "date": "2026-11-11",
+  "id": "p-022",
+  "type": "morse",
+  "title": "Morse riddle",
+  "prompt": "Read the Morse, then answer the riddle in one word.",
+  "morse": ".. / .- -. ... .-- . .-. / -.-- --- ..- / .. -. / -.-- --- ..- .-. / --- .-- -. / ...- --- .. -.-. . / ..-. .-. --- -- / - .... . / .... .. .-.. .-.. ...",
+  "hint": "A slash is a gap between words.",
+  "hash": "092c79e8f80e559e404bcf660c48f3522b67aba9ff1484b0367e1a4ddef7431d"
+ },
+ {
+  "date": "2026-11-12",
+  "id": "p-023",
+  "type": "aviation",
+  "title": "Aviation",
+  "prompt": "In the UK, which code does a VFR flight squawk when it has not been given a code by a controller?",
+  "hint": "Four digits. It is called the conspicuity code.",
+  "hash": "b698d86c67a2cff80405bd47af322216c552fd3a52f9c58a70f7b3a3313895b1"
+ },
+ {
+  "date": "2026-11-13",
+  "id": "p-024",
+  "type": "physics",
+  "title": "Physics and space",
+  "prompt": "The Karman line, often used as the edge of space, is at what height in kilometres?",
+  "hint": "A round number of kilometres.",
+  "hash": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306"
+ }
+]

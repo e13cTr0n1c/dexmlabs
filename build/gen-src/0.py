@@ -146,7 +146,14 @@ def games_html():
 GAMES_HTML=games_html()
 import json as _json
 GAMES_LD=_json.dumps({"@context":"https://schema.org","@type":"ItemList","@id":"https://dexmlabs.app/#games","name":"DEXM Labs games","itemListOrder":"https://schema.org/ItemListOrderAscending","numberOfItems":LIVE,"itemListElement":[{"@type":"ListItem","position":i+1,"name":g[3],"url":f"https://dexmlabs.app/{g[0]}/"} for i,g in enumerate(GAMES)]},separators=(',',':'))
-home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector, Orbit and Enigma, plus designs for the radio bench.','','').replace('</head>','<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n<script type="application/ld+json">'+GAMES_LD+'</script>\n</head>',1)+f'''<main id="main">
+home=head('DEXM Labs / Games and makes','Free browser games from a home lab in the UK: Skywave, Lorenz, Tolerance, Vector, Orbit and Enigma, plus designs for the radio bench.','','').replace('</head>','<script src="assets/puzzle.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>\n<script type="application/ld+json">'+GAMES_LD+'</script>\n</head>',1)+f'''<main id="main">
+<section class="block pz-today" id="puzzle-today" aria-labelledby="pz-today-h"><div class="wrap">
+<article class="card pz-card" data-puzzle-card data-src="puzzle/puzzles.json">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>NEW EVERY DAY</span><span class="label" data-pz-type>DAILY</span></div>
+<div class="card-body"><h2 id="pz-today-h">Today's Puzzle</h2><p data-pz-line>One small puzzle a day: a rotor cipher, a Morse riddle, an aviation question or a bit of physics and space.</p><p class="label acid" data-pz-streak></p><a class="btn" href="puzzle/" data-pz-go>Play today's puzzle</a></div>
+</article>
+</div></section>
+
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>

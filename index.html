@@ -15,13 +15,20 @@
 <link rel="stylesheet" href="assets/site.css">
 <link rel="stylesheet" href="assets/dexm-ui.css"><script src="assets/points.js" defer></script><script src="assets/support.js" defer></script><script src="assets/theme.js" defer></script>
 <script src="assets/storage-note.js" data-cookies="cookies/" defer></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>
+<script src="assets/puzzle.js" defer></script><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://dexmlabs.app/#site","url":"https://dexmlabs.app/","name":"DEXM Labs","inLanguage":"en-GB"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","@id":"https://dexmlabs.app/#games","name":"DEXM Labs games","itemListOrder":"https://schema.org/ItemListOrderAscending","numberOfItems":14,"itemListElement":[{"@type":"ListItem","position":1,"name":"Booster","url":"https://dexmlabs.app/booster-landing-game/"},{"@type":"ListItem","position":2,"name":"Docking Run","url":"https://dexmlabs.app/docking-run-game/"},{"@type":"ListItem","position":3,"name":"Sling Load","url":"https://dexmlabs.app/helicopter-sling-load-game/"},{"@type":"ListItem","position":4,"name":"Apollo","url":"https://dexmlabs.app/apollo-lunar-landing-game/"},{"@type":"ListItem","position":5,"name":"Glider Thermals","url":"https://dexmlabs.app/glider-thermals-game/"},{"@type":"ListItem","position":6,"name":"Roadster Thrusters","url":"https://dexmlabs.app/tesla-roadster-thruster-game/"},{"@type":"ListItem","position":7,"name":"Skywave","url":"https://dexmlabs.app/skywave/"},{"@type":"ListItem","position":8,"name":"Lorenz","url":"https://dexmlabs.app/lorenz/"},{"@type":"ListItem","position":9,"name":"Enigma","url":"https://dexmlabs.app/enigma-machine/"},{"@type":"ListItem","position":10,"name":"Tolerance","url":"https://dexmlabs.app/tolerance/"},{"@type":"ListItem","position":11,"name":"Repurposed","url":"https://dexmlabs.app/repurposed/"},{"@type":"ListItem","position":12,"name":"Vector","url":"https://dexmlabs.app/vector/"},{"@type":"ListItem","position":13,"name":"Orbit","url":"https://dexmlabs.app/orbit/"},{"@type":"ListItem","position":14,"name":"RBMK","url":"https://dexmlabs.app/chernobyl-reactor-simulator/"}]}</script>
 </head><body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="top"><div class="wrap"><a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><rect class="frame" x="2.5" y="2.5" width="27" height="27" fill="none" stroke="#d6ff00" stroke-width="3"/><path d="M16 8a8 8 0 1 1 0 16a8 8 0 1 1 0-16z" fill="#d6ff00"/><rect x="6" y="15" width="20" height="2.4" fill="#0a0b09"/><rect x="14.8" y="5" width="2.4" height="5" fill="#0a0b09"/></svg><span>DEXM LABS</span></a><nav aria-label="Main"><a href="./">HOME</a><a href="#games">GAMES</a><a href="#makes">MAKES</a></nav><div class="dexm-tools"><button type="button" class="dexm-chip" data-points-chip data-points-page="points/" aria-haspopup="dialog"><svg viewBox="0 0 16 16" aria-hidden="true"><circle class="c" cx="8" cy="8" r="6.5"/><path d="M8 5v6M6 7h4"/></svg><span class="dexm-sr">Points </span><span data-points-balance></span></button><button type="button" class="dexm-theme" data-theme-toggle aria-label="Switch theme"><svg class="moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 1 1 6.4 2.5a4.6 4.6 0 0 0 7.1 7.1z"/></svg><svg class="sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></svg></button></div></div></header>
 <div class="stripe" aria-hidden="true"></div>
 <main id="main">
+<section class="block pz-today" id="puzzle-today" aria-labelledby="pz-today-h"><div class="wrap">
+<article class="card pz-card" data-puzzle-card data-src="puzzle/puzzles.json">
+<div class="plate-head"><span class="label acid status"><span class="dot" aria-hidden="true"></span>NEW EVERY DAY</span><span class="label" data-pz-type>DAILY</span></div>
+<div class="card-body"><h2 id="pz-today-h">Today's Puzzle</h2><p data-pz-line>One small puzzle a day: a rotor cipher, a Morse riddle, an aviation question or a bit of physics and space.</p><p class="label acid" data-pz-streak></p><a class="btn" href="puzzle/" data-pz-go>Play today's puzzle</a></div>
+</article>
+</div></section>
+
 <section class="hero"><div class="wrap hero-grid">
 <div class="plate">
 <div class="plate-head"><span class="label acid"><span class="dot blink" aria-hidden="true"></span> ONLINE</span><span class="label">EST. 2026</span></div>
@@ -149,7 +156,7 @@
 <a href="https://cults3d.com/en/3d-model/tool/rf-connector-panel-drill-guides-so-239-n-4-hole-flange-and-bnc-d-hole-with" rel="noopener"><span><b>RF panel drill guide</b><small>3D print for SO-239, N and BNC holes.</small></span></a>
 <a href="https://arthurdeusexmachina-shop.fourthwall.com/products/uk-ham-radio-band-plan-desk-mat-160m-to-70cm" rel="noopener"><span><b>Band plan desk mat</b><small>UK ham bands, 160m to 70cm.</small></span></a>
 </div>
-<p class="mk-more"><a class="btn" href="makes/">See all 31 3D models</a></p>
+<p class="mk-more"><a class="btn" href="makes/">See all 32 3D models</a></p>
 </div></section>
 
 <section class="block" id="support" aria-labelledby="support-h"><div class="wrap">
