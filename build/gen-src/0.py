@@ -110,7 +110,8 @@ GAME_SECTIONS=[
   ('lorenz','lorenz','CIPHER','Lorenz',LORENZ_LINE,'Play Lorenz','live'),
   ('enigma-machine','enigma','CIPHER','Enigma','A working Enigma I simulator and a daily intercept. Set the rotors from the key sheet, find the smudged cable and read the message.','Play Enigma','live'),
   ('tolerance','tolerance','ENGINEERING','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.','Play Tolerance','live'),
-  ('flight-path','flight-path','PATH PUZZLE','Flight Path','Fly one path through every square of the radar, past each numbered beacon in order. One answer, a new grid every day, harder by the weekend.','Play Flight Path','live')]),
+  ('flight-path','flight-path','PATH PUZZLE','Flight Path','Fly one path through every square of the radar, past each numbered beacon in order. One answer, a new grid every day, harder by the weekend.','Play Flight Path','live'),
+  ('say-it-slowly','say-it-slowly','PICTURE PUZZLE','Say It Slowly','Say a row of pictures out loud, slowly, and they turn into a word. Bee, knee, fish, awl: beneficial. Five tries, a hint after two, a new one every day.','Play Say It Slowly','live')]),
  ('labs','WORK IN PROGRESS','Labs / Beta',[
   ('repurposed','repurposed','PUZZLE','Repurposed','A first person puzzle game in a facility that would rather you stayed put. Take over arms, drones, a crane and a wall climbing spider bot to get through. Two facilities so far.','See Repurposed','beta'),
   ('missions/mmx','mission-replays','MISSION REPLAYS','Mission Replays','Real space missions on a time slider. First up is MMX, the Japanese trip to the Mars moon Phobos and back, with real dates and the planned steps marked.','See the MMX replay','beta'),

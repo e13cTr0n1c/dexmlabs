@@ -13,7 +13,7 @@ PAGES = [('apollo-lunar-landing-game/index.html','Apollo'),('booster-landing-gam
  ('grid/index.html','GRID'),('helicopter-sling-load-game/index.html','Sling Load'),('lorenz/index.html','Lorenz'),
  ('mars-base-game/index.html','Mars Base'),('missions/mmx/index.html','MMX Replay'),('orbit/index.html','Orbit'),('play-test-8179d030/game/index.html','Repurposed beta'),
  ('repurposed/index.html','Repurposed'),('rocket-launch-game/index.html','Rocket Launch'),('skywave/index.html','Skywave'),
- ('tesla-roadster-thruster-game/index.html','Roadster Thrusters'),('tolerance/index.html','Tolerance'),('vector/index.html','Vector')]
+ ('tesla-roadster-thruster-game/index.html','Roadster Thrusters'),('say-it-slowly/index.html','Say It Slowly'),('tolerance/index.html','Tolerance'),('vector/index.html','Vector')]
 # Pages that need the bar placed differently, with why.
 SPECIAL = {
  'forge/index.html': 'fixed',   # 'back soon' pages centre everything in the body, so the bar is pinned to the top instead
