@@ -200,3 +200,4 @@ t('a promoted type upgrades saved cards and tops up points', () => {
   C.upgradeTiers(s, idx, table); assert.equal(s.cards.X59.tier, 'legendary'); assert.equal(s.points, 150);
   C.upgradeTiers(s, idx, table); assert.equal(s.points, 150, 'only once');
 });
+t('NASA research aircraft are at least rare', () => { assert.equal(C.tierFor({callsign: 'NASA946', r: 'N946NA'}, {tier: 'common'}), 'rare'); assert.equal(C.tierFor({callsign: 'NASA859', r: 'N859NA'}, idx.get('X59')), 'legendary'); });

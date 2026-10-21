@@ -95,6 +95,8 @@ export function migrateHexTypes(state, idx, table) {
 export function tierFor(ac, info) {
   if (isDisplay(ac)) return 'legendary';
   const base = TIERS.includes(info.tier) ? info.tier : 'uncommon';
+  // NASA research aircraft (N8xxNA style registrations or NASA callsigns) are at least rare.
+  if ((/^N\d{3}NA$/.test(String(ac.r || '')) || /^NASA\d/.test(String(ac.callsign || ''))) && TIERS.indexOf(base) < TIERS.indexOf('rare') && !isMilitary(ac)) return 'rare';
   if (!isMilitary(ac)) return base;
   return base === 'rare' || base === 'legendary' ? 'legendary' : 'rare';
 }
