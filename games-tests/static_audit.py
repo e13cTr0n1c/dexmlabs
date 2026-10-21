@@ -81,8 +81,9 @@ fom=ROOT/'flying-over-me';fpage=Page((fom/'index.html').read_text())
 fcsp=next(a['content'] for t,a in fpage.tags if t=='meta' and a.get('http-equiv')=='Content-Security-Policy')
 fconnect=set(fcsp.split('connect-src ',1)[1].split(';',1)[0].split())
 flinks={'https://globe.adsb.lol','https://airplanes.live','https://adsb.lol'}  # hosts the code only links to, never fetches
+fproxy0=re.search(r"export const PROXY_API = '([^']*)'",(fom/'js/main.mjs').read_text()).group(1)
 fhosts={'https://'+h for h in re.findall(r'https://([a-z0-9.-]+)/',(fom/'js/main.mjs').read_text())}-flinks
-check(fconnect=={"'self'",'https://cloudflareinsights.com'}|fhosts,f'flying-over-me: connect-src lists exactly the API hosts the code fetches {sorted(fhosts)}')
+check(fconnect=={"'self'",'https://cloudflareinsights.com'}|fhosts|({'https://'+urlparse(fproxy0).netloc} if fproxy0 else set()),f'flying-over-me: connect-src lists exactly the API hosts the code fetches {sorted(fhosts)}')
 fproxy=re.search(r"export const PROXY_API = '([^']*)'",(fom/'js/main.mjs').read_text()).group(1)
 check(not fproxy or 'https://'+urlparse(fproxy).netloc in fconnect,'flying-over-me: the relay host, once set, is allowed in connect-src')
 fhash="'sha256-"+base64.b64encode(hashlib.sha256(fpage.inline[0].encode()).digest()).decode()+"'"
