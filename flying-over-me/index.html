@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en-GB"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('dexm:theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.setAttribute('data-theme',t)})();</script><meta name="theme-color" content="#050805">
+<title>What's Flying Over Me? Live Planes and Satellites Overhead / DEXM Labs</title>
+<meta name="description" content="See the planes and satellites over you right now on a retro radar: live aircraft with callsign, altitude and speed, the ISS and its next pass. Free, no sign up.">
+<link rel="canonical" href="https://dexmlabs.app/flying-over-me/"><meta property="og:type" content="website"><meta property="og:site_name" content="DEXM Labs"><meta property="og:title" content="What's Flying Over Me? Live Planes and Satellites Overhead"><meta property="og:description" content="See the planes and satellites over you right now on a retro radar: live aircraft with callsign, altitude and speed, the ISS and its next pass. Free, no sign up."><meta property="og:url" content="https://dexmlabs.app/flying-over-me/"><meta property="og:image" content="https://dexmlabs.app/flying-over-me/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="A green radar scope with aircraft blips and the ISS track"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="What's Flying Over Me? Live Planes and Satellites Overhead"><meta name="twitter:description" content="See the planes and satellites over you right now on a retro radar: live aircraft with callsign, altitude and speed, the ISS and its next pass. Free, no sign up."><meta name="twitter:image" content="https://dexmlabs.app/flying-over-me/og.png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kE1co0z749oaTiQdaivkHEhVq9XX5NAlLv+Izxpx4G4=' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com https://celestrak.org https://nominatim.openstreetmap.org https://geocoding-api.open-meteo.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="../assets/apple-touch-icon.png"><link rel="stylesheet" href="./css/style.css"><link rel="stylesheet" href="../assets/more.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "@id": "https://dexmlabs.app/flying-over-me/#app", "name": "What's Flying Over Me?", "url": "https://dexmlabs.app/flying-over-me/", "description": "See the planes and satellites over you right now on a retro radar: live aircraft with callsign, altitude and speed, the ISS and its next pass. Free, no sign up.", "image": "https://dexmlabs.app/flying-over-me/og.png", "applicationCategory": "UtilitiesApplication", "operatingSystem": "Any", "browserRequirements": "Requires JavaScript and a modern browser", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}, "author": {"@type": "Person", "name": "Arthur Jones"}, "publisher": {"@type": "Organization", "name": "DEXM Labs", "url": "https://dexmlabs.app/"}, "inLanguage": "en-GB"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Do you store my location?", "acceptedAnswer": {"@type": "Answer", "text": "No. Your location stays in your browser and is never saved, shown on screen or put in the page address. To ask for planes and satellites, a copy rounded to about a kilometre goes through my relay to the aircraft feed, and a town or postcode you type goes to the place search. Nothing goes to my server, because there isn't one."}}, {"@type": "Question", "name": "Why can't I see a plane I can hear?", "acceptedAnswer": {"@type": "Answer", "text": "Not every aircraft sends ADS-B, some fly with it switched off, and the volunteer receivers that feed the map do not cover everywhere, especially low down and far from towns. Positions can also be a few seconds old."}}, {"@type": "Question", "name": "When can I see the ISS?", "acceptedAnswer": {"@type": "Answer", "text": "You can only see it when the sky is dark where you are and the station is still in sunlight, which happens for an hour or two after sunset and before sunrise. The page shows the next pass you can see and the next pass overhead, with the times in your own time zone."}}, {"@type": "Question", "name": "Where does the data come from?", "acceptedAnswer": {"@type": "Answer", "text": "Aircraft come from the free community feeds at airplanes.live and adsb.lol, through a small relay of mine that only passes on the rounded position. Until that relay is switched on, the radar shows demo planes. Satellite orbits come from CelesTrak and are worked out in your browser with satellite.js. Typed places are looked up with OpenStreetMap's Nominatim, or Open-Meteo if that is busy."}}, {"@type": "Question", "name": "What happens if a feed is down?", "acceptedAnswer": {"@type": "Answer", "text": "If the aircraft feeds do not answer, the radar switches to clearly marked demo planes and keeps trying the real ones. If CelesTrak does not answer, the page uses a saved copy of the orbits, which is fine for a few days."}}]}</script>
+<script type="module" src="./js/main.mjs"></script><script src="../assets/more.js" type="module"></script>
+<link data-homebar rel="stylesheet" href="../assets/homebar.css"></head><body data-view="radar">
+<a class="skip-link" href="#main">Skip to the radar</a><nav data-homebar class="dexm-homebar" aria-label="DEXM Labs"><span class="dexm-homebar-game">Flying Over Me</span><a href="https://dexmlabs.app/">dexmlabs.app</a></nav>
+<main id="main">
+<section class="intro">
+<p class="eyebrow">Live sky</p>
+<h1>What's flying over me?</h1>
+<p class="lead">Tap <b>Show me</b> and I'll put the planes above you on a radar scope, live, with their callsign, height, speed and heading. Switch to the sky dome to see the satellites passing over, with the International Space Station picked out and its next pass worked out for you.</p>
+<p class="fom-private"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 7V5a4 4 0 0 1 8 0v2h1v8H3V7zm2 0h4V5a2 2 0 0 0-4 0z" fill="currentColor"/></svg> Your location stays in your browser. I never see it, save it or show it.</p>
+</section>
+<section id="fom-start" class="fom-start" aria-label="Choose where to look">
+<noscript><p class="fom-nojs">This page needs JavaScript to fetch the live aircraft and work out the satellites. Everything about how it works is below, and it all still reads fine without it.</p></noscript>
+<div class="fom-actions">
+<button type="button" id="fom-show" class="fom-btn">Show me</button>
+<form id="fom-form" class="fom-form" role="search"><label for="fom-q" class="fom-vh">Town or postcode</label><input id="fom-q" name="q" type="text" inputmode="search" autocomplete="off" placeholder="Or type a town or postcode" maxlength="80"><button type="submit" class="fom-btn fom-btn--ghost">Look</button></form>
+<button type="button" id="fom-demo" class="fom-link">Try it near Heathrow</button>
+</div>
+<p id="fom-status" class="fom-status" role="status" aria-live="polite"></p>
+</section>
+<section id="fom-app" class="fom-app" hidden aria-label="Live sky">
+<div class="fom-bar">
+<p class="fom-where">Over <b id="fom-place"></b> <span class="fom-mode" aria-hidden="true"></span> <button type="button" id="fom-change" class="fom-link fom-change-btn">Change place</button></p>
+<div class="fom-seg" role="group" aria-label="View"><button type="button" data-view-btn="radar" aria-pressed="true">Radar</button><button type="button" data-view-btn="sky" aria-pressed="false">Sky dome</button><button type="button" data-view-btn="list" aria-pressed="false">List</button></div>
+<label class="fom-range">Range <select id="fom-range"><option value="10">10 mi</option><option value="25" selected>25 mi</option><option value="50">50 mi</option></select></label>
+</div>
+<div class="fom-grid">
+<div class="fom-main">
+<figure id="fom-scope" class="fom-scope"><canvas id="fom-radar" role="img" aria-label="Radar of the aircraft around you. The list view has the same aircraft as text."></canvas>
+<div class="fom-count"><b id="fom-count">0</b><span id="fom-count-k">aircraft in the air</span></div>
+<figcaption id="fom-legend"></figcaption></figure>
+<div id="fom-card" class="fom-card" hidden role="dialog" aria-labelledby="fom-card-cs">
+<button type="button" id="fom-card-close" class="fom-x" aria-label="Close">×</button>
+<p class="fom-card-k">Aircraft</p><h2 id="fom-card-cs"></h2><p id="fom-card-sub" class="fom-card-sub"></p>
+<dl id="fom-card-dl"></dl>
+<a id="fom-card-link" class="fom-btn fom-btn--small" href="https://globe.adsb.lol/" rel="noopener" target="_blank">Follow it on globe.adsb.lol</a>
+<p id="fom-card-demo" class="fom-card-sub" hidden>A demo plane, so there is nothing to follow.</p>
+</div>
+<div id="fom-listwrap" class="fom-listwrap" hidden>
+<table id="fom-list" class="fom-table"><caption>Aircraft in range</caption><thead><tr><th scope="col">Callsign</th><th scope="col">Type</th><th scope="col">Altitude</th><th scope="col">Speed</th><th scope="col">Distance</th></tr></thead><tbody></tbody></table>
+<h2 class="fom-h3">Satellites above you</h2><ul id="fom-sats" class="fom-sats"></ul>
+</div>
+</div>
+<aside class="fom-side">
+<div class="fom-panel fom-iss-panel"><p class="fom-card-k">International Space Station</p><h2>The ISS</h2><div id="fom-iss"><p>Loading its orbit…</p></div></div>
+<div class="fom-panel fom-src"><p class="fom-card-k">Data</p><p id="fom-feed">Connecting to the aircraft feed…</p><p id="fom-satsrc">Loading satellites from CelesTrak…</p><p>Map searches by <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors through Nominatim.</p></div>
+</aside>
+</div>
+</section>
+<section class="fom-more" aria-label="More from me">
+<a class="fom-tile" href="../skywave/"><span class="fom-card-k">Daily puzzle</span><b>Skywave</b><small>Bounce a radio signal off the ionosphere to reach ten stations.</small></a>
+<a class="fom-tile" href="../makes/#m-radar-scope"><span class="fom-card-k">My makes</span><b>Radar Scope Desk Console</b><small>Turn a round Raspberry Pi screen into an old radar scope that can show these planes.</small></a>
+<div id="fom-pack" class="fom-tile-wrap" hidden><a class="fom-tile" href="#"><span class="fom-card-k">For your Pi</span><b>Radar software pack for your Pi</b><small>The software I run on my scope, ready to put on your own Pi.</small></a></div>
+</section>
+<article class="text">
+<details class="dexm-more"><summary><h2>How it works</h2></summary>
+<p>When you tap Show me, your browser asks if it may share your location. If you say yes, the page rounds it to about a kilometre and asks a free community ADS-B feed, through my small relay, for every aircraft within your chosen range. Most airliners and many light aircraft broadcast their position, height, speed and heading on 1090 MHz, and thousands of volunteers pick those signals up with small receivers and share them.</p>
+<p>The page asks again every 12 seconds, and between updates it moves each blip along its track at its ground speed, so the radar glides rather than jumps. The sweep is just for looks: real ADS-B is not a radar at all, but I couldn't resist.</p>
+<p>For satellites, the page downloads the orbits of the space stations and the brightest satellites from CelesTrak, keeps them in your browser for a few hours, and works out where each one is from where you are, every second, with the SGP4 model in satellite.js. A pass counts as one you can see when the station is high enough, your sky is dark and the station is still in sunlight.</p>
+<p>If you type a place instead, the name goes to OpenStreetMap's Nominatim search, only when you press Look, never as you type.</p></details>
+<details class="dexm-more"><summary><h2>Your privacy</h2></summary>
+<p>Your location never leaves your browser except as a rounded copy sent through my relay to the aircraft feed with each request. The relay passes it on and keeps nothing, and a place you type, sent to the place search. It is not saved, not shown on screen and not put in the address bar, and I have no server that could keep it. The only thing kept in your browser is the downloaded satellite orbits, under keys starting <code>fom:tle:</code>, so the page does not fetch them every visit. Visits to the site are counted by Cloudflare Web Analytics, which uses no cookies. More in my <a href="../privacy/">privacy notice</a>.</p></details>
+<details class="dexm-more"><summary><h2>Questions</h2></summary>
+<h3>Do you store my location?</h3>
+<p>No. Your location stays in your browser and is never saved, shown on screen or put in the page address. To ask for planes and satellites, a copy rounded to about a kilometre goes through my relay to the aircraft feed, and a town or postcode you type goes to the place search. Nothing goes to my server, because there isn't one.</p>
+<h3>Why can't I see a plane I can hear?</h3>
+<p>Not every aircraft sends ADS-B, some fly with it switched off, and the volunteer receivers that feed the map do not cover everywhere, especially low down and far from towns. Positions can also be a few seconds old.</p>
+<h3>When can I see the ISS?</h3>
+<p>You can only see it when the sky is dark where you are and the station is still in sunlight, which happens for an hour or two after sunset and before sunrise. The page shows the next pass you can see and the next pass overhead, with the times in your own time zone.</p>
+<h3>Where does the data come from?</h3>
+<p>Aircraft come from the free community feeds at airplanes.live and adsb.lol, through a small relay of mine that only passes on the rounded position. Until that relay is switched on, the radar shows demo planes. Satellite orbits come from CelesTrak and are worked out in your browser with satellite.js. Typed places are looked up with OpenStreetMap's Nominatim, or Open-Meteo if that is busy.</p>
+<h3>What happens if a feed is down?</h3>
+<p>If the aircraft feeds do not answer, the radar switches to clearly marked demo planes and keeps trying the real ones. If CelesTrak does not answer, the page uses a saved copy of the orbits, which is fine for a few days.</p>
+</details>
+<details class="dexm-more"><summary><h2 id="sources">Data and credits</h2></summary>
+<ul class="src">
+<li>Live aircraft: <a href="https://airplanes.live/" rel="noopener">airplanes.live</a> and <a href="https://adsb.lol/" rel="noopener">adsb.lol</a> (data under the ODbL), through my relay, which keeps nothing. Flight links open on <a href="https://globe.adsb.lol/" rel="noopener">globe.adsb.lol</a>.</li>
+<li>Satellite orbits: <a href="https://celestrak.org/" rel="noopener">CelesTrak</a>, the space stations and visual groups.</li>
+<li>Orbit maths: <a href="https://github.com/shashwatak/satellite-js" rel="noopener">satellite.js</a>, MIT licence (<a href="js/vendor/satellite.js-LICENSE.md">licence text</a>).</li>
+<li>Place search: <a href="https://nominatim.openstreetmap.org/" rel="noopener">Nominatim</a>, data &copy; <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap contributors</a>, with <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a> geocoding as a backup.</li>
+</ul>
+<p>Spot something wrong? <a href="mailto:hello@dexmlabs.app?subject=What%27s%20flying%20over%20me">Tell me</a>.</p></details>
+</article>
+<aside class="support-cta" aria-label="Support my work"><p class="support-cta-lead">Enjoyed this? You can support my work:</p><p class="support-cta-links"><a href="https://buymeacoffee.com/arthurdeusexmachina" target="_blank" rel="noopener">Buy Me a Coffee</a><span class="support-cta-sep" aria-hidden="true">·</span><a href="https://cults3d.com/en/users/ArthurDeusExMachina/3d-models" target="_blank" rel="noopener">my 3D prints on Cults</a></p></aside>
+</main>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d2c23a1c7dbd41168e2a3d54c4a4dc40"}'></script><!-- End Cloudflare Web Analytics --></body></html>

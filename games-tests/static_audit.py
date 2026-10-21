@@ -63,6 +63,18 @@ for game in ['vector','orbit']:
         imports += [(module.parent/u).resolve() for u in re.findall(r'from\s+[\'\"]([^\'\"]+)[\'\"]',module.read_text())]
     check(all(p.is_file() and p.is_relative_to(ROOT) for p in imports),f'{game}: all ES module imports are local and resolve')
     check(sum(p.stat().st_size for p in (ROOT/game).rglob('*') if p.is_file())<1_100_000,f'{game}: complete game folder below 1.1 MB including social artwork')
+# What's flying over me?: the CSP lets the page reach exactly the data services its code calls, nothing more.
+fom=ROOT/'flying-over-me';fpage=Page((fom/'index.html').read_text())
+fcsp=next(a['content'] for t,a in fpage.tags if t=='meta' and a.get('http-equiv')=='Content-Security-Policy')
+fconnect=set(fcsp.split('connect-src ',1)[1].split(';',1)[0].split())
+flinks={'https://globe.adsb.lol','https://airplanes.live','https://adsb.lol'}  # hosts the code only links to, never fetches
+fhosts={'https://'+h for h in re.findall(r'https://([a-z0-9.-]+)/',(fom/'js/main.mjs').read_text())}-flinks
+check(fconnect=={"'self'",'https://cloudflareinsights.com'}|fhosts,f'flying-over-me: connect-src lists exactly the API hosts the code fetches {sorted(fhosts)}')
+fproxy=re.search(r"export const PROXY_API = '([^']*)'",(fom/'js/main.mjs').read_text()).group(1)
+check(not fproxy or 'https://'+urlparse(fproxy).netloc in fconnect,'flying-over-me: the relay host, once set, is allowed in connect-src')
+fhash="'sha256-"+base64.b64encode(hashlib.sha256(fpage.inline[0].encode()).digest()).decode()+"'"
+check(len(fpage.inline)==1 and fhash in fcsp and "'unsafe-inline'" not in fcsp.split('script-src ',1)[1].split(';',1)[0],'flying-over-me: CSP allows only the theme script by hash')
+check((fom/'js/vendor/satellite.js-LICENSE.md').is_file() and 'MIT License' in (fom/'js/vendor/satellite.js-LICENSE.md').read_text(),'flying-over-me: vendored satellite.js ships with its licence')
 home=(ROOT/'index.html').read_text();hp=Page(home)
 for game in ['vector','orbit']:
     check(f'href="{game}/"' in home and f'assets/{game}-thumb.webp' in home and (ROOT/'assets'/f'{game}-thumb.webp').is_file(),f'homepage: {game} card and screenshot thumbnail present')
