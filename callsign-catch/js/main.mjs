@@ -56,7 +56,7 @@ function renderHangar() {
   const set = C.SETS.find(s => s.id === filter);
   let codes;
   if (set && set.codes) codes = set.codes;
-  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : (C.isDisplay(e.cs) || e.type === 'HAWK')).map(e => e.type);
+  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : (C.isDisplay(e.cs, e.type) || e.type === 'HAWK')).map(e => e.type);
   else codes = [...new Set([...Object.keys(state.cards), ...C.SETS.flatMap(s => s.codes || [])])];
   codes = [...new Set(codes)].sort((a, b) => (!!state.cards[b] - !!state.cards[a]) || C.TIERS.indexOf(C.typeInfo(b, idx, table).tier) - C.TIERS.indexOf(C.typeInfo(a, idx, table).tier) || a.localeCompare(b));
   $('#hangar').innerHTML = codes.map(code => { const c = state.cards[code], info = C.typeInfo(code, idx, table);

@@ -42,13 +42,14 @@ export function typeInfo(code, idx, table, ac) {
 }
 
 // Military aircraft and display team callsigns are always legendary.
-const DISPLAY = /^(RRR|REDS?\d|PAT\d|FAF\d|SNOW|BLUE?ANG|THUNDER|FRECCE|PAF\d)/;
-export function isDisplay(callsign) { return DISPLAY.test(callsign || ''); }
+const DISPLAY = /^(REDS?\d|PAT\d|FAF\d|SNOW|BLUE?ANG|THUNDER|FRECCE|PAF\d)/;
+// RRR is the whole RAF, so it only counts as a display team on a Hawk (the Red Arrows); an RRR Voyager is just military.
+export function isDisplay(callsign, type) { return DISPLAY.test(callsign || '') || (/^RRR/.test(callsign || '') && type === 'HAWK'); }
 // Military operators: the dbFlags military bit or a known military callsign. They lift a type one step, to at least rare.
 const MILCS = /^(RRR|ASCOT|NATO|RCH|REACH|CFC|GAF|GAM|IAM|CTM|FAF|BAF|NAF|DAF|HAF|PLF|SVF|SHF|RFR|ARMY|NAVY|CNV|DUKE|SPAR|SAM|TARTN|COMET|KIWI|AME|MMF|LAGR|HRZ|SUI|BRK|NOW|TOPCAT|VIPER|MAGMA|SNAKE|NOBLE|GOLD|HAWK)\d/;
 export const isMilitary = ac => !!((ac.dbFlags & 1) || MILCS.test(String(ac.callsign || '')));
 export function tierFor(ac, info) {
-  if (isDisplay(ac.callsign)) return 'legendary';
+  if (isDisplay(ac.callsign, ac.t || info.code)) return 'legendary';
   const base = TIERS.includes(info.tier) ? info.tier : 'uncommon';
   if (!isMilitary(ac)) return base;
   return base === 'rare' || base === 'legendary' ? 'legendary' : 'rare';
@@ -106,7 +107,7 @@ export const SETS = [
 export function setProgress(state, set) {
   const s = state || emptyState();
   if (set.codes) { const got = set.codes.filter(c => s.cards[c]).length; return {got, goal: set.codes.length, done: got === set.codes.length}; }
-  const got = set.rule === 'night' ? s.night : s.log.filter(e => isDisplay(e.cs) || e.type === 'HAWK').length;
+  const got = set.rule === 'night' ? s.night : s.log.filter(e => isDisplay(e.cs, e.type) || e.type === 'HAWK').length;
   return {got: Math.min(got, set.goal), goal: set.goal, done: got >= set.goal};
 }
 

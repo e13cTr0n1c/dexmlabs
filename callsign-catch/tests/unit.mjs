@@ -20,7 +20,7 @@ t('rarity by type: A320 and 737 common, 747 and A380 rare, Beluga and An-124 leg
 t('unknown types default to uncommon; military operators lift to at least rare, display callsigns are legendary', () => {
   const u = C.typeInfo('ZZZZ', idx, table); assert.equal(u.tier, 'uncommon'); assert.equal(C.tierFor({}, u), 'uncommon');
   assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('A320')), 'rare'); assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('B744')), 'legendary');
-  assert.equal(C.tierFor({callsign: 'RRR1'}, idx.get('A320')), 'legendary');
+  assert.equal(C.tierFor({callsign: 'RRR1', t: 'HAWK'}, idx.get('HAWK')), 'legendary');
 });
 t('query parsing: callsign, registration and hex', () => {
   assert.deepEqual(C.parseQuery(' baw117 '), {kind: 'callsign', value: 'BAW117'});
@@ -93,7 +93,8 @@ t('an unknown type never loses a catch: generic card by class plus a one off bon
 t('military operators lift a type to at least rare; squawks give a badge and no points', () => {
   const info = C.typeInfo('A332', idx, table);
   assert.equal(C.tierFor({callsign: 'BAW12', dbFlags: 0}, info), info.tier);
-  assert.equal(C.tierFor({callsign: 'RRR6612', dbFlags: 0}, {tier: 'common'}), 'legendary', 'RRR stays a display style legendary');
+  assert.equal(C.tierFor({callsign: 'RRR6612', dbFlags: 0, t: 'A332'}, {code: 'A332', tier: 'uncommon'}), 'rare', 'an RRR Voyager is military, not a display team');
+  assert.equal(C.isDisplay('RRR6612', 'A332'), false, 'an RRR Voyager is not in Display teams');
   assert.equal(C.tierFor({callsign: 'ASCOT481', dbFlags: 0}, {tier: 'common'}), 'rare');
   assert.equal(C.tierFor({callsign: 'XYZ', dbFlags: 1}, {tier: 'rare'}), 'legendary');
   const ac = {hex: 'abc124', callsign: 'EZY77', reg: 'G-EZZZ', type: 'A319', alt: 9000, gs: 250, dbFlags: 0, op: '', squawk: '7700'};
