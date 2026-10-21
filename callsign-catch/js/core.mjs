@@ -112,7 +112,7 @@ export function shareText(entry, info, tier) {
 export function validateImport(obj) {
   if (!obj || obj.v !== 1 || typeof obj.cards !== 'object' || !Array.isArray(obj.log)) return null;
   const s = Object.assign(emptyState(), obj);
-  for (const [k, c] of Object.entries(s.cards)) if (!/^[A-Z0-9]{2,5}$/.test(k) || !TIERS.includes(c.tier) || !(c.count >= 1)) return null;
+  s.cards = {...s.cards}; for (const [k, c] of Object.entries(s.cards)) { if (!c || typeof c !== 'object' || !(c.count >= 1)) { delete s.cards[k]; continue; } if (!TIERS.includes(c.tier)) c.tier = 'uncommon'; if (!/^[A-Z0-9?]{2,8}$/.test(k)) { delete s.cards[k]; } } // repair, never throw a whole hangar away over one odd card
   s.points = +s.points || 0; s.xp = +s.xp || 0; s.night = +s.night || 0; return s;
 }
 // Reward only after a legendary catch of that type, and only when it has a code and a link.

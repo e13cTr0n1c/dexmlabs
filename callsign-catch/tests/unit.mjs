@@ -63,7 +63,7 @@ t('rewards only after a legendary catch with a code', () => {
   assert.equal(C.rewardFor(idx.get('HAWK'), 'legendary'), null, 'empty for now');
 });
 t('import validation and share text', () => {
-  assert.equal(C.validateImport({v: 9}), null); assert.equal(C.validateImport({v: 1, cards: {'<x>': {tier: 'rare', count: 1}}, log: []}), null);
+  assert.equal(C.validateImport({v: 9}), null); assert.deepEqual(C.validateImport({v: 1, cards: {'<x>': {tier: 'rare', count: 1}, '????': {tier: 'uncommon', count: 1}}, log: []}).cards, {'????': {tier: 'uncommon', count: 1}});
   const r = C.applyCatch(null, live(), new Date(2026, 9, 21, 12), idx, table, null);
   assert.ok(C.validateImport(JSON.parse(JSON.stringify(r.state))));
   assert.match(C.shareText(r.entry, r.info, r.tier), /I caught an Airbus A380 ✈ Rare[\s\S]*dexmlabs\.app\/callsign-catch\//);
