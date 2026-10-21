@@ -21,7 +21,9 @@ async function open(viewport) {
   const ctx = await browser.newContext({viewport, deviceScaleFactor: 1, acceptDownloads: true, colorScheme: process.env.SCHEME || 'dark'}); const page = await ctx.newPage(), errors = [];
   page.on('console', m => { if (m.type() === 'error' && !/cloudflareinsights|ERR_FAILED/.test(m.text())) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
   await ctx.route(u => !u.href.startsWith(BASE), r => {
-    const m = r.request().url().match(/api\.adsb\.lol\/v2\/(callsign|reg|hex)\/([^/?]+)/);
+    const u = r.request().url();
+    if (/workers\.dev\/board/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: '{"today":[],"alltime":[]}'});
+    const m = u.match(/(?:api\.adsb\.lol|workers\.dev)\/v2\/(callsign|reg|hex)\/([^/?]+)/);
     if (!m) return r.abort(); calls++;
     const a = Object.values(AC).find(x => (m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex).toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
     return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({ac: a ? [a] : [], now: Date.now()})});
@@ -59,7 +61,7 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   await closeReveal(page);
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   ok(wide <= 0, `${label}: no horizontal overflow (${wide})`);
-  ok(await page.isHidden('#board'), `${label}: leaderboard hidden while LEADERBOARD_API is empty`);
+  ok(await page.isVisible('#board'), `${label}: leaderboard shown now LEADERBOARD_API is set`);
   await page.evaluate(() => document.getElementById('hangar-h').scrollIntoView());
   await page.screenshot({path: path.join(SHOTS, `${label}-hangar.png`)});
   if (label === 'desktop') {

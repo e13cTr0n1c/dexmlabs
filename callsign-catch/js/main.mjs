@@ -5,7 +5,19 @@ import {cardArt, setArtManifest} from './art.mjs';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-const [table, specials, art] = await Promise.all(['types', 'specials', 'art'].map(n => fetch(`./data/${n}.json`).then(r => r.json())));
+// The form listener goes on before anything is awaited. The page's CSP blocks a plain form post, so a press that
+// came before the listener existed used to do nothing at all. Now every press gets an answer.
+let ready = false, loadFailed = false;
+$('#catch-form').addEventListener('submit', e => {
+  e.preventDefault();
+  if (loadFailed) return say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad');
+  if (!ready) return say('Still loading the aircraft list. Give it a second and press Catch it again.', 'wait');
+  submit($('#cs').value);
+});
+const getJSON = n => fetch(`./data/${n}.json`).then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
+let table, specials, art;
+try { [table, specials, art] = await Promise.all(['types', 'specials', 'art'].map(getJSON)); }
+catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad'); throw e; }
 setArtManifest(art.codes);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
@@ -67,18 +79,21 @@ async function submit(raw) {
   const label = q.value.toUpperCase();
   if ((state.days[C.dayKey(now())] || []).includes(label)) return say(MSG.today(label), 'bad');
   lastSubmit = t; recent.push(t);
-  const btn = $('#go'); btn.disabled = true; say(`Listening for ${label}...`, 'wait');
+  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking...'; btn.setAttribute('aria-busy', 'true');
+  say(`Listening for ${label}...`, 'wait');
   try {
     const r = await lookup(q);
-    if (r.error) return say(MSG[r.error](label), 'bad');
+    if (r.error) return say((MSG[r.error] || MSG.offline)(label), 'bad');
     const live = C.pickLive(r.data);
-    if (!live.ok) return say(MSG[live.reason](label), 'bad');
+    if (!live.ok) return say((MSG[live.reason] || MSG.notfound)(label), 'bad');
     const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
     if (res.status === 'today') return say(MSG.today(live.ac.callsign), 'bad');
     state = res.state; save(); render();
     say(res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
     reveal(res); postCatch(live.ac.callsign);
-  } finally { setTimeout(() => { btn.disabled = false; }, 400); }
+  } catch (e) {
+    console.error(e); say('Something went wrong with that one. Try again in a moment.', 'bad');
+  } finally { setTimeout(() => { btn.disabled = false; btn.textContent = 'Catch it'; btn.removeAttribute('aria-busy'); }, 400); }
 }
 
 function reveal(res) {
@@ -108,7 +123,6 @@ async function importFile(file) {
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 
-$('#catch-form').addEventListener('submit', e => { e.preventDefault(); submit($('#cs').value); });
 $('#set-all').addEventListener('click', () => { filter = 'all'; renderHangar(); });
 $('#sets').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { filter = filter === b.dataset.set ? 'all' : b.dataset.set; renderHangar(); } });
 $('#close').addEventListener('click', () => { const d = $('#reveal'); d.classList.remove('go'); d.close ? d.close() : d.removeAttribute('open'); });
@@ -128,4 +142,5 @@ render();
 const deep = new URLSearchParams(location.search).get('cs');
 if (deep && C.parseQuery(deep)) { $('#cs').value = deep.toUpperCase().slice(0, 10); say(`Spotted overhead: ${deep.toUpperCase().slice(0, 10)}. Press Catch it to check it's flying.`, 'wait'); }
 // resetGap is for the browser test only: it clears the gap between lookups (or with -1 sets it to now).
+ready = true;
 window.CallsignCatch = {state: () => state, submit, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};
