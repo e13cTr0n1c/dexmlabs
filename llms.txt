@@ -1,6 +1,6 @@
 # DEXM Labs
 
-> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, a Chernobyl RBMK reactor simulator, an Apollo lunar landing game, and 3D print designs for the radio bench.
+> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Flight Path, a daily path puzzle on a radar grid, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, a Chernobyl RBMK reactor simulator, an Apollo lunar landing game, and 3D print designs for the radio bench.
 
 ## Home
 
@@ -24,6 +24,7 @@
 - [Glider Thermals Game](https://dexmlabs.app/glider-thermals-game/): Fly a sailplane with a realistic glide polar, stall and speed to fly. Thermals under cumulus with circling birds, ridge lift and mountain wave, a vario that beeps as you climb, cross country routes with turnpoints and landing out in a field. Seven flights, autotrim assist, and a Daily Drop task.
 - [Helicopter Sling Load Game](https://dexmlabs.app/helicopter-sling-load-game/): Fly a heavy lift helicopter with a load on a rope, with real pendulum physics, downwash and wind. Seven jobs from a first crate to a rooftop AC unit, a forest log, a fire bucket and a bridge span, graded S to D, plus a Daily Drop. Free, no account.
 - [Tolerance](https://dexmlabs.app/tolerance/): A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.
+- [Flight Path](https://dexmlabs.app/flight-path/): A daily path puzzle on a radar grid. Draw one path through every square, past the numbered beacons in order. One answer per puzzle, a new one every UTC day, plus endless practice. Free, no account, no cookies.
 - [MMX mission explained: interactive simulation](https://dexmlabs.app/missions/mmx/): Mission Replays: a time slider through JAXA's MMX mission to Phobos, from the H3 launch on 20 October 2026 to the planned sample return in 2031, with a heliocentric view and a Mars and Phobos close view.
 
 ## Makes

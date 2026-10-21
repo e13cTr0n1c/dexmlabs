@@ -18,7 +18,7 @@ t("homepage: games first, then makes, then support", function () {
   assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["puzzle-today", "hero", "games", "makes", "hire", "support"]);
   assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .game-sec"), function (s) { return s.id + ":" + s.querySelector(".sec-h").textContent; }), ["games-physics:Physics & Flight", "games-daily:Daily Puzzles", "games-labs:Labs / Beta", "games-other:Other"], "game sections in order");
   var btns = [].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); });
-  assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "repurposed/", "missions/mmx/", "vector/", "orbit/", "chernobyl-reactor-simulator/"]);
+  assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "flight-path/", "repurposed/", "missions/mmx/", "vector/", "orbit/", "chernobyl-reactor-simulator/"]);
   assert.strictEqual(d.querySelector(".bignum").textContent, String(btns.length), "games live counter matches the cards");
   var ld = [].map.call(d.querySelectorAll('script[type="application/ld+json"]'), function (e) { return JSON.parse(e.textContent); }).filter(function (j) { return j["@type"] === "ItemList"; })[0];
   assert.deepStrictEqual(ld.itemListElement.map(function (e) { return e.url; }), btns.map(function (h) { return "https://dexmlabs.app/" + h; }), "ItemList matches the cards");
@@ -107,7 +107,7 @@ t("Cloudflare beacon once on every generated page, never on redirects", function
 });
 t("cookies table lists every storage key, hard and realistic rows after lorenz:stats", function () {
   var keys = [].map.call(dom("cookies/index.html").querySelectorAll("tbody tr td:first-child"), function (td) { return td.textContent; });
-  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "vector:settings", "vector:stats", "orbit:settings", "orbit:stats", "forge-shift-v1", "grid:power:v2", "grid:sound", "enigma:round:<date>", "enigma:stats", "rbmk:stats", "apollo:stats", "booster:stats", "docking:stats", "glider:stats", "glider:daily", "sling:stats", "sling:daily", "roadster:stats", "roadster:daily", "rocket:stats", "puzzle:stats", "puzzle:nick", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
+  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "flightpath:stats", "flightpath:seen", "flightpath:sound", "flightpath:size", "vector:settings", "vector:stats", "orbit:settings", "orbit:stats", "forge-shift-v1", "grid:power:v2", "grid:sound", "enigma:round:<date>", "enigma:stats", "rbmk:stats", "apollo:stats", "booster:stats", "docking:stats", "glider:stats", "glider:daily", "sling:stats", "sling:daily", "roadster:stats", "roadster:daily", "rocket:stats", "puzzle:stats", "puzzle:nick", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
 });
 t("old tool and template URLs are bare redirects to the new site", function () {
   MOVED.forEach(function (u) {
@@ -126,8 +126,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 30); // Vector, Orbit and Hire me are listed now
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|hire\/|missions\/mmx\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 31); // Vector, Orbit, Hire me and Flight Path are listed now
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|flight-path\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|hire\/|missions\/mmx\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");

@@ -11,7 +11,7 @@
 (function (root) {
   'use strict';
   var KEY = 'dexm:points', SALT = 'dexm-points:v1:', CAP = 200, MAX_AMOUNT = 10000;
-  var EARN = {skywave: 100, lorenz: 100, lorenzHard: 250, lorenzReal: 400, lorenzReply: 100, tolerance: 100, vector: 100, orbit: 100, practice: 20};
+  var EARN = {skywave: 100, lorenz: 100, lorenzHard: 250, lorenzReal: 400, lorenzReply: 100, tolerance: 100, flightpath: 100, vector: 100, orbit: 100, practice: 20};
   var COSTS = {
     skywave: {muf: 10, absorption: 10, scope: 20},
     lorenz: {check: 20, reveal: 50, smudge: 50, qep: 40, char: 10}
@@ -117,7 +117,7 @@
     return '<div class="dexm-pop-head"><h2 id="dexm-pop-title">How points work</h2><button type="button" class="dexm-pop-close" aria-label="Close">&#215;</button></div>' +
       '<p class="dexm-pop-bal">You have <b data-points-balance>' + fmt(Points.balance()) + '</b> points.</p>' +
       (note ? '<p class="dexm-pop-note">' + note + '</p>' : '') +
-      '<ul><li>Finish today\'s Skywave: <b>' + EARN.skywave + '</b></li><li>Decode today\'s Lorenz: <b>' + EARN.lorenz + '</b>, or <b>' + EARN.lorenzHard + '</b> in hard mode or <b>' + EARN.lorenzReal + '</b> in realistic mode, plus <b>' + EARN.lorenzReply + '</b> for the reply</li><li>Solve today\'s Tolerance: <b>' + EARN.tolerance + '</b></li><li>Practice rounds: <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a day in each game</li></ul>' +
+      '<ul><li>Finish today\'s Skywave: <b>' + EARN.skywave + '</b></li><li>Decode today\'s Lorenz: <b>' + EARN.lorenz + '</b>, or <b>' + EARN.lorenzHard + '</b> in hard mode or <b>' + EARN.lorenzReal + '</b> in realistic mode, plus <b>' + EARN.lorenzReply + '</b> for the reply</li><li>Solve today\'s Tolerance: <b>' + EARN.tolerance + '</b></li><li>Fly today\'s Flight Path: <b>' + EARN.flightpath + '</b></li><li>Practice rounds: <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a day in each game</li></ul>' +
       '<p>Vector: clear five aircraft in an endless run. Orbit: deploy three satellites. Each earns <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' qualifying runs a UTC day per game. Complete the daily shift with those minimums for <b>100</b> once that day. FORGE challenges award the points shown on each test once; Sandbox earns no points. GRID: a day that stays lit earns <b>' + EARN.practice + '</b>, up to ' + PRACTICE_PER_DAY + ' a UTC day.</p>' +
       '<p>Hints in Skywave and Lorenz are paid for with points, and each button shows its price. Your game score is just how you played.</p>' +
       '<p class="dexm-pop-small">Points live in this browser. There\'s no account and nothing to buy. <a href="' + page + '">More about points</a></p>';
