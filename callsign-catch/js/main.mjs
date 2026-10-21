@@ -2,6 +2,7 @@ import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
+import {countTo, sparks, buzz, holo, calm} from './fx.mjs';
 import {clack, chime, thud, soundOn, setSound} from './sound.mjs';
 import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot} from './art.mjs';
 
@@ -43,7 +44,7 @@ ${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${log}<p 
 
 function renderStats() {
   const t = C.totals(state);
-  $('#stat-types').textContent = t.types; $('#stat-catches').textContent = t.catches; $('#stat-points').textContent = t.points.toLocaleString('en-GB'); $('#stat-xp').textContent = t.xp; $('#stat-moments').textContent = t.moments;
+  for (const [id, v] of [['types', t.types], ['catches', t.catches], ['points', t.points], ['xp', t.xp], ['moments', t.moments]]) countTo($('#stat-' + id), v);
 }
 let wantedShown = false;
 function renderWanted() {
@@ -61,7 +62,8 @@ function renderHangar() {
   $('#hangar').innerHTML = codes.map(code => { const c = state.cards[code], info = C.typeInfo(code, idx, table);
     return cardHTML(info, c ? c.tier : info.tier, c && c.last, !!c, c && c.count > 1 ? ` <span class="cc-count">×${c.count}</span>` : ''); }).join('') || '<p class="muted">Nothing here yet.</p>';
   $('#sets').innerHTML = C.SETS.map(s => { const p = C.setProgress(state, s);
-    return `<button type="button" class="set${filter === s.id ? ' on' : ''}${p.done ? ' done' : ''}" data-set="${s.id}" aria-pressed="${filter === s.id}"><span>${esc(s.name)}</span><span class="bar"><i style="width:${Math.round(100 * p.got / p.goal)}%"></i></span><small>${p.got}/${p.goal}${s.desc ? ' · ' + esc(s.desc) : ''}</small></button>`; }).join('');
+    const pc = Math.round(100 * p.got / p.goal);
+    return `<button type="button" class="set${filter === s.id ? ' on' : ''}${p.done ? ' done' : ''}" data-set="${s.id}" aria-pressed="${filter === s.id}" style="--p:${pc}"><span class="badge" aria-hidden="true"><b>${p.done ? '\u2713' : pc + '%'}</b></span><span>${esc(s.name)}</span><span class="bar"><i style="width:${Math.round(100 * p.got / p.goal)}%"></i></span><small>${p.got}/${p.goal}${s.desc ? ' · ' + esc(s.desc) : ''}</small></button>`; }).join('');
   $('#set-all').setAttribute('aria-pressed', filter === 'all'); $('#set-all').classList.toggle('on', filter === 'all');
   $('#logbook').innerHTML = state.log.slice(0, 12).map(e => `<li><span class="lt tier-${e.tier}">${esc(e.type)}</span> ${esc(e.cs)} <span class="muted">${esc(fmtTime(e.t))} · ${esc(e.alt.toLocaleString('en-GB'))} ft · +${e.gain || 0}</span></li>`).join('') || '<li class="muted">Your catches will be logged here.</li>';
 }
@@ -106,7 +108,7 @@ async function submit(raw) {
     const photo = await spot; if (photo) res.entry.photo = photo;
     state = res.state; save(); render();
     say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
-    board(res.newType ? 'NEW TYPE' : 'CAUGHT'); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
+    board(res.newType ? 'NEW TYPE' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
     reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(live.ac.callsign);
   } catch (e) {
     console.error(e); miss('TRY AGAIN'); say('Something went wrong with that one. Try again in a moment.', 'bad');
@@ -153,6 +155,8 @@ function reveal(res) {
   dlg.dataset.share = C.shareText(entry, info, tier); dlg.className = 'reveal tier-' + tier;
   if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   requestAnimationFrame(() => requestAnimationFrame(() => dlg.classList.add('go')));
+  // The pack shakes, flips at about 0.5s and the sparks fly as the face lands.
+  clearTimeout(reveal.t); reveal.t = setTimeout(() => sparks($('#sparks'), getComputedStyle(dlg).getPropertyValue('--c').trim() || '#d6ff00', entry.sq ? 'legendary' : tier), calm() ? 0 : 900);
 }
 
 async function share(text) {
@@ -187,7 +191,7 @@ async function postCatch(cs) { const nick = (localStorage.getItem('callsign:nick
 if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') || ''; $('#nick').addEventListener('change', e => localStorage.setItem('callsign:nick', e.target.value.slice(0, 16))); fetch(LEADERBOARD_API + '/board').then(r => r.json()).then(drawBoard).catch(() => {}); }
 const drop = C.dropFor(now(), specials);
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }
-render();
+render(); holo($('#hangar'));
 const deep = new URLSearchParams(location.search).get('cs');
 if (deep && C.parseQuery(deep)) { $('#cs').value = deep.toUpperCase().slice(0, 10); say(`Spotted overhead: ${deep.toUpperCase().slice(0, 10)}. Press Catch it to check it's flying.`, 'wait'); }
 // resetGap is for the browser test only: it clears the gap between lookups (or with -1 sets it to now).

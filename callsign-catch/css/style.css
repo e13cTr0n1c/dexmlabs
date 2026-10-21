@@ -144,3 +144,82 @@ button:hover,.file-btn:hover{border-color:var(--radar-ink)}
 @keyframes miss{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
 @media (max-width:560px){.flap{font-size:16px;width:1.35em}.flapboard.small .flap{font-size:12px}.hero::before{right:-30%;top:-10px}}
 @media (prefers-reduced-motion:reduce){.flap.flip>span,.catch.hit,.catch.miss,.hero::before{animation:none}}
+/* ==== Arcade cabinet identity: Bungee display face, scanlines and grain, a console for the catch ==== */
+@font-face{font-family:"Bungee";src:url(../fonts/bungee.woff2) format("woff2");font-display:swap}
+:root{--head:"Bungee","Arial Black",Arial,sans-serif;--bevel:#000;--scan:.07;--grain:.06}
+:root[data-theme=light]{--bevel:#7b8f80;--scan:.035;--grain:.04}
+body::after{content:"";position:fixed;inset:0;z-index:50;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,var(--scan)) 0 1px,transparent 1px 3px),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:1;mix-blend-mode:overlay}
+body::after{opacity:var(--fx,.6)}
+:root[data-theme=light]{--fx:.3}
+:root[data-theme=light] body::after{mix-blend-mode:multiply}
+h1,h2,h3{font-weight:400;letter-spacing:.01em}
+h1{font-size:clamp(44px,13vw,96px);line-height:.9;background:none;color:var(--acid-ink);text-shadow:3px 3px 0 #ff3d8b55,-3px -2px 0 #39e5ff44,0 0 30px color-mix(in srgb,var(--acid) 35%,transparent)}
+:root[data-theme=light] h1{color:#101a12;text-shadow:4px 4px 0 var(--acid)}
+/* Full screen first view: the hero fills the phone and sits in the middle on a desktop */
+.hero{min-height:calc(100svh - 110px);display:flex;flex-direction:column;justify-content:center;padding-bottom:20px}
+.hero .lead{font-size:15px;color:var(--muted)}
+.catch{position:relative;padding:16px 16px 14px;border:3px solid #000;border-radius:22px;background:linear-gradient(180deg,#1b2620,#0b110d 60%);box-shadow:0 0 0 2px #2b3b30,0 10px 0 #000,0 22px 40px -10px #000,inset 0 2px 0 #ffffff1a;color:#e8f2ea}
+:root[data-theme=light] .catch{background:linear-gradient(180deg,#26332b,#121a15 60%);box-shadow:0 0 0 2px #9fb3a4,0 10px 0 #4c5e51,0 22px 40px -18px #0006}
+.catch::before,.catch::after{content:"";position:absolute;top:10px;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#7d8a80,#222 70%);box-shadow:0 1px 0 #000}
+.catch::before{left:10px}.catch::after{right:10px}
+.console-top{display:flex;align-items:center;gap:8px;margin:0 14px 10px;font:400 11px var(--head);letter-spacing:.12em;color:#39ff88;text-transform:uppercase}
+.console-top span{margin-left:auto;color:#5e7465;font-family:var(--mono);font-weight:700}
+.led{width:9px;height:9px;border-radius:50%;background:#39ff88;box-shadow:0 0 8px #39ff88,0 0 2px #fff inset;animation:led 1.6s steps(2) infinite}
+.catch label{color:#93a897}
+#cs{min-height:64px;background:#020403;color:#d6ff00;border:3px solid #000;box-shadow:inset 0 3px 10px #000,0 0 0 1px #2b3b30;border-radius:12px;font:400 26px var(--head);letter-spacing:.12em;text-shadow:0 0 10px #d6ff0066;caret-color:#d6ff00}
+#cs::placeholder{color:#3a4a3f;text-shadow:none}
+#cs:focus{border-color:#000;box-shadow:inset 0 3px 10px #000,0 0 0 2px #d6ff00,0 0 22px -4px #d6ff00}
+/* Chunky tactile buttons: a hard bottom edge that presses down */
+button,.file-btn{border:3px solid #000;border-radius:12px;box-shadow:0 5px 0 var(--bevel);transition:transform .07s,box-shadow .07s,filter .1s;font-weight:800;text-transform:uppercase;letter-spacing:.04em;font-size:13px}
+:root[data-theme=light] button,:root[data-theme=light] .file-btn{border-color:#2d3b31}
+button:active:not(:disabled),.file-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--bevel)}
+#go{min-height:64px;font:400 18px var(--head);border:3px solid #000;box-shadow:0 7px 0 #5d7000,0 7px 0 3px #000,0 14px 24px -6px #d6ff0066;background:linear-gradient(180deg,#e6ff4d,#d6ff00 45%,#b8dc00)}
+#go:active:not(:disabled){transform:translateY(5px);box-shadow:0 2px 0 #5d7000,0 2px 0 3px #000}
+.sound{min-height:40px;background:#111813;color:#93a897;border-color:#000;box-shadow:0 4px 0 #000}
+.sound[aria-pressed=true]{color:#d6ff00;box-shadow:0 4px 0 #000,0 0 14px -4px #d6ff00}
+.reveal-btns button:not(.primary){box-shadow:0 5px 0 #000}
+/* Stats: arcade score readouts that count up */
+.stats{border:3px solid #000;box-shadow:0 0 0 2px var(--edge);background:var(--panel)}
+.stats b{font:400 26px/1.1 var(--head)}.stats b.bump{animation:bump .5s ease-out}
+/* Sets as progress badges: a ring that fills as you collect */
+.set{flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap;align-content:center;min-height:74px;box-shadow:0 5px 0 var(--bevel);text-transform:none;letter-spacing:0}
+.set>span:not(.badge):not(.bar){font:400 13px var(--head);flex:1;min-width:0}
+.set .bar{display:none}.set small{flex-basis:100%;padding-left:56px;margin-top:-18px}
+.badge{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--radar) calc(var(--p,0)*1%),color-mix(in srgb,var(--edge) 80%,transparent) 0);box-shadow:0 0 0 3px #000,inset 0 0 0 1px #0006}
+.badge b{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--panel);font:400 10px var(--head);color:var(--ink)}
+.set.done .badge{background:conic-gradient(from 0deg,#fff2b0,var(--legendary),#7a4d00,var(--legendary),#fff2b0);box-shadow:0 0 0 3px #000,0 0 16px -2px var(--legendary)}
+.set.done .badge b{color:var(--legendary);font-size:18px}
+#set-all{flex-direction:column;flex-wrap:nowrap;align-items:flex-start;justify-content:center}#set-all span{font:400 13px var(--head)}#set-all small{padding:0;margin:0}
+/* The hangar: a wall of holo cards that lean towards the pointer */
+.hangar-wrap{padding:22px 0 0;border-top:3px dashed var(--edge)}
+.hangar-head h2{font-size:clamp(28px,7vw,44px);color:var(--acid-ink)}
+.hangar{perspective:1200px}
+.cc-card{--rx:0deg;--ry:0deg;transform:rotateX(var(--rx)) rotateY(var(--ry));transform-style:preserve-3d;will-change:transform}
+.cc-card.tilt{transition:transform .06s linear,box-shadow .2s}
+.cc-card:not(.empty):hover{transform:rotateX(var(--rx)) rotateY(var(--ry)) translateY(-4px) scale(1.02)}
+.cc-in{position:relative}
+.cc-card:not(.empty) .cc-in::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;background:radial-gradient(circle at var(--mx,50%) var(--my,0%),#ffffff30,transparent 45%);opacity:0;transition:opacity .2s}
+.cc-card.tilt .cc-in::before{opacity:1}
+.cc-card.tier-rare:not(.empty) .cc-in::after,.cc-card.tier-legendary:not(.empty) .cc-in::after,.cc-card.sq:not(.empty) .cc-in::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;background:linear-gradient(115deg,transparent 25%,#ff6ad566 38%,#6ad6ff66 46%,#d6ff0066 54%,#ffc94d55 60%,transparent 72%);background-size:300% 300%;background-position:var(--mx,0%) var(--my,0%);mix-blend-mode:color-dodge;opacity:.35;animation:holo 5s ease-in-out infinite alternate}
+.cc-card.tier-legendary:not(.empty) .cc-in::after,.cc-card.sq:not(.empty) .cc-in::after{opacity:.55}
+.cc-card.tilt .cc-in::after{animation:none;opacity:.75}
+.cc-name{font:400 15px/1.15 var(--head);letter-spacing:.01em}.cc-tier,.cc-code{font-family:var(--head);font-weight:400}
+/* Pack opening: the sealed pack shakes, flips in 3D, a light burst and sparks */
+.sparks{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:7}
+.reveal-in{position:relative;z-index:6}
+.reveal h2{font-weight:400}
+.reveal.go .reveal-card{animation:pack .5s ease-in-out}
+.flip{transition:transform .8s cubic-bezier(.2,.9,.25,1.15) .45s,opacity .25s}
+.reveal-card::after{content:"";position:absolute;left:50%;top:45%;width:20px;height:20px;margin:-10px;border-radius:50%;background:var(--c);box-shadow:0 0 60px 30px var(--c),0 0 140px 80px color-mix(in srgb,var(--c) 50%,transparent);opacity:0;z-index:-1;pointer-events:none}
+.reveal.go .reveal-card::after{animation:burst 1.1s .8s ease-out forwards}
+.reveal.go .reveal-card::before{transition-delay:.9s}
+.face.back{font:400 34px var(--head);background:repeating-linear-gradient(45deg,#d6ff0010 0 8px,transparent 8px 16px),radial-gradient(circle,#1d2a20,#050806 70%);box-shadow:inset 0 0 0 3px #000}
+.face.back span{padding:10px 16px;border:3px solid currentColor;border-radius:10px;transform:rotate(-8deg)}
+@keyframes pack{0%,100%{transform:none}20%{transform:rotate(-4deg) scale(1.03)}40%{transform:rotate(4deg) scale(1.05)}60%{transform:rotate(-3deg) scale(1.06)}80%{transform:rotate(2deg) scale(1.03)}}
+@keyframes burst{0%{opacity:0;transform:scale(.2)}25%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(3)}}
+@keyframes holo{from{background-position:0% 0%}to{background-position:100% 100%}}
+@keyframes bump{30%{transform:scale(1.25);color:var(--acid-ink)}}
+@keyframes led{50%{opacity:.35}}
+@media (max-width:560px){.hero{min-height:calc(100svh - 100px)}h1{font-size:clamp(40px,14vw,64px)}.hero .lead{font-size:14px;margin:6px 0 4px}.catch{margin-top:14px}#cs{font-size:22px}
+ .stats b{font-size:20px}.set{flex:0 0 74%}.hangar .cc-name{font-size:12px}}
+@media (prefers-reduced-motion:reduce){.led,.reveal.go .reveal-card,.reveal.go .reveal-card::after,.cc-in::after,.stats b.bump{animation:none!important}.flip{transition:opacity .2s}.cc-card,.cc-card:not(.empty):hover{transform:none!important}button,#go{transition:none}}

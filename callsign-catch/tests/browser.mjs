@@ -81,6 +81,9 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   ok(wide <= 0, `${label}: no horizontal overflow (${wide})`);
   ok(await page.isVisible('#board'), `${label}: leaderboard shown now LEADERBOARD_API is set`);
+  ok(await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('20px Bungee') && [...document.fonts].some(f => f.family.includes('Bungee') && f.status === 'loaded'); }), `${label}: self hosted display font loads`);
+  ok(await page.$$eval('#sets .set .badge', b => b.length >= 6) && await page.$eval('#sets .set', b => b.style.getPropertyValue('--p') !== ''), `${label}: sets show as progress badges`);
+  ok(await page.$eval('#sparks', c => c.tagName === 'CANVAS') && await page.$eval('.console-top', e => /radar live/i.test(e.textContent)), `${label}: spark canvas and catch console are there`);
   await page.evaluate(() => document.getElementById('hangar-h').scrollIntoView());
   await page.screenshot({path: path.join(SHOTS, `${label}-hangar.png`)});
   if (label === 'desktop') {
