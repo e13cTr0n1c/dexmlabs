@@ -115,6 +115,7 @@ GAME_SECTIONS=[
   ('missions/mmx','mission-replays','MISSION REPLAYS','Mission Replays','Real space missions on a time slider. First up is MMX, the Japanese trip to the Mars moon Phobos and back, with real dates and the planned steps marked.','See the MMX replay','beta'),
   (None,None,None,'Next game','In development. Nothing to see yet.',None,'sealed')]),
  ('other','ODDS AND ENDS','Other',[
+  ('callsign-catch','callsign-catch','PLANE SPOTTING','Callsign Catch',"Spot a plane on a tracker or overhead and type its callsign. If it's flying right now you catch its card. Rare jumbos, legendary one offs and a wanted plane every day.",'Play Callsign Catch','live'),
   ('vector','vector','AIR TRAFFIC CONTROL','Vector','An endless air traffic control game. Route arrivals, sequence the runway and keep aircraft safely separated as your sector gets busier.','Play Vector','live'),
   ('orbit','orbit','ORBITAL FLIGHT','Orbit','Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.','Play Orbit','live'),
   ('chernobyl-reactor-simulator','chernobyl-reactor-simulator','REACTOR','RBMK','A simplified RBMK-1000 control desk. Hold power through a xenon pit or run the rundown test, and know when to press AZ-5.','Play RBMK','live')])]

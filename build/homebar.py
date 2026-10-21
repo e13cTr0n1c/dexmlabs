@@ -9,7 +9,7 @@ S = Path(__file__).resolve().parent.parent
 # (page, name shown on the left)
 PAGES = [('apollo-lunar-landing-game/index.html','Apollo'),('booster-landing-game/index.html','Booster'),
  ('chernobyl-reactor-simulator/index.html','RBMK'),('docking-run-game/index.html','Docking Run'),
- ('enigma-machine/index.html','Enigma'),('forge/index.html','FORGE'),('glider-thermals-game/index.html','Glider Thermals'),
+ ('enigma-machine/index.html','Enigma'),('forge/index.html','FORGE'),('glider-thermals-game/index.html','Glider Thermals'),('callsign-catch/index.html','Callsign Catch'),
  ('grid/index.html','GRID'),('helicopter-sling-load-game/index.html','Sling Load'),('lorenz/index.html','Lorenz'),
  ('mars-base-game/index.html','Mars Base'),('missions/mmx/index.html','MMX Replay'),('orbit/index.html','Orbit'),('play-test-8179d030/game/index.html','Repurposed beta'),
  ('repurposed/index.html','Repurposed'),('rocket-launch-game/index.html','Rocket Launch'),('skywave/index.html','Skywave'),

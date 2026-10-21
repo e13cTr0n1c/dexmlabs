@@ -63,6 +63,19 @@ for game in ['vector','orbit']:
         imports += [(module.parent/u).resolve() for u in re.findall(r'from\s+[\'\"]([^\'\"]+)[\'\"]',module.read_text())]
     check(all(p.is_file() and p.is_relative_to(ROOT) for p in imports),f'{game}: all ES module imports are local and resolve')
     check(sum(p.stat().st_size for p in (ROOT/game).rglob('*') if p.is_file())<1_100_000,f'{game}: complete game folder below 1.1 MB including social artwork')
+# Callsign Catch: live lookups only to the hosts in its CSP, the theme script hash, local files resolve.
+cc=ROOT/'callsign-catch/index.html';ct=cc.read_text();cp=Page(ct)
+ccsp=next(a['content'] for t,a in cp.tags if t=='meta' and a.get('http-equiv')=='Content-Security-Policy')
+cconnect=ccsp.split('connect-src ',1)[1].split(';',1)[0].split()
+check(all(h in cconnect for h in ['https://api.adsb.lol','https://api.airplanes.live']) and "'unsafe-inline'" not in ccsp.split('script-src ',1)[1].split(';',1)[0],'callsign-catch: CSP allows the adsb.lol and airplanes.live API hosts and no inline script')
+chashes=["'sha256-"+base64.b64encode(hashlib.sha256(x.encode()).digest()).decode()+"'" for x in cp.inline]
+check(bool(chashes) and all(h in ccsp for h in chashes),'callsign-catch: CSP authorizes the exact theme script hash')
+ccfg=(ROOT/'callsign-catch/js/config.mjs').read_text();capi=(ROOT/'callsign-catch/js/api.mjs').read_text()
+hosts=set(re.findall(r"https://[a-z0-9.-]+",ccfg+capi))
+check(hosts<=set(cconnect),'callsign-catch: every API host in the code is in connect-src '+str(hosts))
+cmiss=[str(t.relative_to(ROOT)) for _,a in cp.tags for k in ['src','href'] if k in a and (t:=resolve_file(cc,a[k])) and not t.is_file()]
+check(not cmiss,'callsign-catch: local links resolve'+str(cmiss))
+check('adsb.lol' in ct and 'gumroad' not in ct.lower(),'callsign-catch: credits adsb.lol, no Gumroad')
 home=(ROOT/'index.html').read_text();hp=Page(home)
 for game in ['vector','orbit']:
     check(f'href="{game}/"' in home and f'assets/{game}-thumb.webp' in home and (ROOT/'assets'/f'{game}-thumb.webp').is_file(),f'homepage: {game} card and screenshot thumbnail present')

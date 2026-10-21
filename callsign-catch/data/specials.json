@@ -1,0 +1,133 @@
+{
+ "note": "Dated bonus cards. Set date (YYYY-MM-DD) and mode (wanted or drop) to switch one on. Rewards stay empty until a code exists.",
+ "cards": [
+  {
+   "id": "SHIP_CATCH",
+   "code": "SHIP_CATCH",
+   "name": "Ship Catch",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/SHIP_CATCH.webp",
+   "model_slug": "ship-catch-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "SHUTTLE",
+   "code": "SHUTTLE",
+   "name": "Space Shuttle Stack",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/SHUTTLE.webp",
+   "model_slug": "space-shuttle-stack-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "MOON_ROCKET",
+   "code": "MOON_ROCKET",
+   "name": "Moon Rocket",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/MOON_ROCKET.webp",
+   "model_slug": "moon-rocket-cutaway-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "SATELLITE",
+   "code": "SATELLITE",
+   "name": "First Satellite",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/SATELLITE.webp",
+   "model_slug": "first-satellite-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "PROBE",
+   "code": "PROBE",
+   "name": "Deep Space Probe",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/PROBE.webp",
+   "model_slug": "deep-space-probe-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "ROVER",
+   "code": "ROVER",
+   "name": "Lunar Rover",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/ROVER.webp",
+   "model_slug": "lunar-rover-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "PHOBOS",
+   "code": "PHOBOS",
+   "name": "Phobos and MMX Probe",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/PHOBOS.webp",
+   "model_slug": "phobos-mmx-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  },
+  {
+   "id": "RADAR",
+   "code": "RADAR",
+   "name": "Radar Station",
+   "date": "",
+   "mode": "",
+   "image": "img/cards/RADAR.webp",
+   "model_slug": "radar-station-desk-model",
+   "reward": {
+    "url": "",
+    "label": "",
+    "code": ""
+   },
+   "fact": "",
+   "tier": "legendary"
+  }
+ ]
+}
