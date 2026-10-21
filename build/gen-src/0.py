@@ -119,6 +119,7 @@ GAME_SECTIONS=[
   ('callsign-catch','callsign-catch','PLANE SPOTTING','Callsign Catch',"Spot a plane on a tracker or overhead and type its callsign. If it's flying right now you catch its card. Rare jumbos, legendary one offs and a wanted plane every day.",'Play Callsign Catch','live'),
   ('vector','vector','AIR TRAFFIC CONTROL','Vector','An endless air traffic control game. Route arrivals, sequence the runway and keep aircraft safely separated as your sector gets busier.','Play Vector','live'),
   ('orbit','orbit','ORBITAL FLIGHT','Orbit','Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.','Play Orbit','live'),
+  ('flying-over-me','flying-over-me','LIVE SKY',"What's Flying Over Me?",'Tap once and see the planes above you right now on a green radar scope, with the satellites passing over and the next time you can spot the ISS.',"See what's overhead",'live'),
   ('chernobyl-reactor-simulator','chernobyl-reactor-simulator','REACTOR','RBMK','A simplified RBMK-1000 control desk. Hold power through a xenon pit or run the rundown test, and know when to press AZ-5.','Play RBMK','live')])]
 GAMES=[g for _,_,_,gs in GAME_SECTIONS for g in gs if g[6]!='sealed']
 LIVE=len(GAMES)

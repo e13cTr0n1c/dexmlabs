@@ -76,6 +76,18 @@ check(hosts<=set(cconnect),'callsign-catch: every API host in the code is in con
 cmiss=[str(t.relative_to(ROOT)) for _,a in cp.tags for k in ['src','href'] if k in a and (t:=resolve_file(cc,a[k])) and not t.is_file()]
 check(not cmiss,'callsign-catch: local links resolve'+str(cmiss))
 check('adsb.lol' in ct and 'gumroad' not in ct.lower(),'callsign-catch: credits adsb.lol, no Gumroad')
+# What's flying over me?: the CSP lets the page reach exactly the data services its code calls, nothing more.
+fom=ROOT/'flying-over-me';fpage=Page((fom/'index.html').read_text())
+fcsp=next(a['content'] for t,a in fpage.tags if t=='meta' and a.get('http-equiv')=='Content-Security-Policy')
+fconnect=set(fcsp.split('connect-src ',1)[1].split(';',1)[0].split())
+flinks={'https://globe.adsb.lol','https://airplanes.live','https://adsb.lol'}  # hosts the code only links to, never fetches
+fhosts={'https://'+h for h in re.findall(r'https://([a-z0-9.-]+)/',(fom/'js/main.mjs').read_text())}-flinks
+check(fconnect=={"'self'",'https://cloudflareinsights.com'}|fhosts,f'flying-over-me: connect-src lists exactly the API hosts the code fetches {sorted(fhosts)}')
+fproxy=re.search(r"export const PROXY_API = '([^']*)'",(fom/'js/main.mjs').read_text()).group(1)
+check(not fproxy or 'https://'+urlparse(fproxy).netloc in fconnect,'flying-over-me: the relay host, once set, is allowed in connect-src')
+fhash="'sha256-"+base64.b64encode(hashlib.sha256(fpage.inline[0].encode()).digest()).decode()+"'"
+check(len(fpage.inline)==1 and fhash in fcsp and "'unsafe-inline'" not in fcsp.split('script-src ',1)[1].split(';',1)[0],'flying-over-me: CSP allows only the theme script by hash')
+check((fom/'js/vendor/satellite.js-LICENSE.md').is_file() and 'MIT License' in (fom/'js/vendor/satellite.js-LICENSE.md').read_text(),'flying-over-me: vendored satellite.js ships with its licence')
 home=(ROOT/'index.html').read_text();hp=Page(home)
 for game in ['vector','orbit']:
     check(f'href="{game}/"' in home and f'assets/{game}-thumb.webp' in home and (ROOT/'assets'/f'{game}-thumb.webp').is_file(),f'homepage: {game} card and screenshot thumbnail present')

@@ -140,6 +140,7 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>vector:stats</code></td><td>Completed-run best scores by mode, the most recent daily score and the number of completed runs</td><td>Until you clear it</td></tr>
 <tr><td><code>orbit:settings</code></td><td>Your selected game mode and sound setting</td><td>Until you clear it</td></tr>
 <tr><td><code>orbit:stats</code></td><td>Completed-run best scores by mode, the most recent daily score and the number of completed runs</td><td>Until you clear it</td></tr>
+<tr><td><code>fom:tle:&lt;group&gt;</code></td><td>Satellite orbits downloaded from CelesTrak for What's Flying Over Me, so they are not fetched on every visit. Never your location</td><td>Replaced after six hours</td></tr>
 <tr><td><code>forge-shift-v1</code></td><td>FORGE stars, daily result, sound and proving-ground records</td><td>Until you clear it</td></tr>
 <tr><td><code>grid:power:v2</code></td><td>The city you are running in GRID: seed, day, policy and trust</td><td>Until you clear it</td></tr>
 <tr><td><code>grid:sound</code></td><td>Whether GRID sound is on</td><td>Until you clear it</td></tr>

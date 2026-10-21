@@ -17,7 +17,7 @@
  ('missions/mmx/','MMX mission explained: interactive simulation','Mission Replays: a time slider through JAXA\'s MMX mission to Phobos, from the H3 launch on 20 October 2026 to the planned sample return in 2031, with a heliocentric view and a Mars and Phobos close view.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 # Pages added since 13 October, with their own lastmod, listed first.
-NEW_PAGES=[('callsign-catch/','2026-10-21'),('flight-path/','2026-10-21'),('hire/','2026-10-20'),('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
+NEW_PAGES=[('callsign-catch/','2026-10-21'),('flight-path/','2026-10-21'),('flying-over-me/','2026-10-21'),('hire/','2026-10-20'),('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
 # Game pages that changed in the 20 October tidy, so their lastmod moves on.
 TIDIED={'skywave/','lorenz/','enigma-machine/','chernobyl-reactor-simulator/','apollo-lunar-landing-game/','tolerance/'}
 NEW_URLS={u for u,_ in NEW_PAGES}
