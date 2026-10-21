@@ -132,6 +132,10 @@ doc('cookies','Cookies &amp; storage','COOKIES AND STORAGE','dexmlabs.app sets n
 <tr><td><code>lorenz:panels</code></td><td>Which Lorenz panels you've hidden</td><td>Until you clear it</td></tr>
 <tr><td><code>tolerance:round:&lt;date&gt;</code></td><td>Your guesses in a daily Tolerance puzzle</td><td>Until you clear it</td></tr>
 <tr><td><code>tolerance:stats</code></td><td>Your Tolerance results and streak</td><td>Until you clear it</td></tr>
+<tr><td><code>flightpath:stats</code></td><td>Your Flight Path streak, best times and the last 60 days of daily times</td><td>Until you clear it</td></tr>
+<tr><td><code>flightpath:seen</code></td><td>Whether you've seen how to play Flight Path</td><td>Until you clear it</td></tr>
+<tr><td><code>flightpath:sound</code></td><td>Whether Flight Path sound is on</td><td>Until you clear it</td></tr>
+<tr><td><code>flightpath:size</code></td><td>Your Flight Path practice grid size</td><td>Until you clear it</td></tr>
 <tr><td><code>vector:settings</code></td><td>Your selected game mode and sound setting</td><td>Until you clear it</td></tr>
 <tr><td><code>vector:stats</code></td><td>Completed-run best scores by mode, the most recent daily score and the number of completed runs</td><td>Until you clear it</td></tr>
 <tr><td><code>orbit:settings</code></td><td>Your selected game mode and sound setting</td><td>Until you clear it</td></tr>

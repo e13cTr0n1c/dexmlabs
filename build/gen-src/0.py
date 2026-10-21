@@ -5,7 +5,7 @@ Run from anywhere:  python3 build/gen.py
 Writes: index.html, the policy pages (privacy, cookies, terms, disclaimer, contact), 404.html,
 robots.txt, sitemap.xml, llms.txt, the IndexNow key file, and the redirect pages under tools/ and
 templates/ (those pages moved to https://e13ctr0n1c.github.io/).
-Not written here: skywave/, lorenz/, tolerance/, vector/, orbit/, assets/, CNAME, README.md, except the new game signup block in
+Not written here: skywave/, lorenz/, tolerance/, flight-path/, vector/, orbit/, assets/, CNAME, README.md, except the new game signup block in
 skywave/index.html and lorenz/index.html, in the section marked data-signup.
 Every page carries the Cloudflare Web Analytics beacon (CFWA) once, just before </body>.
 skywave/*.html and lorenz/*.html carry it by hand.
@@ -109,7 +109,8 @@ GAME_SECTIONS=[
   ('skywave','skywave','HF RADIO','Skywave','A daily ham radio puzzle. Read the sun, pick the band and bounce your signal off the ionosphere to reach ten stations before the day runs out.','Play Skywave','live'),
   ('lorenz','lorenz','CIPHER','Lorenz',LORENZ_LINE,'Play Lorenz','live'),
   ('enigma-machine','enigma','CIPHER','Enigma','A working Enigma I simulator and a daily intercept. Set the rotors from the key sheet, find the smudged cable and read the message.','Play Enigma','live'),
-  ('tolerance','tolerance','ENGINEERING','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.','Play Tolerance','live')]),
+  ('tolerance','tolerance','ENGINEERING','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, and each one comes back higher, lower or within 5%.','Play Tolerance','live'),
+  ('flight-path','flight-path','PATH PUZZLE','Flight Path','Fly one path through every square of the radar, past each numbered beacon in order. One answer, a new grid every day, harder by the weekend.','Play Flight Path','live')]),
  ('labs','WORK IN PROGRESS','Labs / Beta',[
   ('repurposed','repurposed','PUZZLE','Repurposed','A first person puzzle game in a facility that would rather you stayed put. Take over arms, drones, a crane and a wall climbing spider bot to get through. Two facilities so far.','See Repurposed','beta'),
   ('missions/mmx','mission-replays','MISSION REPLAYS','Mission Replays','Real space missions on a time slider. First up is MMX, the Japanese trip to the Mars moon Phobos and back, with real dates and the planned steps marked.','See the MMX replay','beta'),

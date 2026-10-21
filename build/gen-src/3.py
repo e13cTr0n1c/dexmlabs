@@ -13,10 +13,11 @@
  ('helicopter-sling-load-game/','Helicopter Sling Load Game','Fly a heavy lift helicopter with a load on a rope, with real pendulum physics, downwash and wind. Seven jobs from a first crate to a rooftop AC unit, a forest log, a fire bucket and a bridge span, graded S to D, plus a Daily Drop. Free, no account.'),
  ('callsign-catch/','Callsign Catch','A free plane spotting card game. Type the callsign, registration or hex code of a plane on a flight tracker or overhead; if the live adsb.lol feed shows it flying right now you catch a card for its aircraft type, logged with time, altitude and speed. Rarity by type, sets, a daily wanted plane, export and import. No account.'),
  ('tolerance/','Tolerance','A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.'),
+ ('flight-path/','Flight Path','A daily path puzzle on a radar grid. Draw one path through every square, past the numbered beacons in order. One answer per puzzle, a new one every UTC day, plus endless practice. Free, no account, no cookies.'),
  ('missions/mmx/','MMX mission explained: interactive simulation','Mission Replays: a time slider through JAXA\'s MMX mission to Phobos, from the H3 launch on 20 October 2026 to the planned sample return in 2031, with a heliocentric view and a Mars and Phobos close view.')]
 POL_DESC={'privacy':'What data the site keeps and why.','cookies':'Cookies and local storage used on the site.','terms':'Terms of use.','disclaimer':'What the games are and are not.','contact':'How to get in touch.'}
 # Pages added since 13 October, with their own lastmod, listed first.
-NEW_PAGES=[('callsign-catch/','2026-10-21'),('hire/','2026-10-20'),('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
+NEW_PAGES=[('callsign-catch/','2026-10-21'),('flight-path/','2026-10-21'),('hire/','2026-10-20'),('missions/mmx/','2026-10-20'),('puzzle/','2026-10-20'),('makes/','2026-10-20'),('repurposed/','2026-10-20'),('booster-landing-game/','2026-10-20'),('glider-thermals-game/','2026-10-20'),('helicopter-sling-load-game/','2026-10-20'),('docking-run-game/','2026-10-20'),('vector/','2026-10-20'),('orbit/','2026-10-20')]
 # Game pages that changed in the 20 October tidy, so their lastmod moves on.
 TIDIED={'skywave/','lorenz/','enigma-machine/','chernobyl-reactor-simulator/','apollo-lunar-landing-game/','tolerance/'}
 NEW_URLS={u for u,_ in NEW_PAGES}
@@ -25,7 +26,7 @@ urls=[('','2026-10-13')]+NEW_PAGES+[(u,'2026-10-20' if u in TIDIED else '2026-10
 print('sitemap',len(urls))
 (S/'robots.txt').write_text('User-agent: *\nAllow: /\n\nSitemap: https://dexmlabs.app/sitemap.xml\n')
 A='https://dexmlabs.app/'
-L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, a Chernobyl RBMK reactor simulator, an Apollo lunar landing game, and 3D print designs for the radio bench.','',
+L=['# DEXM Labs','','> Small free browser games and makes from a home lab in the UK: Skywave, a daily ham radio propagation puzzle, Lorenz, a daily cipher machine puzzle, Tolerance, a daily engineering puzzle, Flight Path, a daily path puzzle on a radar grid, Vector air traffic control, Orbit satellite missions, an Enigma machine simulator, a Chernobyl RBMK reactor simulator, an Apollo lunar landing game, and 3D print designs for the radio bench.','',
  '## Home','',f'- [DEXM Labs]({A}): Homepage with the games and the makes.','',
  '## Games','']+[f'- [{n}]({A}{u}): {d}' for u,n,d in GAME_PAGES]+['',
  '## Makes','',f'- [3D models]({A}makes/): Gallery of my {len(MK_MODELS)} printable 3D models, grouped by collection, each linking to its Cults3D page.']+[f'- [{m[2]}]({MK_C}{m[4]}): {m[6]} On Cults3D.' for m in MK_MODELS if MK_C+m[4] not in {u for u,*_ in MAKES}]+[f'- [{n}]({u}): {d} On {w}.' for u,n,d,w in MAKES]+[f'- [Buy me a coffee]({BMC}): Support the lab.','',

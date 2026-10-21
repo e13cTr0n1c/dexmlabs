@@ -48,7 +48,7 @@ doc('contact','Contact','CONTACT','How to contact DEXM Labs.',f'''
 ''')
 
 # ---------- points ----------
-PTS={'vector':100,'orbit':100,'tolerance':100,'skywave':100,'lorenz':100,'hard':250,'real':400,'reply':100,'practice':20,'per_day':3,'welcome':150}
+PTS={'vector':100,'orbit':100,'tolerance':100,'flightpath':100,'skywave':100,'lorenz':100,'hard':250,'real':400,'reply':100,'practice':20,'per_day':3,'welcome':150}
 doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them by finishing the daily games and spend them on hints. They stay in your browser.',f'''
 <p>Points are shared by every game on the site. You earn them by playing and spend them on hints. They live in this browser, so there's no account and nothing to buy.</p>
 <div class="points-now" data-points-ledger><p>Your points show here when JavaScript is on.</p></div>
@@ -57,6 +57,8 @@ doc('points','How points work','POINTS','Points on dexmlabs.app: you earn them b
 <tr><td>Finish today's Skywave round with at least one contact</td><td>{PTS['skywave']}</td></tr>
 <tr><td>Decode today's Lorenz</td><td>{PTS['lorenz']}</td></tr>
 <tr><td>Solve today's Tolerance</td><td>{PTS['tolerance']}</td></tr>
+<tr><td>Fly today's Flight Path</td><td>{PTS['flightpath']}</td></tr>
+<tr><td>Fly a Flight Path practice puzzle</td><td>{PTS['practice']}, up to {PTS['per_day']} a day</td></tr>
 <tr><td>Read today's Enigma intercept</td><td>100</td></tr>
 <tr><td>Reach orbit with today's rocket</td><td>100</td></tr>
 <tr><td>Land today's Apollo lunar module</td><td>100</td></tr>
