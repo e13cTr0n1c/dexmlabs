@@ -1,4 +1,4 @@
-import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS} from './config.mjs';
+import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
@@ -24,7 +24,7 @@ catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh t
 C.setTeams(teams); C.setHexTypes(hexTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
-const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.migrateHexTypes(s, idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
+const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.backfillVariants(C.migrateHexTypes(s, idx, table)) : C.emptyState(); } catch { return C.emptyState(); } };
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
 // Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
 const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
@@ -33,13 +33,18 @@ const wanted = () => C.wantedFor(now(), table, specials);
 const Tier = t => t[0].toUpperCase() + t.slice(1);
 const fmtTime = iso => new Date(iso).toLocaleString('en-GB', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'});
 
+// The variants caught of a type, as ticked chips, e.g. UH-60 Black Hawk and S-70 Firehawk on the H60 card.
+function variantChips(code) {
+  const v = (state.cards[code] && state.cards[code].variants) || [];
+  return v.length ? `<ul class="cc-vars" aria-label="Variants caught">${v.map(x => `<li><span aria-hidden="true">\u2713</span> ${esc(x)}</li>`).join('')}</ul>` : '';
+}
 function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
   const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}${entry.reg ? `<div><dt>Registration</dt><dd>${esc(entry.reg)}</dd></div>` : ''}${info.unknown && entry.hex ? `<div><dt>Hex</dt><dd>${esc(entry.hex.toUpperCase())}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
   const sq = entry && C.SQUAWKS[entry.sq] ? `<p class="cc-squawk"><b>Legendary squawk</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
   return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}" data-code="${esc(info.code)}"><div class="cc-in">
 <div class="cc-photo">${cardArt(info, tier, owned, eager, entry)}<div class="cc-top"><span class="cc-code">${esc(info.code)}</span><span class="cc-tier">${owned ? Tier(tier) : 'Locked'}</span></div>
 <div class="cc-title">${owned && info.unknown && entry && entry.origin ? `<span class="cc-origin">${esc(entry.origin)}</span>` : ''}${owned && entry && entry.team ? `<span class="cc-team">${esc(entry.team)}</span>` : ''}<h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p></div></div>
-${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${log}<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p></div>` : ''}</div></article>`;
+${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${variantChips(info.code)}${log}<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p></div>` : ''}</div></article>`;
 }
 
 function renderStats() {
@@ -101,33 +106,39 @@ async function submit(raw) {
     if (r.error) { miss(WORD[r.error] || 'NO SIGNAL'); return say((MSG[r.error] || MSG.offline)(label), 'bad'); }
     const live = C.pickLive(r.data);
     if (!live.ok) { miss(WORD[live.reason] || 'NOT FOUND'); return say((MSG[live.reason] || MSG.notfound)(label), 'bad'); }
-    if (!live.ac.type) await fillType(live.ac);
+    const hexdbType = await fillType(live.ac);
     if (!live.ac.type) live.ac.type = C.hexType(live.ac.hex);
-    const spot = spotPhoto(live.ac);
+    const photo = await spotPhoto(live.ac);
+    live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
     const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
     if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(live.ac.callsign), 'bad'); }
-    const photo = await spot; if (photo) res.entry.photo = photo;
+    if (photo) res.entry.photo = photo;
     state = res.state; save(); render();
-    say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
-    board(res.newType ? 'NEW TYPE' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
+    say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
+    board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
     reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(live.ac.callsign);
   } catch (e) {
     console.error(e); miss('TRY AGAIN'); say('Something went wrong with that one. Try again in a moment.', 'bad');
   } finally { setTimeout(() => { btn.disabled = false; btn.textContent = 'Catch it'; btn.removeAttribute('aria-busy'); }, 400); }
 }
 
-// The feed sometimes has no type. Ask hexdb.io, a free aircraft database, by the airframe's hex code before falling back.
+// Ask hexdb.io, a free aircraft database, by the airframe's hex code. Its 'Type' text names the variant
+// (UH-60L Blackhawk, S-70 I) and, when the feed has no type, it fills the type, registration and owner too.
 async function fillType(ac) {
-  if (!ac.hex) return;
+  if (!ac.hex) return '';
   try {
     const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 3000);
     const r = await fetch(`https://hexdb.io/api/v1/aircraft/${encodeURIComponent(ac.hex)}`, {signal: ctl.signal}); clearTimeout(timer);
-    if (!r.ok) return;
+    if (!r.ok) return '';
     const j = await r.json(), t = String(j.ICAOTypeCode || '').toUpperCase().trim();
-    if (/^[A-Z0-9]{2,4}$/.test(t)) ac.type = t;
-    if (!ac.reg && j.Registration) ac.reg = String(j.Registration).slice(0, 10);
-    if (!ac.op && j.RegisteredOwners) ac.op = String(j.RegisteredOwners).slice(0, 40);
-  } catch {}
+    if (ac.type && t && t !== ac.type) return ''; // a different type, so its variant text is not for this card
+    if (!ac.type) {
+      if (/^[A-Z0-9]{2,4}$/.test(t)) ac.type = t;
+      if (!ac.reg && j.Registration) ac.reg = String(j.Registration).slice(0, 10);
+      if (!ac.op && j.RegisteredOwners) ac.op = String(j.RegisteredOwners).slice(0, 40);
+    }
+    return String(j.Type || '').slice(0, 60);
+  } catch { return ''; }
 }
 
 // A photo of the exact airframe from Planespotters.net, if one exists. Never holds a catch up for long.
@@ -150,7 +161,7 @@ function reveal(res) {
   const dlg = $('#reveal'), {info, tier, entry} = res, reward = C.rewardFor(info, tier);
   $('#reveal-card').innerHTML = `<div class="flip tier-${tier}"><div class="face back" aria-hidden="true"><span>DEXM</span></div><div class="face front">${cardHTML(info, tier, entry, true, res.status === 'dupe' ? ` <span class="cc-count">+${res.gain} XP</span>` : '', true)}</div></div>`;
   $('#reveal-h').textContent = res.status === 'new' ? `New card: ${Tier(tier)}` : `Duplicate: +${res.gain} XP`;
-  $('#reveal-sub').textContent = res.wanted ? "That's today's wanted type. Double points!" : (res.status === 'new' ? `+${res.gain} points` : `You now have ${state.cards[info.code].count}`);
+  $('#reveal-sub').textContent = res.wanted ? "That's today's wanted type. Double points!" : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${NEW_VARIANT_BONUS} bonus` : (res.status === 'new' ? `+${res.gain} points` : `You now have ${state.cards[info.code].count}`);
   const rw = $('#reward'); rw.hidden = !reward;
   if (reward) { rw.querySelector('a').href = reward.url; rw.querySelector('a').textContent = 'Card reward: print this model'; rw.querySelector('code').textContent = reward.code; rw.querySelector('.rl').textContent = reward.label; }
   dlg.dataset.share = C.shareText(entry, info, tier); dlg.className = 'reveal tier-' + tier;
@@ -171,7 +182,7 @@ function exportFile() {
   a.href = URL.createObjectURL(blob); a.download = `callsign-catch-${C.dayKey(now())}.json`; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function importFile(file) {
-  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.migrateHexTypes(s, idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
+  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.backfillVariants(C.migrateHexTypes(s, idx, table)); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 

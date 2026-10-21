@@ -150,4 +150,48 @@ t('ICAO blocks: 4984EE is Czechia, the military sub range gives the military bum
   assert.equal(mil.entry.origin, 'Czechia military'); assert.equal(mil.tier, 'rare'); assert.equal(mil.entry.mil, 1);
   assert.equal(C.applyCatch(null, {hex: '4984ee', callsign: 'CEF21', type: '', alt: 8000, gs: 300, dbFlags: 1}, new Date(2026, 9, 21, 12), idx, table, null).entry.origin, 'Czechia military', 'dbFlags military');
 });
+const H60 = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-h60.json', import.meta.url))), SRC = H60.sources;
+t('variants: every source for Arthur\'s two H60s normalises to a short name', () => {
+  assert.equal(C.variantName(SRC.ae21cf.hexdb.Type), 'UH-60 Black Hawk'); assert.equal(C.variantName(SRC.a5fb7d.hexdb.Type), 'S-70 Firehawk');
+  assert.equal(C.variantFromPhotoLink(SRC.a5fb7d.planespotters.photos[0].link), 'S-70 Firehawk');
+  assert.equal(C.pickVariant({hexdb: '', photoLink: SRC.a5fb7d.planespotters.photos[0].link}), 'S-70 Firehawk', 'photo link is the fallback');
+  assert.equal(C.pickVariant({desc: 'SIKORSKY UH-60 Black Hawk'}), 'UH-60 Black Hawk', 'feed desc is the last fallback');
+  assert.equal(C.pickVariant({}), ''); assert.equal(C.variantShort('S-70 Firehawk'), 'Firehawk');
+  assert.equal(C.variantName('MH-60R Seahawk'), 'SH-60 Seahawk'); assert.equal(C.variantName('Boeing 777-236ER'), '777-200ER');
+  assert.equal(C.variantName('<script>'), ''); assert.ok(!/[\u2013\u2014]/.test(C.variantName('UH\u201360L')));
+});
+t('variants: one H60 card, Black Hawk then Firehawk gives New variant and +10, a repeat gives no bonus', () => {
+  const ac = id => ({...live(SRC[id].adsb), variant: C.pickVariant({hexdb: SRC[id].hexdb.Type})});
+  let r = C.applyCatch(null, ac('ae21cf'), new Date(2026, 9, 21, 17, 1), idx, table, null);
+  assert.equal(r.status, 'new'); assert.deepEqual(r.state.cards.H60.variants, ['UH-60 Black Hawk']); assert.equal(r.newVariant, false);
+  const p0 = r.state.points;
+  r = C.applyCatch(r.state, ac('a5fb7d'), new Date(2026, 9, 21, 17, 6), idx, table, null);
+  assert.equal(r.status, 'dupe'); assert.equal(r.newVariant, true); assert.equal(r.variant, 'S-70 Firehawk');
+  assert.equal(r.gain, 12 + 10, 'rare duplicate XP plus the variant bonus'); assert.equal(r.state.points, p0 + 22); assert.equal(Object.keys(r.state.cards).length, 1);
+  assert.deepEqual(r.state.cards.H60.variants, ['UH-60 Black Hawk', 'S-70 Firehawk']); assert.equal(r.state.cards.H60.count, 2);
+  r = C.applyCatch(r.state, {...ac('a5fb7d'), callsign: 'CFR607', hex: 'a5fb7e'}, new Date(2026, 9, 21, 17, 9), idx, table, null);
+  assert.equal(r.newVariant, false); assert.equal(r.gain, 12, 'a variant you have already earns no bonus');
+  const plain = C.applyCatch(null, live(), new Date(2026, 9, 21, 12), idx, table, null);
+  assert.deepEqual(plain.state.cards.A388.variants, []); assert.equal(plain.entry.var, undefined);
+});
+t('variants: old cards learn their first variant without a bonus', () => {
+  const s = C.emptyState(); s.cards.H60 = {code: 'H60', tier: 'rare', count: 1, first: {}, last: {}};
+  const r = C.applyCatch(s, {...live({flight: 'X1', hex: 'ae0001', t: 'H60'}), variant: 'S-70 Firehawk'}, new Date(2026, 9, 21, 12), idx, table, null);
+  assert.equal(r.newVariant, false); assert.deepEqual(r.state.cards.H60.variants, ['S-70 Firehawk']);
+});
+t('validateImport and backfill: Arthur\'s real export keeps every card and point, H60 learns Firehawk', () => {
+  const raw = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-hangar.json', import.meta.url)));
+  const s = C.backfillVariants(C.migrateHexTypes(C.validateImport(JSON.parse(JSON.stringify(raw))), idx, table));
+  assert.equal(s.points, raw.points); assert.equal(s.xp, raw.xp); assert.equal(s.log.length, raw.log.length);
+  assert.deepEqual(Object.keys(s.cards).sort(), Object.keys(raw.cards).sort());
+  for (const k of Object.keys(raw.cards)) assert.equal(s.cards[k].count, raw.cards[k].count, k);
+  assert.deepEqual(s.cards.H60.variants, ['S-70 Firehawk'], 'the Black Hawk catch carries no variant data, the Firehawk photo link does');
+  assert.equal(s.log.find(e => e.hex === 'a5fb7d').var, 'S-70 Firehawk');
+  const again = C.backfillVariants(C.validateImport(JSON.parse(JSON.stringify(s))));
+  assert.deepEqual(again.cards, s.cards, 'a save with variants round trips, and backfill twice changes nothing');
+  const bad = C.validateImport({...JSON.parse(JSON.stringify(s)), cards: {...s.cards, H60: {...s.cards.H60, variants: 'oops'}}});
+  assert.deepEqual(bad.cards.H60.variants, [], 'a malformed variants list is repaired, not fatal');
+  const mixed = C.validateImport({...JSON.parse(JSON.stringify(s)), cards: {...s.cards, H60: {...s.cards.H60, variants: ['UH-60 Black Hawk', 5, null, 'UH-60 Black Hawk']}}});
+  assert.deepEqual(mixed.cards.H60.variants, ['UH-60 Black Hawk']);
+});
 console.log(n + ' passed');

@@ -23,14 +23,21 @@ const AC = {
   BTLE21: {hex: '4984ee', flight: 'BTLE21  ', alt_baro: 8000, gs: 300, seen: 1},
   CZM1: {hex: '498421', flight: 'CZM1    ', alt_baro: 9000, gs: 320, seen: 1},
   RRR2: {hex: '43c9ff', flight: 'RRR2    ', r: 'ZK010', t: 'HAWK', alt_baro: 5000, gs: 320, dbFlags: 1, seen: 1}};
+// Arthur's two H60 catches (tests/fixtures/arthur-h60.json): a US Army Black Hawk and a Cal Fire Firehawk.
+const H60 = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-h60.json', import.meta.url))).sources;
+AC.R26863 = H60.ae21cf.adsb; AC.CFR606 = H60.a5fb7d.adsb;
 let calls = 0;
 async function open(viewport) {
   const ctx = await browser.newContext({viewport, deviceScaleFactor: 1, acceptDownloads: true, colorScheme: process.env.SCHEME || 'dark'}); const page = await ctx.newPage(), errors = [];
-  page.on('console', m => { if (m.type() === 'error' && !/cloudflareinsights|ERR_FAILED/.test(m.text())) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
+  // hexdb.io answers 404 for airframes it does not know; the page asks it on every catch for the variant, so that is expected.
+  page.on('console', m => { if (m.type() === 'error' && !/cloudflareinsights|ERR_FAILED/.test(m.text()) && !/hexdb\.io/.test((m.location() || {}).url || '')) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
   await ctx.route(u => !u.href.startsWith(ORIGIN), r => {
     const u = r.request().url();
     if (/raw\.githubusercontent\.com|githack\.com/.test(u)) return r.continue();
+    const hx = u.match(/hexdb\.io\/api\/v1\/aircraft\/([0-9a-f]{6})/i);
+    if (hx && H60[hx[1].toLowerCase()]) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60[hx[1].toLowerCase()].hexdb)});
     if (/hexdb\.io/.test(u)) return r.fulfill({status: 404, headers: {'access-control-allow-origin': '*'}, body: ''});
+    if (/workers\.dev\/photos\/hex\/a5fb7d$/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60.a5fb7d.planespotters)});
     if (/workers\.dev\/board/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: '{"today":[],"alltime":[]}'});
     // The Worker's Planespotters relay: a photo for the A380 by hex, nothing for the rest.
     if (/workers\.dev\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
@@ -109,6 +116,14 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     await page.fill('#cs', 'NOPE3'); await page.click('#go'); await page.waitForTimeout(100);
     ok(/One lookup every/.test(await page.textContent('#status')), 'submits are rate limited');
   }
+  if (label === 'desktop') {
+    // Arthur's real export from before variants: every card and point kept, and the Firehawk is learnt from its photo link.
+    await page.setInputFiles('#import', new URL('fixtures/arthur-hangar.json', import.meta.url).pathname);
+    await page.waitForFunction(() => /Imported/.test(document.getElementById('status').textContent));
+    const ai = await page.evaluate(() => window.CallsignCatch.state()), raw = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-hangar.json', import.meta.url)));
+    ok(ai.points === raw.points && Object.keys(ai.cards).length === Object.keys(raw.cards).length && JSON.stringify(ai.cards.H60.variants) === '["S-70 Firehawk"]', 'Arthur\'s old export imports with every card and point, H60 backfilled with Firehawk');
+    await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
+  }
   ok(errors.length === 0, `${label}: no console errors ${JSON.stringify(errors)}`);
   await go(page, 'BTLE21'); ok(await page.$eval('#reveal-card .cc-card', c => c.dataset.code === 'L39') && /L-39NG/.test(await page.textContent('#reveal-card')), `${label}: blank type 4984EE becomes the L-39 card`); await closeReveal(page);
   await go(page, 'CZM1'); ok(await page.textContent('#reveal-card .cc-origin') === 'Czechia military', `${label}: unidentified military jet shows its country`); await closeReveal(page);
@@ -123,6 +138,16 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     if (cs === 'SQK1') ok(/Legendary squawk/.test(await page.textContent('#reveal-card .cc-squawk')) && await page.$eval('#reveal-card .cc-card', c => c.classList.contains('sq')), `${label}: squawk badge shows on the card`);
     await closeReveal(page);
   }
+  // Variants: the Black Hawk makes the H60 card, the Firehawk adds a variant with a +10 bonus, not a second card.
+  await go(page, 'R26863'); ok(await page.$$eval('#reveal-card .cc-vars li', l => l.map(x => x.textContent.trim()).join('|')) === '\u2713 UH-60 Black Hawk', `${label}: Black Hawk card shows its variant chip`); await closeReveal(page);
+  const pts0 = +(await page.evaluate(() => window.CallsignCatch.state().points));
+  const vs = await go(page, 'CFR606');
+  ok(/New variant: Firehawk/.test(vs) && /New variant: Firehawk/.test(await page.textContent('#reveal-sub')) && await boardText() === 'NEW VARIANT', `${label}: catch screen says New variant: Firehawk (${vs})`);
+  const st2 = await page.evaluate(() => window.CallsignCatch.state());
+  ok(st2.points === pts0 + 22 && st2.cards.H60.count === 2 && !Object.keys(st2.cards).some(k => k !== 'H60' && /60/.test(k)) && JSON.stringify(st2.cards.H60.variants) === '["UH-60 Black Hawk","S-70 Firehawk"]', `${label}: one H60 card, two variants, rare XP plus the +10 bonus`);
+  ok(await page.$$eval('#hangar .cc-card[data-code="H60"] .cc-vars li', l => l.length) === 2, `${label}: hangar H60 card ticks both variants`);
+  ok(!/[\u2013\u2014]/.test(await page.textContent('#reveal')), `${label}: no dashes in the variant copy`);
+  await closeReveal(page);
   ok(await page.textContent('#stat-moments') === '1', `${label}: rare moments tally counts the squawk`);
   await waitImgs();
   const hang = await imgsOk('#hangar .cc-card:not(.empty)');

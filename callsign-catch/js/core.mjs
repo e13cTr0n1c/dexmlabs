@@ -1,5 +1,5 @@
 // Pure game rules: no DOM, no network. Shared by the page and the unit tests.
-import {POINTS, DUPLICATE_XP, NIGHT_FROM, NIGHT_TO, NEW_TYPE_BONUS} from './config.mjs';
+import {POINTS, DUPLICATE_XP, NIGHT_FROM, NIGHT_TO, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
 export const TIERS = ['common', 'uncommon', 'rare', 'legendary'];
 export const STORE_KEY = 'callsign:collection';
 
@@ -107,11 +107,55 @@ export function pickLive(resp) {
   if (!list.length) return {ok: false, reason: 'notfound'};
   const now = list.find(a => a.alt_baro !== 'ground' && typeof a.alt_baro === 'number' && (a.seen == null || a.seen < 60));
   if (!now) return {ok: false, reason: list.some(a => a.alt_baro === 'ground') ? 'ground' : 'stale', ac: list[0]};
-  return {ok: true, ac: {hex: now.hex || '', callsign: String(now.flight || '').trim() || String(now.r || '').trim(), reg: String(now.r || '').trim(), type: String(now.t || '').trim().toUpperCase(), op: String(now.ownOp || now.operator || '').trim(), alt: Math.round(now.alt_baro), gs: now.gs != null ? Math.round(now.gs) : null, dbFlags: now.dbFlags | 0, category: String(now.category || ''), squawk: String(now.squawk || '')}};
+  return {ok: true, ac: {hex: now.hex || '', callsign: String(now.flight || '').trim() || String(now.r || '').trim(), reg: String(now.r || '').trim(), type: String(now.t || '').trim().toUpperCase(), op: String(now.ownOp || now.operator || '').trim(), alt: Math.round(now.alt_baro), gs: now.gs != null ? Math.round(now.gs) : null, dbFlags: now.dbFlags | 0, category: String(now.category || ''), desc: String(now.desc || '').slice(0, 60), squawk: String(now.squawk || '')}};
 }
 
 export function dayKey(date) { const d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 export function emptyState() { return {v: 1, cards: {}, log: [], days: {}, xp: 0, points: 0, night: 0, wantedHits: {}}; }
+
+// Variants within one ICAO type, e.g. H60 covers the UH-60 Black Hawk and the S-70 Firehawk.
+// Sources, best first: hexdb.io 'Type' (e.g. 'UH-60L Blackhawk', 'S-70 I'), the Planespotters photo link slug
+// (e.g. '.../n485df-cal-fire-sikorsky-s-70i-firehawk'), then the feed's 'desc'. Names are cut to a short family name.
+const VARIANTS = [
+  [/FIRE ?HAWK|^S-?70 ?I\b|^S-?70I\b/, 'S-70 Firehawk'], [/^S-?70 ?A|^S-?70$|^S-?70 /, 'S-70 Black Hawk'],
+  [/SEA ?HAWK|^[SM]H-?60/, 'SH-60 Seahawk'], [/JAY ?HAWK|^HH-?60J/, 'HH-60J Jayhawk'],
+  [/JOLLY GREEN|^HH-?60W/, 'HH-60W Jolly Green II'], [/PAVE ?HAWK|^HH-?60G?\b/, 'HH-60 Pave Hawk'], [/BLACK ?HAWK|^UH-?60|^EH-?60|^VH-?60/, 'UH-60 Black Hawk']];
+export function variantName(raw) {
+  let v = String(raw || '').toUpperCase().replace(/[_\u2013\u2014]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!v || v.length > 60) return '';
+  v = v.replace(/^(SIKORSKY|PZL MIELEC|BOEING|AIRBUS|BELL|LEONARDO|AGUSTAWESTLAND|EUROCOPTER|LOCKHEED MARTIN|LOCKHEED|EMBRAER|CESSNA|PIPER|BEECHCRAFT|BEECH)( ?\/ ?[A-Z ]+?)? /, '');
+  for (const [re, name] of VARIANTS) if (re.test(v)) return name;
+  v = v.replace(/^([A-Z]*\d{3})-(\d)\d{2}([A-Z]*)\b/, '$1-$200$3'); // customer codes: 777-236ER is a 777-200ER
+  if (!/^[A-Z0-9][A-Z0-9 .+\/-]{1,23}$/.test(v)) return '';
+  return v.split(' ').map(w => /\d/.test(w) || w.length <= 3 ? w : w[0] + w.slice(1).toLowerCase()).join(' ');
+}
+// The variant text hidden in a Planespotters photo link: the slug after the registration and operator.
+export function variantFromPhotoLink(link) {
+  const m = String(link || '').match(/planespotters\.net\/photo\/\d+\/([a-z0-9-]+)/); if (!m) return '';
+  const slug = m[1], hit = slug.match(/(?:^|-)((?:sikorsky|pzl-mielec)-.*)$/);
+  if (!hit) return '';
+  const words = hit[1].replace(/^(sikorsky|pzl-mielec)-/, '').split('-');
+  for (let i = 0; i < words.length; i++) { const v = variantName(words.slice(i).join(' ')); if (v && VARIANTS.some(x => x[1] === v)) return v; }
+  return '';
+}
+// The short word used in the catch message: 'S-70 Firehawk' becomes 'Firehawk'.
+export const variantShort = v => { const w = String(v || '').split(' '); return w.length > 1 && /\d/.test(w[0]) ? w.slice(1).join(' ') : String(v || ''); };
+export function pickVariant({hexdb, desc, photoLink} = {}) {
+  return variantName(hexdb) || variantFromPhotoLink(photoLink) || variantName(desc);
+}
+const cleanVariants = v => Array.isArray(v) ? [...new Set(v.filter(x => typeof x === 'string' && x && x.length <= 40))] : [];
+// Older saves have no variants: rebuild them from the log entries that carry one (entry.var or a photo link).
+export function backfillVariants(state) {
+  const s = state; if (!s || !s.cards) return s;
+  for (const c of Object.values(s.cards)) c.variants = cleanVariants(c.variants);
+  for (const e of [...(s.log || [])].reverse()) {
+    if (!e || !s.cards[e.type]) continue;
+    const v = e.var || variantFromPhotoLink(e.photo && e.photo.link); if (!v) continue;
+    if (!e.var) e.var = v;
+    const c = s.cards[e.type]; if (!c.variants.includes(v)) c.variants.push(v);
+  }
+  return s;
+}
 
 // Record a live aircraft. Returns {status: 'new' | 'dupe' | 'today', ...}.
 export function applyCatch(state, ac, when, idx, table, wanted) {
@@ -125,17 +169,24 @@ export function applyCatch(state, ac, when, idx, table, wanted) {
   if (info.unknown) { const o = originOf(ac); if (o) entry.origin = o; }
   const team = teamFor(ac); if (team) entry.team = team.name;
   if (SQUAWKS[ac.squawk]) entry.sq = ac.squawk;
+  if (ac.variant) entry.var = String(ac.variant).slice(0, 40);
   const had = s.cards[code], isWanted = !!(wanted && wanted.code === code && !s.wantedHits[day]);
   let gain = had ? DUPLICATE_XP[tier] : POINTS[tier];
   if (isWanted) { gain *= 2; s.wantedHits[day] = code; }
   const newType = !!(info.unknown && !had);
   if (newType) gain += NEW_TYPE_BONUS;
+  // A first time variant of a type you already own earns a small bonus. Cards from before variants were tracked
+  // (no variants recorded yet) just learn the variant, since it may be the one already caught.
+  if (had) had.variants = cleanVariants(had.variants);
+  const newVariant = !!(had && entry.var && had.variants.length && !had.variants.includes(entry.var));
+  if (newVariant) gain += NEW_VARIANT_BONUS;
+  if (had && entry.var && !had.variants.includes(entry.var)) had.variants.push(entry.var);
   if (had) { had.count++; had.last = entry; if (TIERS.indexOf(tier) > TIERS.indexOf(had.tier)) had.tier = tier; s.xp += gain; }
-  else s.cards[code] = {code, tier, count: 1, first: entry, last: entry};
+  else s.cards[code] = {code, tier, count: 1, first: entry, last: entry, variants: entry.var ? [entry.var] : []};
   s.points += gain; entry.gain = gain;
   if (night) s.night++;
   s.days[day].push(key); s.log.unshift(entry); s.log = s.log.slice(0, 500);
-  return {status: had ? 'dupe' : 'new', state: s, entry, info, tier, gain, wanted: isWanted, newType};
+  return {status: had ? 'dupe' : 'new', state: s, entry, info, tier, gain, wanted: isWanted, newType, newVariant, variant: entry.var || ''};
 }
 
 // Sets for the hangar. Each has a list of type codes (silhouettes until caught) or a rule.
@@ -197,7 +248,7 @@ export function validateImport(obj) {
   if (s.cards['????']) { const o = s.cards['????'], n = s.cards.UNKFW; delete s.cards['????'];
     if (o && typeof o === 'object') s.cards.UNKFW = n ? {...n, count: (n.count | 0) + (o.count | 0)} : {...o, code: 'UNKFW'}; }
   s.log = s.log.map(e => e && e.type === '????' ? {...e, type: 'UNKFW'} : e);
-  for (const [k, c] of Object.entries(s.cards)) { if (!c || typeof c !== 'object' || !(c.count >= 1)) { delete s.cards[k]; continue; } if (!TIERS.includes(c.tier)) c.tier = 'uncommon'; if (!/^[A-Z0-9?]{2,8}$/.test(k)) { delete s.cards[k]; } } // repair, never throw a whole hangar away over one odd card
+  for (const [k, c] of Object.entries(s.cards)) { if (!c || typeof c !== 'object' || !(c.count >= 1)) { delete s.cards[k]; continue; } if (!TIERS.includes(c.tier)) c.tier = 'uncommon'; if (!/^[A-Z0-9?]{2,8}$/.test(k)) { delete s.cards[k]; continue; } if ('variants' in c) c.variants = cleanVariants(c.variants); } // repair, never throw a whole hangar away over one odd card
   s.points = +s.points || 0; s.xp = +s.xp || 0; s.night = +s.night || 0; return s;
 }
 // Reward only after a legendary catch of that type, and only when it has a code and a link.

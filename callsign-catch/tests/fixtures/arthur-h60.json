@@ -1,0 +1,135 @@
+{
+ "note": "Arthur's two H60 catches from his hangar export (21 Oct 2026), with what each source returned for them that day.",
+ "log": [
+  {
+   "t": "2026-10-21T16:06:28.524Z",
+   "cs": "CFR606",
+   "reg": "N485DF",
+   "hex": "a5fb7d",
+   "type": "H60",
+   "op": "",
+   "alt": 2625,
+   "gs": 148,
+   "tier": "rare",
+   "night": false,
+   "cat": "heli",
+   "gain": 12,
+   "photo": {
+    "src": "https://t.plnspttrs.net/47787/1641910_9172f4d56e_280.jpg",
+    "by": "MILSPOT",
+    "link": "https://www.planespotters.net/photo/1641910/n485df-cal-fire-sikorsky-s-70i-firehawk?utm_source=api"
+   }
+  },
+  {
+   "t": "2026-10-21T16:01:47.151Z",
+   "cs": "R26863",
+   "reg": "00-26863",
+   "hex": "ae21cf",
+   "type": "H60",
+   "op": "",
+   "alt": 2625,
+   "gs": 115,
+   "tier": "legendary",
+   "night": false,
+   "cat": "heli",
+   "mil": 1,
+   "gain": 150
+  }
+ ],
+ "card": {
+  "code": "H60",
+  "tier": "legendary",
+  "count": 2,
+  "first": {
+   "t": "2026-10-21T16:01:47.151Z",
+   "cs": "R26863",
+   "reg": "00-26863",
+   "hex": "ae21cf",
+   "type": "H60",
+   "op": "",
+   "alt": 2625,
+   "gs": 115,
+   "tier": "legendary",
+   "night": false,
+   "cat": "heli",
+   "mil": 1,
+   "gain": 150
+  },
+  "last": {
+   "t": "2026-10-21T16:06:28.524Z",
+   "cs": "CFR606",
+   "reg": "N485DF",
+   "hex": "a5fb7d",
+   "type": "H60",
+   "op": "",
+   "alt": 2625,
+   "gs": 148,
+   "tier": "rare",
+   "night": false,
+   "cat": "heli",
+   "gain": 12,
+   "photo": {
+    "src": "https://t.plnspttrs.net/47787/1641910_9172f4d56e_280.jpg",
+    "by": "MILSPOT",
+    "link": "https://www.planespotters.net/photo/1641910/n485df-cal-fire-sikorsky-s-70i-firehawk?utm_source=api"
+   }
+  }
+ },
+ "sources": {
+  "ae21cf": {
+   "hexdb": {
+    "ModeS": "AE21CF",
+    "Registration": "00-26863",
+    "Manufacturer": "Sikorsky",
+    "ICAOTypeCode": "H60",
+    "Type": "UH-60L Blackhawk",
+    "RegisteredOwners": "United States Army"
+   },
+   "planespotters": {
+    "photos": []
+   },
+   "adsb": {
+    "hex": "ae21cf",
+    "flight": "R26863  ",
+    "r": "00-26863",
+    "t": "H60",
+    "dbFlags": 1,
+    "alt_baro": 2150,
+    "gs": 117.1,
+    "category": "A7",
+    "seen": 0.1
+   }
+  },
+  "a5fb7d": {
+   "hexdb": {
+    "ModeS": "A5FB7D",
+    "Registration": "N485DF",
+    "Manufacturer": "Sikorsky / PZL Mielec",
+    "ICAOTypeCode": "H60",
+    "Type": "S-70 I",
+    "RegisteredOwners": "Cal Fire"
+   },
+   "planespotters": {
+    "photos": [
+     {
+      "thumbnail_large": {
+       "src": "https://t.plnspttrs.net/47787/1641910_9172f4d56e_280.jpg"
+      },
+      "link": "https://www.planespotters.net/photo/1641910/n485df-cal-fire-sikorsky-s-70i-firehawk?utm_source=api",
+      "photographer": "MILSPOT"
+     }
+    ]
+   },
+   "adsb": {
+    "hex": "a5fb7d",
+    "flight": "CFR606  ",
+    "r": "N485DF",
+    "t": "H60",
+    "alt_baro": 2625,
+    "gs": 148,
+    "category": "A7",
+    "seen": 0.5
+   }
+  }
+ }
+}

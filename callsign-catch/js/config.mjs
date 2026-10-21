@@ -13,3 +13,5 @@ export const NIGHT_FROM = 0, NIGHT_TO = 5; // Night owl hours, on the player's c
 export const SPOT_API = LOOKUP_API ? LOOKUP_API + '/photos' : '';
 // A one off bonus the first time you catch a type that is not in the table yet.
 export const NEW_TYPE_BONUS = 25;
+// A small bonus the first time you catch a new variant of a type you already own, such as a Firehawk after a Black Hawk.
+export const NEW_VARIANT_BONUS = 10;
