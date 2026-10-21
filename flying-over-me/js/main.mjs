@@ -9,7 +9,7 @@ export const RADAR_PACK_URL = '';
 // adsb.lol and airplanes.live send no CORS headers, so the page asks my relay Worker instead
 // (GET {PROXY_API}/point/{lat}/{lon}/{radius}, see callsign-worker). Until it is live this stays empty and
 // the radar shows demo planes with a note. When you set it, add its host to connect-src in index.html.
-export const PROXY_API = '';
+export const PROXY_API = 'https://callsign-catch.thearthurjones.workers.dev';
 const PROXY = (window.__FOM_PROXY_TEST || PROXY_API).replace(/\/$/, '');
 const FEED = {name: 'airplanes.live and adsb.lol', site: 'https://airplanes.live/', url: (la, lo, nm) => `${PROXY}/point/${la}/${lo}/${nm}`};
 const CELESTRAK = g => `https://celestrak.org/NORAD/elements/gp.php?GROUP=${g}&FORMAT=tle`;
