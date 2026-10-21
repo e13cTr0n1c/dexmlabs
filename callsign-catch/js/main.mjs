@@ -4,7 +4,7 @@ import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
 import {countTo, sparks, buzz, holo, calm} from './fx.mjs';
 import {clack, chime, thud, soundOn, setSound} from './sound.mjs';
-import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot} from './art.mjs';
+import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot, nextArt, upgradeArt} from './art.mjs';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -41,9 +41,11 @@ function variantChips(code) {
 function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
   const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}${entry.reg ? `<div><dt>Registration</dt><dd>${esc(entry.reg)}</dd></div>` : ''}${info.unknown && entry.hex ? `<div><dt>Hex</dt><dd>${esc(entry.hex.toUpperCase())}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
   const sq = entry && C.SQUAWKS[entry.sq] ? `<p class="cc-squawk"><b>Legendary squawk</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
-  return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}" data-code="${esc(info.code)}"><div class="cc-in">
+  const card = owned && state.cards[info.code], multi = !!(card && card.count > 1 && !extra.includes('XP'));
+  const more = multi ? `<span class="cc-more">See all ${card.count} catches</span>` : '';
+  return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}${multi ? ' multi' : ''}" data-code="${esc(info.code)}"${multi ? ` tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(info.name)}, see all ${card.count} catches"` : ''}><div class="cc-in">
 <div class="cc-photo">${cardArt(info, tier, owned, eager, entry)}<div class="cc-top"><span class="cc-code">${esc(info.code)}</span><span class="cc-tier">${owned ? Tier(tier) : 'Locked'}</span></div>
-<div class="cc-title">${owned && info.unknown && entry && entry.origin ? `<span class="cc-origin">${esc(entry.origin)}</span>` : ''}${owned && entry && entry.team ? `<span class="cc-team">${esc(entry.team)}</span>` : ''}<h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p></div></div>
+<div class="cc-title">${owned && info.unknown && entry && entry.origin ? `<span class="cc-origin">${esc(entry.origin)}</span>` : ''}${owned && entry && entry.team ? `<span class="cc-team">${esc(entry.team)}</span>` : ''}<h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p>${more}</div></div>
 ${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${variantChips(info.code)}${log}<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p></div>` : ''}</div></article>`;
 }
 
@@ -72,7 +74,39 @@ function renderHangar() {
   $('#set-all').setAttribute('aria-pressed', filter === 'all'); $('#set-all').classList.toggle('on', filter === 'all');
   $('#logbook').innerHTML = state.log.slice(0, 12).map(e => `<li><span class="lt tier-${e.tier}">${esc(e.type)}</span> ${esc(e.cs)} <span class="muted">${esc(fmtTime(e.t))} · ${esc(e.alt.toLocaleString('en-GB'))} ft · +${e.gain || 0}</span></li>`).join('') || '<li class="muted">Your catches will be logged here.</li>';
 }
-function render() { renderStats(); renderWanted(); renderHangar(); }
+// Commons photos are looked up after the cards are drawn, so a slow or failed lookup never holds a card up.
+const wikiStore = (() => { try { return localStorage; } catch { return null; } })();
+const upgrade = el => upgradeArt(el, fetch, wikiStore).catch(() => {});
+function render() { renderStats(); renderWanted(); renderHangar(); upgrade($('#hangar')); upgrade($('#wanted')); }
+// A picture that fails to load (offline, Planespotters down) steps down the chain instead of leaving a gap.
+document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.closest('.art-slot')) nextArt(t, code => C.typeInfo(code, idx, table), upgrade); }, true);
+
+// Every catch of one type, each with its own photo, callsign, registration, variant and date.
+function catchesOf(code) { return state.log.filter(e => e && e.type === code); }
+function catchItem(info, e, i) {
+  const row = (k, v) => v ? `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>` : '';
+  return `<li class="catch-item tier-${esc(e.tier || info.tier)}" data-i="${i}"><div class="cc-in"><div class="cc-photo">${cardArt(info, e.tier || info.tier, true, false, e)}</div>${photoCredit(info, e, true)}<dl class="log">${row('Callsign', e.cs)}${row('Registration', e.reg)}${row('Variant', e.var)}${row('Caught', fmtTime(e.t))}${e.op ? row('Operator', e.op) : ''}${e.hex ? row('Hex', e.hex.toUpperCase()) : ''}</dl></div></li>`;
+}
+const asked = new Set(); // airframes already looked up this visit
+function openDetail(code) {
+  const card = state.cards[code]; if (!card) return;
+  const info = C.typeInfo(code, idx, table), list = catchesOf(code), dlg = $('#detail');
+  $('#detail-h').textContent = `${info.name}: ${card.count} catches`;
+  const missing = card.count - list.length;
+  $('#detail-list').innerHTML = list.map((e, i) => catchItem(info, e, i)).join('');
+  $('#detail-note').textContent = missing > 0 ? `${missing} earlier ${missing === 1 ? 'catch was' : 'catches were'} made before I kept the details of each one, so ${missing === 1 ? 'it is' : 'they are'} counted on the card but not listed here.` : '';
+  dlg.dataset.code = code;
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  upgrade($('#detail-list'));
+  // Older catches saved no photo: look the airframe up now by its hex or registration and keep what turns up.
+  list.forEach(async (e, i) => {
+    const k = e.hex || e.reg; if (e.photo || !k || asked.has(k)) return; asked.add(k);
+    const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (!ph) return;
+    e.photo = ph; save();
+    const li = $(`#detail-list [data-i="${i}"]`); if (ph && li && dlg.dataset.code === code) li.outerHTML = catchItem(info, e, i);
+  });
+}
+const closeDetail = () => { const d = $('#detail'); d.close ? d.close() : d.removeAttribute('open'); };
 
 // The departures board above the status line: the callsign while I check it, then the result in one or two words.
 const board = (word, opts = {}) => flapTo($('#flapboard'), word, {min: 12, onTick: clack, ...opts});
@@ -166,6 +200,7 @@ function reveal(res) {
   if (reward) { rw.querySelector('a').href = reward.url; rw.querySelector('a').textContent = 'Card reward: print this model'; rw.querySelector('code').textContent = reward.code; rw.querySelector('.rl').textContent = reward.label; }
   dlg.dataset.share = C.shareText(entry, info, tier); dlg.className = 'reveal tier-' + tier;
   if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  upgrade($('#reveal-card'));
   requestAnimationFrame(() => requestAnimationFrame(() => dlg.classList.add('go')));
   // The pack shakes, flips at about 0.5s and the sparks fly as the face lands.
   clearTimeout(reveal.t); reveal.t = setTimeout(() => sparks($('#sparks'), getComputedStyle(dlg).getPropertyValue('--c').trim() || '#d6ff00', entry.sq ? 'legendary' : tier), calm() ? 0 : 900);
@@ -191,6 +226,10 @@ sb.addEventListener('click', () => { setSound(!soundOn()); showSound(); if (soun
 $('#set-all').addEventListener('click', () => { filter = 'all'; renderHangar(); });
 $('#sets').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { filter = filter === b.dataset.set ? 'all' : b.dataset.set; renderHangar(); } });
 $('#close').addEventListener('click', () => { const d = $('#reveal'); d.classList.remove('go'); d.close ? d.close() : d.removeAttribute('open'); });
+$('#hangar').addEventListener('click', e => { if (e.target.closest('a')) return; const c = e.target.closest('.cc-card.multi'); if (c) openDetail(c.dataset.code); });
+$('#hangar').addEventListener('keydown', e => { const c = e.target.closest && e.target.closest('.cc-card.multi'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(c.dataset.code); } });
+$('#detail-close').addEventListener('click', closeDetail);
+$('#detail').addEventListener('click', e => { if (e.target === $('#detail')) closeDetail(); });
 $('#share').addEventListener('click', () => share($('#reveal').dataset.share));
 $('#export').addEventListener('click', exportFile);
 $('#import').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
@@ -208,4 +247,4 @@ const deep = new URLSearchParams(location.search).get('cs');
 if (deep && C.parseQuery(deep)) { $('#cs').value = deep.toUpperCase().slice(0, 10); say(`Spotted overhead: ${deep.toUpperCase().slice(0, 10)}. Press Catch it to check it's flying.`, 'wait'); }
 // resetGap is for the browser test only: it clears the gap between lookups (or with -1 sets it to now).
 ready = true; board('READY', {instant: true});
-window.CallsignCatch = {state: () => state, submit, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};
+window.CallsignCatch = {state: () => state, submit, openDetail, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};

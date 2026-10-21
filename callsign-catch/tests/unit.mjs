@@ -201,3 +201,48 @@ t('a promoted type upgrades saved cards and tops up points', () => {
   C.upgradeTiers(s, idx, table); assert.equal(s.points, 150, 'only once');
 });
 t('NASA research aircraft are at least rare', () => { assert.equal(C.tierFor({callsign: 'NASA946', r: 'N946NA'}, {tier: 'common'}), 'rare'); assert.equal(C.tierFor({callsign: 'NASA859', r: 'N859NA'}, idx.get('X59')), 'legendary'); });
+
+// Card art fallback chain: Planespotters, self hosted photo, live Commons, render, silhouette. Never blank.
+const A = await import('../js/art.mjs'), FX = await import('../js/fx.mjs');
+const artJson = JSON.parse(fs.readFileSync(new URL('art.json', dir))), photosJson = JSON.parse(fs.readFileSync(new URL('photos.json', dir)));
+A.setArtManifest(artJson.codes); A.setPhotos(photosJson.photos);
+t('art chain: the stages come in order and every type owned shows an image or a silhouette', () => {
+  const spot = {photo: {src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A'}};
+  assert.deepEqual(A.ART_CHAIN, ['spot', 'photo', 'commons', 'render', 'silhouette']);
+  assert.deepEqual(A.artStages(idx.get('A320'), spot), ['spot', 'photo', 'commons', 'render', 'silhouette']);
+  assert.deepEqual(A.artStages(idx.get('X59'), null), ['commons', 'render', 'silhouette'], 'X-59 has a render now');
+  assert.ok(fs.existsSync(new URL('../img/cards/X59.webp', import.meta.url)));
+  const x = A.cardArt(idx.get('X59'), 'legendary', true, true, null);
+  assert.match(x, /data-stage="render"[^>]*X59\.webp|X59\.webp[^>]*data-stage="render"/); assert.match(x, /data-wiki="Lockheed Martin X-59 QueSST"/); assert.match(x, /data-next="silhouette"/);
+  const sp = A.cardArt(idx.get('A320'), 'common', true, true, spot); assert.match(sp, /data-stage="spot"/); assert.match(sp, /data-next="photo commons render silhouette"/); assert.ok(!/data-wiki/.test(sp));
+  for (const ty of table.types) { const h = A.cardArt(C.typeInfo(ty.code, idx, table), ty.tier, true, false, {}); assert.ok(/<img |<svg /.test(h), ty.code); }
+  for (const code of artJson.codes) assert.ok(fs.existsSync(new URL(`../img/cards/${code}.webp`, import.meta.url)), code);
+  assert.equal(A.wikiTitle({code: 'UNKFW', unknown: true, name: 'x'}), '');
+  assert.equal(A.wikiTitle({code: 'Q', source: 'https://en.wikipedia.org/wiki/Sikorsky_UH-60_Black_Hawk', name: 'x'}), 'Sikorsky UH-60 Black Hawk');
+});
+const mem = () => { const m = new Map(); return {getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, v), m}; };
+const res = j => ({ok: true, status: 200, json: async () => j});
+const wikiOK = async u => /en\.wikipedia/.test(u) ? res({query: {pages: {1: {pageimage: 'X-59_in_flight.jpg'}}}}) : res({query: {pages: {'-1': {imageinfo: [{thumburl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/X-59_in_flight.jpg/640px-X-59_in_flight.jpg', extmetadata: {Artist: {value: '<a href="x">NASA</a>'}, LicenseShortName: {value: 'Public domain'}, LicenseUrl: {value: ''}}}]}}}});
+{
+  const st = mem(); let p = await A.commonsPhoto('Lockheed Martin X-59 QueSST', wikiOK, st);
+  assert.ok(p && /^https:\/\/upload\.wikimedia\.org\//.test(p.src) && p.author === 'NASA' && p.licence === 'Public domain' && /commons\.wikimedia\.org\/wiki\/File/.test(p.source));
+  let calls = 0; p = await A.commonsPhoto('Lockheed Martin X-59 QueSST', async () => { calls++; throw new Error('offline'); }, st); assert.ok(p && calls === 0, 'cached for a week');
+  // A local, non free enwiki file is missing on Commons, so it is never used.
+  const st2 = mem(); p = await A.commonsPhoto('Some type', async u => /en\.wikipedia/.test(u) ? res({query: {pages: {1: {pageimage: 'Logo.png'}}}}) : res({query: {pages: {'-1': {missing: '', title: 'File:Logo.png'}}}}), st2); assert.equal(p, null);
+  const st3 = mem(); p = await A.commonsPhoto('Offline', async () => { throw new TypeError('Failed to fetch'); }, st3); assert.equal(p, null); assert.equal(st3.m.size, 0, 'network failure is not remembered');
+  p = await A.commonsPhoto('Fair', async u => /en\.wikipedia/.test(u) ? res({query: {pages: {1: {pageimage: 'F.jpg'}}}}) : res({query: {pages: {1: {imageinfo: [{thumburl: 'https://upload.wikimedia.org/a.jpg', extmetadata: {LicenseShortName: {value: 'Fair use'}}}]}}}}), mem()); assert.equal(p, null, 'non free licence refused');
+  n++; console.log('PASS commons lookup: free Commons file with credit, cached, non free and offline give nothing');
+}
+t('card tilt is small: at most 3 degrees either way, flat in the middle', () => {
+  assert.equal(FX.TILT_MAX, 3);
+  for (const [x, y] of [[0, 0], [1, 1], [0, 1], [1, 0], [-5, 9]]) { const r = FX.tiltFor(x, y); assert.ok(Math.abs(r.rx) <= 3 && Math.abs(r.ry) <= 3, JSON.stringify(r)); }
+  assert.deepEqual(FX.tiltFor(0.5, 0.5), {rx: 0, ry: 0});
+  const css = fs.readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.ok(!/\.cc-card:not\(\.empty\):hover\{[^}]*(translateY|scale\()/.test(css), 'no lift or zoom on hover');
+  assert.ok(css.includes('.cc-card,.cc-card:not(.empty):hover{transform:none!important}'), 'reduced motion keeps cards flat');
+});
+t('every catch is kept as its own record for the detail view', () => {
+  let s = null; for (const [cs, r] of [['R26863', '00-26863'], ['CFR606', 'N485DF']]) s = C.applyCatch(s, live({flight: cs, r, t: 'H60', hex: cs === 'CFR606' ? 'a5fb7d' : 'ae21cf', variant: undefined}), new Date(2026, 9, 21, 12), idx, table, null).state;
+  const mine = s.log.filter(e => e.type === 'H60'); assert.equal(mine.length, 2); assert.deepEqual(mine.map(e => e.reg), ['N485DF', '00-26863']); assert.ok(mine.every(e => e.hex && e.cs && e.t));
+});
+console.log(`${n} unit tests passed`);

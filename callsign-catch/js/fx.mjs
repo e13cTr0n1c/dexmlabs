@@ -42,7 +42,10 @@ export function buzz(tier) {
   try { navigator.vibrate({common: 30, uncommon: [30, 40, 30], rare: [40, 50, 60], legendary: [60, 40, 60, 40, 120]}[tier] || 30); } catch {}
 }
 
-// Cards lean towards the pointer and the foil follows it. One listener for the whole wall.
+// Cards lean a little towards the pointer and the foil follows it. Kept small so the text stays readable.
+export const TILT_MAX = 3; // degrees, either way
+export const tiltFor = (x, y) => { const k = v => Math.max(-1, Math.min(1, v)); return {rx: +(k((0.5 - y) * 2) * TILT_MAX).toFixed(2), ry: +(k((x - 0.5) * 2) * TILT_MAX).toFixed(2)}; };
+// One listener for the whole wall. Off with reduced motion and on touch screens.
 export function holo(root) {
   if (!root || calm() || !(window.matchMedia && matchMedia('(hover: hover)').matches)) return;
   let cur = null;
@@ -50,7 +53,7 @@ export function holo(root) {
     const c = e.target.closest('.cc-card:not(.empty)');
     if (cur && cur !== c) reset(cur); cur = c; if (!c) return;
     const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-    c.style.setProperty('--rx', ((0.5 - y) * 14).toFixed(2) + 'deg'); c.style.setProperty('--ry', ((x - 0.5) * 18).toFixed(2) + 'deg');
+    const t = tiltFor(x, y); c.style.setProperty('--rx', t.rx + 'deg'); c.style.setProperty('--ry', t.ry + 'deg');
     c.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); c.style.setProperty('--my', (y * 100).toFixed(1) + '%'); c.classList.add('tilt');
   });
   root.addEventListener('pointerleave', () => { if (cur) reset(cur); cur = null; });

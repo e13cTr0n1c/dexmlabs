@@ -198,7 +198,7 @@ export function applyCatch(state, ac, when, idx, table, wanted) {
   else s.cards[code] = {code, tier, count: 1, first: entry, last: entry, variants: entry.var ? [entry.var] : []};
   s.points += gain; entry.gain = gain;
   if (night) s.night++;
-  s.days[day].push(key); s.log.unshift(entry); s.log = s.log.slice(0, 500);
+  s.days[day].push(key); s.log.unshift(entry); s.log = s.log.slice(0, 5000); // one record per catch, kept for the catch detail view
   return {status: had ? 'dupe' : 'new', state: s, entry, info, tier, gain, wanted: isWanted, newType, newVariant, variant: entry.var || ''};
 }
 

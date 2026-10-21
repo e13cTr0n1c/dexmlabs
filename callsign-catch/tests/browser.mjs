@@ -22,11 +22,13 @@ const AC = {
   RRR1: {hex: '43c0ee', flight: 'RRR1    ', r: 'XX177', t: 'HAWK', alt_baro: 4000, gs: 300, dbFlags: 1, seen: 1},
   BTLE21: {hex: '4984ee', flight: 'BTLE21  ', alt_baro: 8000, gs: 300, seen: 1},
   CZM1: {hex: '498421', flight: 'CZM1    ', alt_baro: 9000, gs: 320, seen: 1},
+  NASA59: {hex: 'a00059', flight: 'NASA59  ', r: 'N859NA', t: 'X59', alt_baro: 30000, gs: 500, seen: 1},
+  BAW4: {hex: '4005c5', flight: 'BAW4    ', r: 'G-EUUC', t: 'A320', alt_baro: 11000, gs: 290, seen: 1},
   RRR2: {hex: '43c9ff', flight: 'RRR2    ', r: 'ZK010', t: 'HAWK', alt_baro: 5000, gs: 320, dbFlags: 1, seen: 1}};
 // Arthur's two H60 catches (tests/fixtures/arthur-h60.json): a US Army Black Hawk and a Cal Fire Firehawk.
 const H60 = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-h60.json', import.meta.url))).sources;
 AC.R26863 = H60.ae21cf.adsb; AC.CFR606 = H60.a5fb7d.adsb;
-let calls = 0;
+let calls = 0, wikiUp = true; // wikiUp false acts as if Wikipedia and Commons cannot be reached
 async function open(viewport) {
   const ctx = await browser.newContext({viewport, deviceScaleFactor: 1, acceptDownloads: true, colorScheme: process.env.SCHEME || 'dark'}); const page = await ctx.newPage(), errors = [];
   // hexdb.io answers 404 for airframes it does not know; the page asks it on every catch for the variant, so that is expected.
@@ -40,8 +42,14 @@ async function open(viewport) {
     if (/workers\.dev\/photos\/hex\/a5fb7d$/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60.a5fb7d.planespotters)});
     if (/workers\.dev\/board/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: '{"today":[],"alltime":[]}'});
     // The Worker's Planespotters relay: a photo for the A380 by hex, nothing for the rest.
-    if (/workers\.dev\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
+    if (/workers\.dev\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c5$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/2/broken_280.jpg'}, link: 'https://www.planespotters.net/photo/2/g-euuc?utm_source=api', photographer: 'Gone'}] : /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
+    if (/t\.plnspttrs\.net\/.*broken/.test(u)) return r.fulfill({status: 404, body: ''});
     if (/t\.plnspttrs\.net\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/cards/A388.webp', import.meta.url))});
+    // Wikipedia and Commons: a free lead photo for the X-59 only. With wikiUp off every lookup fails like a dead network.
+    if (/en\.wikipedia\.org|commons\.wikimedia\.org|upload\.wikimedia\.org/.test(u) && !wikiUp) return r.abort('internetdisconnected');
+    if (/en\.wikipedia\.org\/w\/api\.php/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({query: {pages: /X-59/.test(decodeURIComponent(u)) ? {1: {pageimage: 'X-59_test.jpg'}} : {'-1': {missing: ''}}}})});
+    if (/commons\.wikimedia\.org\/w\/api\.php/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({query: {pages: {5: {imageinfo: [{thumburl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/x/xx/X-59_test.jpg/640px-X-59_test.jpg', extmetadata: {Artist: {value: 'NASA'}, LicenseShortName: {value: 'Public domain'}}}]}}}})});
+    if (/upload\.wikimedia\.org\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/photos/A320.webp', import.meta.url))});
     const m = u.match(/(?:api\.adsb\.lol|workers\.dev)\/v2\/(callsign|reg|hex)\/([^/?]+)/);
     if (!m) return r.abort(); calls++;
     const a = Object.values(AC).find(x => (m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex).toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
@@ -148,6 +156,41 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   ok(await page.$$eval('#hangar .cc-card[data-code="H60"] .cc-vars li', l => l.length) === 2, `${label}: hangar H60 card ticks both variants`);
   ok(!/[\u2013\u2014]/.test(await page.textContent('#reveal')), `${label}: no dashes in the variant copy`);
   await closeReveal(page);
+  // Catch detail: the H60 card opens a list of both airframes, each with its own photo, callsign, registration, variant and date.
+  await page.click('#hangar .cc-card[data-code="H60"]');
+  await page.waitForSelector('#detail[open]'); await page.waitForTimeout(300);
+  await page.waitForFunction(() => [...document.querySelectorAll('#detail-list img')].every(i => i.complete), null, {timeout: 10000}).catch(() => {});
+  const det = await page.$$eval('#detail-list .catch-item', l => l.map(li => { const i = li.querySelector('.cc-photo img'), sv = li.querySelector('.cc-photo svg'); return {t: li.textContent, ok: i ? i.complete && i.naturalWidth > 0 : !!sv}; }));
+  ok(det.length === 2 && det.every(d => d.ok) && /CFR606/.test(det[0].t) && /N485DF/.test(det[0].t) && /Firehawk/.test(det[0].t) && /R26863/.test(det[1].t) && /00-26863/.test(det[1].t) && /Black Hawk/.test(det[1].t) && det.every(d => /Caught/.test(d.t)), `${label}: H60 detail lists both catches with photo, callsign, reg, variant and date ${JSON.stringify(det.map(d => d.ok))}`);
+  ok(/2 catches/.test(await page.textContent('#detail-h')) && !/[\u2013\u2014]/.test(await page.textContent('#detail')), `${label}: detail heading counts the catches, no dashes`);
+  await page.click('#detail-close'); ok(!(await page.$('#detail[open]')), `${label}: detail closes`);
+  ok(!(await page.$('#hangar .cc-card.multi[data-code="L39"]')) && !!(await page.$('#hangar .cc-card[data-code="L39"]:not(.empty)')) && !!(await page.$('#hangar .cc-card.multi[data-code="H60"]')), `${label}: only cards with more than one catch open a detail view`);
+  // X-59: a Commons photo when Wikipedia answers, its own render when the network is down. Never blank.
+  wikiUp = label === 'desktop';
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('callsign:wiki:')) localStorage.removeItem(k); });
+  await go(page, 'NASA59'); await page.waitForTimeout(800); await waitImgs();
+  const x59 = await page.$eval('#reveal-card .cc-photo img', i => ({stage: i.dataset.stage, ok: i.complete && i.naturalWidth > 0, src: i.src}));
+  ok(x59.ok && x59.stage === (wikiUp ? 'commons' : 'render') && (wikiUp ? /upload\.wikimedia\.org/.test(x59.src) : /img\/cards\/X59\.webp/.test(x59.src)), `${label}: X-59 shows ${wikiUp ? 'a Commons photo' : 'its render while offline'} ${JSON.stringify(x59)}`);
+  if (wikiUp) ok(/Public domain/.test(await page.textContent('#reveal-card .cc-credit')), `${label}: Commons photo carries its licence`);
+  await closeReveal(page); wikiUp = true;
+  // A Planespotters photo that fails to load steps down to the type photo, with the right credit.
+  await go(page, 'BAW4'); await page.waitForTimeout(800); await waitImgs();
+  const pf = await page.$eval('#reveal-card .cc-card', c => { const i = c.querySelector('.cc-photo img'); return {stage: i && i.dataset.stage, ok: !!i && i.complete && i.naturalWidth > 0, cr: (c.querySelector('.cc-credit') || {}).textContent || ''}; });
+  ok(pf.ok && pf.stage === 'photo' && !/Planespotters/.test(pf.cr) && /CC|Public domain/i.test(pf.cr), `${label}: broken Planespotters image falls back to the type photo ${JSON.stringify(pf)}`);
+  await closeReveal(page);
+  if (label === 'desktop') {
+    // Tilt: small, no lift, and none at all with reduced motion.
+    // Headless Chromium reports no hover pointer, so set the tilt the pointer would give at a corner and hover the card.
+    const card = await page.$('#hangar .cc-card[data-code="L39"]'); await card.scrollIntoViewIfNeeded(); const b = await card.boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await card.evaluate(async c => { const t = (await import('./js/fx.mjs')).tiltFor(0, 0); c.style.setProperty('--rx', t.rx + 'deg'); c.style.setProperty('--ry', t.ry + 'deg'); c.classList.add('tilt'); });
+    await page.waitForTimeout(300);
+    const tf = await card.evaluate(c => { const m = new DOMMatrix(getComputedStyle(c).transform); return {ax: Math.asin(Math.min(1, Math.abs(m.m23))) * 180 / Math.PI, ay: Math.asin(Math.min(1, Math.abs(m.m13))) * 180 / Math.PI, tx: m.m41, ty: m.m42, tilt: c.classList.contains('tilt')}; });
+    ok(tf.tilt && tf.ax <= 3.05 && tf.ay <= 3.05 && (tf.ax > 0.5 || tf.ay > 0.5) && Math.abs(tf.tx) < 0.5 && Math.abs(tf.ty) < 0.5, `${label}: hover tilt is at most 3 degrees with no lift ${JSON.stringify(tf)}`);
+    await page.emulateMedia({reducedMotion: 'reduce'}); await page.waitForTimeout(100);
+    ok(await card.evaluate(c => getComputedStyle(c).transform) === 'none', `${label}: reduced motion keeps the card flat`);
+    await page.emulateMedia({reducedMotion: 'no-preference'}); await page.mouse.move(0, 0);
+  }
   ok(await page.textContent('#stat-moments') === '1', `${label}: rare moments tally counts the squawk`);
   await waitImgs();
   const hang = await imgsOk('#hangar .cc-card:not(.empty)');

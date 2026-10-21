@@ -48,7 +48,7 @@ button:hover,.file-btn:hover{border-color:var(--radar-ink)}
 .hangar{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
 /* Cards: a rarity frame, a full bleed photo with the name on a gradient, then the logbook */
 .cc-card{--c:var(--uncommon);--cd:color-mix(in srgb,var(--c) 35%,#000);position:relative;min-width:0;padding:5px;border-radius:18px;background:linear-gradient(150deg,var(--c),var(--cd) 38%,var(--cd) 62%,var(--c));box-shadow:0 14px 30px -18px #000,0 0 0 1px #0006 inset;transition:transform .2s,box-shadow .2s}
-.cc-card:not(.empty):hover{transform:translateY(-3px);box-shadow:0 20px 34px -18px #000,0 0 24px -10px var(--c)}
+.cc-card:not(.empty):hover{box-shadow:0 20px 34px -18px #000,0 0 24px -10px var(--c)}
 .cc-in{height:100%;display:flex;flex-direction:column;border-radius:13px;overflow:hidden;background:#0b100d;color:#e8f2ea}
 .tier-common{--c:var(--common)}.tier-uncommon{--c:var(--uncommon)}.tier-rare{--c:var(--rare)}.tier-legendary{--c:var(--legendary)}
 .cc-photo{position:relative;aspect-ratio:16/10;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--c) 30%,#18221b),#050806 75%)}
@@ -195,8 +195,8 @@ button:active:not(:disabled),.file-btn:active{transform:translateY(4px);box-shad
 .hangar-head h2{font-size:clamp(28px,7vw,44px);color:var(--acid-ink)}
 .hangar{perspective:1200px}
 .cc-card{--rx:0deg;--ry:0deg;transform:rotateX(var(--rx)) rotateY(var(--ry));transform-style:preserve-3d;will-change:transform}
-.cc-card.tilt{transition:transform .06s linear,box-shadow .2s}
-.cc-card:not(.empty):hover{transform:rotateX(var(--rx)) rotateY(var(--ry)) translateY(-4px) scale(1.02)}
+.cc-card.tilt{transition:transform .12s ease-out,box-shadow .2s}
+.cc-card:not(.empty):hover{transform:rotateX(var(--rx)) rotateY(var(--ry))}
 .cc-in{position:relative}
 .cc-card:not(.empty) .cc-in::before{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;border-radius:inherit;background:radial-gradient(circle at var(--mx,50%) var(--my,0%),#ffffff30,transparent 45%);opacity:0;transition:opacity .2s}
 .cc-card.tilt .cc-in::before{opacity:1}
@@ -222,8 +222,19 @@ button:active:not(:disabled),.file-btn:active{transform:translateY(4px);box-shad
 @keyframes led{50%{opacity:.35}}
 @media (max-width:560px){.hero{min-height:calc(100svh - 100px)}h1{font-size:clamp(40px,14vw,64px)}.hero .lead{font-size:14px;margin:6px 0 4px}.catch{margin-top:14px}#cs{font-size:22px}
  .stats b{font-size:20px}.set{flex:0 0 74%}.hangar .cc-name{font-size:12px}}
-@media (prefers-reduced-motion:reduce){.led,.reveal.go .reveal-card,.reveal.go .reveal-card::after,.cc-in::after,.stats b.bump{animation:none!important}.flip{transition:opacity .2s}.cc-card,.cc-card:not(.empty):hover{transform:none!important}button,#go{transition:none}}
+@media (prefers-reduced-motion:reduce){.led,.reveal.go .reveal-card,.reveal.go .reveal-card::after,.cc-in::after,.stats b.bump{animation:none!important}.flip{transition:opacity .2s}.cc-card,.cc-card:not(.empty):hover{transform:none!important}.cc-card,.cc-card.tilt{transition:none!important}button,#go{transition:none}}
 /* Display team badge: plain text on a red, white and blue stripe. No team logos or emblems. */
 .cc-team{display:inline-block;margin:0 0 4px;padding:2px 8px;border-radius:999px;background:linear-gradient(90deg,#c8102e 0 70%,#fff 70% 80%,#012169 80%);color:#fff;font:400 11px/1.3 var(--head);letter-spacing:.04em;text-transform:uppercase;text-shadow:0 1px 2px #000;box-shadow:0 1px 6px #0008}
 .cc-origin{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;background:#0009;border:1px solid #fff6;color:#fff;font:400 11px/1.3 var(--head);letter-spacing:.04em;text-transform:uppercase}
 .cc-vars{list-style:none;display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px;padding:0}.cc-vars li{font-size:10.5px;font-weight:700;color:#050806;background:var(--c);border-radius:999px;padding:1px 8px}
+.art-slot{display:contents}
+.cc-card.multi{cursor:pointer}.cc-card.multi:focus-visible{outline:3px solid var(--acid);outline-offset:3px}
+.cc-more{display:block;margin:6px 0 0;font-size:11px;font-weight:800;color:var(--c);text-transform:uppercase;letter-spacing:.08em}
+.detail{max-width:min(920px,94vw);width:100%;padding:0;border:3px solid #000;border-radius:18px;background:#0b100d;color:#e8f2ea}
+.detail::backdrop{background:#000b}
+.detail-in{padding:18px}.detail-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px}.detail-head h2{margin:0;color:#fff;font-size:clamp(18px,4.6vw,24px)}
+.catches{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.catch-item{border-radius:14px;overflow:hidden;background:#070a08;border:1px solid #ffffff1a}
+.catch-item .cc-photo{border-radius:0}.catch-item .cc-credit{border-top:0}
+.catch-item dl{margin:0;padding:10px 12px}
+.detail-note{margin:12px 0 0;font-size:12px;color:#93a897}
