@@ -223,3 +223,6 @@ button:active:not(:disabled),.file-btn:active{transform:translateY(4px);box-shad
 @media (max-width:560px){.hero{min-height:calc(100svh - 100px)}h1{font-size:clamp(40px,14vw,64px)}.hero .lead{font-size:14px;margin:6px 0 4px}.catch{margin-top:14px}#cs{font-size:22px}
  .stats b{font-size:20px}.set{flex:0 0 74%}.hangar .cc-name{font-size:12px}}
 @media (prefers-reduced-motion:reduce){.led,.reveal.go .reveal-card,.reveal.go .reveal-card::after,.cc-in::after,.stats b.bump{animation:none!important}.flip{transition:opacity .2s}.cc-card,.cc-card:not(.empty):hover{transform:none!important}button,#go{transition:none}}
+/* Display team badge: plain text on a red, white and blue stripe. No team logos or emblems. */
+.cc-team{display:inline-block;margin:0 0 4px;padding:2px 8px;border-radius:999px;background:linear-gradient(90deg,#c8102e 0 70%,#fff 70% 80%,#012169 80%);color:#fff;font:400 11px/1.3 var(--head);letter-spacing:.04em;text-transform:uppercase;text-shadow:0 1px 2px #000;box-shadow:0 1px 6px #0008}
+.cc-origin{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;background:#0009;border:1px solid #fff6;color:#fff;font:400 11px/1.3 var(--head);letter-spacing:.04em;text-transform:uppercase}

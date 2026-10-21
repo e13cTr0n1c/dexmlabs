@@ -18,13 +18,13 @@ $('#catch-form').addEventListener('submit', e => {
   submit($('#cs').value);
 });
 const getJSON = n => fetch(`./data/${n}.json`).then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
-let table, specials, art, photos;
-try { [table, specials, art, photos] = await Promise.all(['types', 'specials', 'art', 'photos'].map(getJSON)); }
+let table, specials, art, photos, teams, hexTypes, ranges;
+try { [table, specials, art, photos, teams, hexTypes, ranges] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges'].map(getJSON)); }
 catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad'); throw e; }
-setArtManifest(art.codes); setPhotos(photos.photos);
+C.setTeams(teams); C.setHexTypes(hexTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
-const load = () => { try { return C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))) || C.emptyState(); } catch { return C.emptyState(); } };
+const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.migrateHexTypes(s, idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
 // Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
 const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
@@ -38,7 +38,7 @@ function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
   const sq = entry && C.SQUAWKS[entry.sq] ? `<p class="cc-squawk"><b>Legendary squawk</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
   return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}" data-code="${esc(info.code)}"><div class="cc-in">
 <div class="cc-photo">${cardArt(info, tier, owned, eager, entry)}<div class="cc-top"><span class="cc-code">${esc(info.code)}</span><span class="cc-tier">${owned ? Tier(tier) : 'Locked'}</span></div>
-<div class="cc-title"><h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p></div></div>
+<div class="cc-title">${owned && info.unknown && entry && entry.origin ? `<span class="cc-origin">${esc(entry.origin)}</span>` : ''}${owned && entry && entry.team ? `<span class="cc-team">${esc(entry.team)}</span>` : ''}<h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p></div></div>
 ${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${log}<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p></div>` : ''}</div></article>`;
 }
 
@@ -56,7 +56,7 @@ function renderHangar() {
   const set = C.SETS.find(s => s.id === filter);
   let codes;
   if (set && set.codes) codes = set.codes;
-  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : (C.isDisplay(e.cs) || e.type === 'HAWK')).map(e => e.type);
+  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : !!e.team).map(e => e.type);
   else codes = [...new Set([...Object.keys(state.cards), ...C.SETS.flatMap(s => s.codes || [])])];
   codes = [...new Set(codes)].sort((a, b) => (!!state.cards[b] - !!state.cards[a]) || C.TIERS.indexOf(C.typeInfo(b, idx, table).tier) - C.TIERS.indexOf(C.typeInfo(a, idx, table).tier) || a.localeCompare(b));
   $('#hangar').innerHTML = codes.map(code => { const c = state.cards[code], info = C.typeInfo(code, idx, table);
@@ -102,6 +102,7 @@ async function submit(raw) {
     const live = C.pickLive(r.data);
     if (!live.ok) { miss(WORD[live.reason] || 'NOT FOUND'); return say((MSG[live.reason] || MSG.notfound)(label), 'bad'); }
     if (!live.ac.type) await fillType(live.ac);
+    if (!live.ac.type) live.ac.type = C.hexType(live.ac.hex);
     const spot = spotPhoto(live.ac);
     const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
     if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(live.ac.callsign), 'bad'); }
@@ -170,7 +171,7 @@ function exportFile() {
   a.href = URL.createObjectURL(blob); a.download = `callsign-catch-${C.dayKey(now())}.json`; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function importFile(file) {
-  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
+  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.migrateHexTypes(s, idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 

@@ -1,0 +1,24 @@
+{
+ "note": "Exact types for airframes the feed and hexdb.io leave blank. Keys are lower case ICAO hex.",
+ "sources": {
+  "4984ee": "Arthur's catch of BTLE21, Czech Air Force Aero L-39NG; type L39 as shown by Flightradar24",
+  "HAWK": "Red Arrows Hawk T1 hex codes from hexdb.io, as listed with their sources in display-teams.json"
+ },
+ "types": {
+  "4984ee": "L39",
+  "43c0ee": "HAWK",
+  "43c407": "HAWK",
+  "43c40d": "HAWK",
+  "43c40f": "HAWK",
+  "43c418": "HAWK",
+  "43c41f": "HAWK",
+  "43c421": "HAWK",
+  "43c434": "HAWK",
+  "43c440": "HAWK",
+  "43c44a": "HAWK",
+  "43c453": "HAWK",
+  "43c455": "HAWK",
+  "43c456": "HAWK",
+  "43c457": "HAWK"
+ }
+}

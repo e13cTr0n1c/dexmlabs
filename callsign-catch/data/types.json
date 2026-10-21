@@ -1509,7 +1509,7 @@
 {"code":"L29B","name":"Lockheed L-1329 Jetstar 731","tier":"rare","cat":"narrow","d":"L4J","w":"M","gen":1},
 {"code":"L37","name":"Lockheed L-137 Ventura","tier":"uncommon","cat":"prop","d":"L2P","w":"M","gen":1},
 {"code":"L380","name":"Lederlin 380 Ladybug","tier":"common","cat":"prop","d":"L1P","w":"L","gen":1},
-{"code":"L39","name":"Aero L-39 Albatros","maker":"Aero Vodochody","tier":"rare","cat":"fighter","fact":"First flew in 1968 and became the first trainer aircraft in the world to be fitted with a turbofan engine.","reward":{"url":"","label":"","code":""},"source":"https://en.wikipedia.org/wiki/Aero_L-39_Albatros","mil":1},
+{"code":"L39","name": "Aero L-39 / L-39NG Albatros","maker":"Aero Vodochody","tier":"rare","cat":"fighter","fact":"First flew in 1968 and became the first trainer aircraft in the world to be fitted with a turbofan engine.","reward":{"url":"","label":"","code":""},"source":"https://en.wikipedia.org/wiki/Aero_L-39_Albatros","mil":1},
 {"code":"L4","name":"Chaika L-4","tier":"rare","cat":"prop","d":"A2P","w":"L","gen":1},
 {"code":"L40","name":"Orlican L-40 Meta Sokol","tier":"common","cat":"prop","d":"L1P","w":"L","gen":1},
 {"code":"L410","name":"Let L-410 Turbolet","tier":"uncommon","cat":"turboprop","d":"L2T","w":"L","gen":1},

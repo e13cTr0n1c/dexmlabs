@@ -19,7 +19,10 @@ const AC = {
   HELI: {hex: '400777', flight: 'HELI    ', r: 'G-HELI', alt_baro: 1500, gs: 110, category: 'A7', seen: 1},
   DRN1: {hex: '43c0a1', flight: 'DRN1    ', r: 'ZZ001', t: 'Q9', alt_baro: 9000, gs: 150, dbFlags: 1, seen: 1},
   SQK1: {hex: '400778', flight: 'SQK1    ', r: 'G-SQKA', t: 'A319', alt_baro: 7000, gs: 250, squawk: '7700', seen: 1},
-  RRR1: {hex: '43c001', flight: 'RRR1    ', r: 'XX177', t: 'HAWK', alt_baro: 4000, gs: 300, dbFlags: 1, seen: 1}};
+  RRR1: {hex: '43c0ee', flight: 'RRR1    ', r: 'XX177', t: 'HAWK', alt_baro: 4000, gs: 300, dbFlags: 1, seen: 1},
+  BTLE21: {hex: '4984ee', flight: 'BTLE21  ', alt_baro: 8000, gs: 300, seen: 1},
+  CZM1: {hex: '498421', flight: 'CZM1    ', alt_baro: 9000, gs: 320, seen: 1},
+  RRR2: {hex: '43c9ff', flight: 'RRR2    ', r: 'ZK010', t: 'HAWK', alt_baro: 5000, gs: 320, dbFlags: 1, seen: 1}};
 let calls = 0;
 async function open(viewport) {
   const ctx = await browser.newContext({viewport, deviceScaleFactor: 1, acceptDownloads: true, colorScheme: process.env.SCHEME || 'dark'}); const page = await ctx.newPage(), errors = [];
@@ -75,9 +78,12 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   ok(+(await page.textContent('#stat-xp')) > 0, `${label}: XP counted`); await closeReveal(page);
   await go(page, 'RRR1'); await page.waitForTimeout(1600);
   ok(await page.$eval('#reveal', d => d.classList.contains('tier-legendary')), `${label}: display team Hawk is legendary`);
+  ok(await page.textContent('#reveal-card .cc-team') === 'Red Arrows' && !(await page.$('#reveal-card .cc-team img')), `${label}: Red Arrows airframe shows a text team badge`);
   await page.screenshot({path: path.join(SHOTS, `${label}-reveal-legendary.png`)});
   ok(await page.isHidden('#reward'), `${label}: reward stays hidden with no code`);
   await closeReveal(page);
+  await go(page, 'RRR2'); ok(!(await page.$('#reveal-card .cc-team')), `${label}: a training Hawk on RRR gets no team badge`); await closeReveal(page);
+  ok(/1\/1/.test(await page.textContent('#sets [data-set="display"]')), `${label}: Display teams set counts only the team jet`);
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   ok(wide <= 0, `${label}: no horizontal overflow (${wide})`);
   ok(await page.isVisible('#board'), `${label}: leaderboard shown now LEADERBOARD_API is set`);
@@ -87,15 +93,16 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   await page.evaluate(() => document.getElementById('hangar-h').scrollIntoView());
   await page.screenshot({path: path.join(SHOTS, `${label}-hangar.png`)});
   if (label === 'desktop') {
+    const nTypes = await page.textContent('#stat-types');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#export')]);
     const file = path.join(SHOTS, 'export.json'); await dl.saveAs(file);
     const data = JSON.parse(fs.readFileSync(file, 'utf8')); ok(data.cards.A388 && data.cards.A320.count === 2, 'export writes the collection');
     await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
     ok(await page.textContent('#stat-types') === '0', 'cleared collection');
-    await page.setInputFiles('#import', file); await page.waitForFunction(() => document.getElementById('stat-types').textContent === '3');
+    await page.setInputFiles('#import', file); await page.waitForFunction(n => document.getElementById('stat-types').textContent === n, nTypes);
     ok(true, 'import restores the collection');
     await page.setInputFiles('#import', {name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"v":9}')});
-    await page.waitForFunction(() => /doesn't look/.test(document.getElementById('status').textContent)); ok(await page.textContent('#stat-types') === '3', 'bad import is refused and keeps the collection');
+    await page.waitForFunction(() => /doesn't look/.test(document.getElementById('status').textContent)); ok(await page.textContent('#stat-types') === nTypes, 'bad import is refused and keeps the collection');
     await page.goto(PAGE + '?cs=baw1'); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
     ok(await page.inputValue('#cs') === 'BAW1' && /overhead/.test(await page.textContent('#status')), '?cs= deep link fills the callsign without a lookup');
     await page.evaluate(() => window.CallsignCatch.resetGap(-1)); await page.fill('#cs', 'NOPE2'); await page.click('#go'); await page.waitForTimeout(200);
@@ -103,6 +110,8 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     ok(/One lookup every/.test(await page.textContent('#status')), 'submits are rate limited');
   }
   ok(errors.length === 0, `${label}: no console errors ${JSON.stringify(errors)}`);
+  await go(page, 'BTLE21'); ok(await page.$eval('#reveal-card .cc-card', c => c.dataset.code === 'L39') && /L-39NG/.test(await page.textContent('#reveal-card')), `${label}: blank type 4984EE becomes the L-39 card`); await closeReveal(page);
+  await go(page, 'CZM1'); ok(await page.textContent('#reveal-card .cc-origin') === 'Czechia military', `${label}: unidentified military jet shows its country`); await closeReveal(page);
   // Unknown, drone and squawk catches, then every caught card must show a loaded picture.
   const imgsOk = sel => page.$$eval(sel, cs => cs.map(c => { const i = c.querySelector('.cc-photo img'), sv = c.querySelector('.cc-photo svg'); return {code: c.dataset.code, ok: i ? i.complete && i.naturalWidth > 0 : !!sv, img: !!i}; }));
   const waitImgs = () => page.waitForFunction(() => [...document.querySelectorAll('.cc-card:not(.empty) .cc-photo img')].every(i => i.complete), null, {timeout: 15000}).catch(() => {});

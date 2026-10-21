@@ -41,14 +41,59 @@ export function typeInfo(code, idx, table, ac) {
     fact: named ? "Not in my table yet, so it counts as uncommon and earns a new type bonus." : "The feed didn't say what type this is, so it counts as uncommon and earns a new type bonus.", reward: {url: '', label: '', code: ''}};
 }
 
-// Military aircraft and display team callsigns are always legendary.
-const DISPLAY = /^(RRR|REDS?\d|PAT\d|FAF\d|SNOW|BLUE?ANG|THUNDER|FRECCE|PAF\d)/;
-export function isDisplay(callsign) { return DISPLAY.test(callsign || ''); }
+// Display teams are known by their own airframes (data/display-teams.json): a listed hex or registration names the team.
+// A team callsign such as RED1 is the fallback. An RRR callsign or a Hawk on its own is not enough, since RAF Valley flies Hawks too.
+let TEAMS = {hex: new Map(), reg: new Map(), cs: []};
+export function setTeams(data) {
+  TEAMS = {hex: new Map(), reg: new Map(), cs: []};
+  for (const t of (data && data.teams) || []) {
+    const team = {id: t.id, name: t.name, country: t.country};
+    for (const a of t.airframes || []) { if (a.hex) TEAMS.hex.set(String(a.hex).toLowerCase(), team); if (a.reg) TEAMS.reg.set(String(a.reg).toUpperCase(), team); }
+    if (t.callsigns) TEAMS.cs.push([new RegExp(t.callsigns), team]);
+  }
+}
+export function teamFor(ac) {
+  if (!ac) return null;
+  const hex = String(ac.hex || '').replace('~', '').toLowerCase(), reg = String(ac.reg || '').toUpperCase(), cs = String(ac.callsign || '').toUpperCase();
+  return (hex && TEAMS.hex.get(hex)) || (reg && TEAMS.reg.get(reg)) || (TEAMS.cs.find(([re]) => re.test(cs)) || [])[1] || null;
+}
+export function isDisplay(ac) { return !!teamFor(ac); }
 // Military operators: the dbFlags military bit or a known military callsign. They lift a type one step, to at least rare.
 const MILCS = /^(RRR|ASCOT|NATO|RCH|REACH|CFC|GAF|GAM|IAM|CTM|FAF|BAF|NAF|DAF|HAF|PLF|SVF|SHF|RFR|ARMY|NAVY|CNV|DUKE|SPAR|SAM|TARTN|COMET|KIWI|AME|MMF|LAGR|HRZ|SUI|BRK|NOW|TOPCAT|VIPER|MAGMA|SNAKE|NOBLE|GOLD|HAWK)\d/;
-export const isMilitary = ac => !!((ac.dbFlags & 1) || MILCS.test(String(ac.callsign || '')));
+// ICAO address blocks (data/icao-ranges.json): the country an address was allocated to, and the military sub ranges.
+let RANGES = {countries: [], military: []};
+const hexNum = h => { const n = parseInt(String(h || '').replace('~', ''), 16); return /^~?[0-9a-f]{6}$/i.test(String(h || '')) ? n : NaN; };
+export function setRanges(data) {
+  const p = r => [parseInt(r[0], 16), parseInt(r[1], 16)];
+  RANGES = {countries: ((data && data.countries) || []).map(r => [...p(r), r[2]]).sort((a, b) => (a[1] - a[0]) - (b[1] - b[0])), military: ((data && data.military) || []).map(p)};
+}
+export function countryOf(hex) { const n = hexNum(hex); if (isNaN(n)) return ''; const r = RANGES.countries.find(([a, b]) => n >= a && n <= b); return r ? r[2] : ''; }
+export function milHex(hex) { const n = hexNum(hex); return !isNaN(n) && RANGES.military.some(([a, b]) => n >= a && n <= b); }
+export const isMilitary = ac => !!((ac.dbFlags & 1) || MILCS.test(String(ac.callsign || '')) || milHex(ac.hex));
+// Where an unidentified aircraft comes from, for its card: 'Czechia', or 'Czechia military' when it is military.
+export function originOf(ac) { const c = countryOf(ac && ac.hex); return c ? c + (isMilitary(ac) ? ' military' : '') : (ac && isMilitary(ac) ? 'Military' : ''); }
+
+// Exact types for airframes the feed leaves blank (data/hex-types.json).
+let HEXTYPES = {};
+export function setHexTypes(data) { HEXTYPES = {}; for (const [k, v] of Object.entries((data && data.types) || {})) HEXTYPES[k.toLowerCase()] = String(v).toUpperCase(); }
+export const hexType = hex => HEXTYPES[String(hex || '').replace('~', '').toLowerCase()] || '';
+// Old catches that became unidentified cards move to their real type once the hex is in the table. Points stay as earned.
+export function migrateHexTypes(state, idx, table) {
+  const s = state; if (!s || !s.log) return s;
+  for (const e of s.log) {
+    const to = e && /^UNK/.test(e.type) && hexType(e.hex); if (!to) continue;
+    const from = s.cards[e.type], info = typeInfo(to, idx, table), tier = TIERS.indexOf(e.tier) > TIERS.indexOf(info.tier) ? e.tier : info.tier;
+    if (from) { from.count--; if (from.count < 1) delete s.cards[e.type]; }
+    e.type = to; e.tier = tier;
+    const c = s.cards[to];
+    if (c) { c.count++; if (TIERS.indexOf(tier) > TIERS.indexOf(c.tier)) c.tier = tier; if (!c.last || e.t > c.last.t) c.last = e; if (!c.first || e.t < c.first.t) c.first = e; }
+    else s.cards[to] = {code: to, tier, count: 1, first: e, last: e};
+  }
+  for (const [k, c] of Object.entries(s.cards)) if (/^UNK/.test(k)) { const mine = s.log.filter(x => x.type === k); if (mine.length) { c.last = mine[0]; c.first = mine[mine.length - 1]; } }
+  return s;
+}
 export function tierFor(ac, info) {
-  if (isDisplay(ac.callsign)) return 'legendary';
+  if (isDisplay(ac)) return 'legendary';
   const base = TIERS.includes(info.tier) ? info.tier : 'uncommon';
   if (!isMilitary(ac)) return base;
   return base === 'rare' || base === 'legendary' ? 'legendary' : 'rare';
@@ -77,6 +122,8 @@ export function applyCatch(state, ac, when, idx, table, wanted) {
   const hour = new Date(when).getHours(), night = hour >= NIGHT_FROM && hour < NIGHT_TO;
   const entry = {t: new Date(when).toISOString(), cs: key, reg: ac.reg || '', hex: ac.hex || '', type: code, op: ac.op || '', alt: ac.alt, gs: ac.gs, tier, night, cat: info.cat};
   if (isMilitary(ac)) entry.mil = 1;
+  if (info.unknown) { const o = originOf(ac); if (o) entry.origin = o; }
+  const team = teamFor(ac); if (team) entry.team = team.name;
   if (SQUAWKS[ac.squawk]) entry.sq = ac.squawk;
   const had = s.cards[code], isWanted = !!(wanted && wanted.code === code && !s.wantedHits[day]);
   let gain = had ? DUPLICATE_XP[tier] : POINTS[tier];
@@ -101,12 +148,12 @@ export const SETS = [
   {id: 'props', name: 'Props and Turboprops', codes: ['AT76', 'DH8D', 'PC12', 'C172', 'C130', 'A400']},
   {id: 'rotor', name: 'Rotor Club', codes: ['EC35', 'EC45', 'A139', 'A169', 'A189', 'S92', 'H160', 'AS50', 'R44', 'R22', 'B06', 'B407', 'B429', 'H47', 'PUMA', 'EH10', 'LYNX', 'H64', 'H60', 'V22']},
   {id: 'unmanned', name: 'Unmanned', codes: ['Q9', 'Q4', 'HRM9']},
-  {id: 'display', name: 'Display teams', rule: 'display', goal: 1, desc: 'Catch a display team callsign or a Hawk'},
+  {id: 'display', name: 'Display teams', rule: 'display', goal: 1, desc: 'Catch a display team jet'},
   {id: 'night', name: 'Night owl', rule: 'night', goal: 3, desc: 'Catch three between 00:00 and 05:00'}];
 export function setProgress(state, set) {
   const s = state || emptyState();
   if (set.codes) { const got = set.codes.filter(c => s.cards[c]).length; return {got, goal: set.codes.length, done: got === set.codes.length}; }
-  const got = set.rule === 'night' ? s.night : s.log.filter(e => isDisplay(e.cs) || e.type === 'HAWK').length;
+  const got = set.rule === 'night' ? s.night : s.log.filter(e => e.team).length;
   return {got: Math.min(got, set.goal), goal: set.goal, done: got >= set.goal};
 }
 

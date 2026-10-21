@@ -3,6 +3,8 @@ import fs from 'fs'; import assert from 'assert/strict';
 import * as C from '../js/core.mjs'; import {POINTS} from '../js/config.mjs';
 const dir = new URL('../data/', import.meta.url);
 const table = JSON.parse(fs.readFileSync(new URL('types.json', dir))), specials = JSON.parse(fs.readFileSync(new URL('specials.json', dir)));
+const teams = JSON.parse(fs.readFileSync(new URL('display-teams.json', dir))); C.setTeams(teams);
+const hexTypes = JSON.parse(fs.readFileSync(new URL('hex-types.json', dir))), ranges = JSON.parse(fs.readFileSync(new URL('icao-ranges.json', dir))); C.setHexTypes(hexTypes); C.setRanges(ranges);
 const idx = C.indexTypes(table); let n = 0; const t = (name, fn) => { fn(); n++; console.log('PASS ' + name); };
 const live = (o = {}) => C.pickLive({ac: [Object.assign({flight: 'BAW1  ', r: 'G-XLEA', hex: '4005c1', t: 'A388', alt_baro: 37000, gs: 488, seen: 1}, o)]}).ac;
 t('table: at least 150 types, valid tiers and categories, unique codes, reward fields', () => {
@@ -20,7 +22,7 @@ t('rarity by type: A320 and 737 common, 747 and A380 rare, Beluga and An-124 leg
 t('unknown types default to uncommon; military operators lift to at least rare, display callsigns are legendary', () => {
   const u = C.typeInfo('ZZZZ', idx, table); assert.equal(u.tier, 'uncommon'); assert.equal(C.tierFor({}, u), 'uncommon');
   assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('A320')), 'rare'); assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('B744')), 'legendary');
-  assert.equal(C.tierFor({callsign: 'RRR1'}, idx.get('A320')), 'legendary');
+  assert.equal(C.tierFor({callsign: 'RED1'}, idx.get('A320')), 'legendary');
 });
 t('query parsing: callsign, registration and hex', () => {
   assert.deepEqual(C.parseQuery(' baw117 '), {kind: 'callsign', value: 'BAW117'});
@@ -93,7 +95,7 @@ t('an unknown type never loses a catch: generic card by class plus a one off bon
 t('military operators lift a type to at least rare; squawks give a badge and no points', () => {
   const info = C.typeInfo('A332', idx, table);
   assert.equal(C.tierFor({callsign: 'BAW12', dbFlags: 0}, info), info.tier);
-  assert.equal(C.tierFor({callsign: 'RRR6612', dbFlags: 0}, {tier: 'common'}), 'legendary', 'RRR stays a display style legendary');
+  assert.equal(C.tierFor({callsign: 'RRR6612', dbFlags: 0}, {tier: 'common'}), 'rare', 'RRR alone is military, not a display team');
   assert.equal(C.tierFor({callsign: 'ASCOT481', dbFlags: 0}, {tier: 'common'}), 'rare');
   assert.equal(C.tierFor({callsign: 'XYZ', dbFlags: 1}, {tier: 'rare'}), 'legendary');
   const ac = {hex: 'abc124', callsign: 'EZY77', reg: 'G-EZZZ', type: 'A319', alt: 9000, gs: 250, dbFlags: 0, op: '', squawk: '7700'};
@@ -108,5 +110,44 @@ t('Rotor Club and Unmanned sets use real table codes', () => {
 t('old saves migrate: a ???? card becomes the unidentified card instead of being lost', () => {
   const old = {v: 1, cards: {'????': {code: '????', tier: 'uncommon', count: 2}, A320: {code: 'A320', tier: 'common', count: 1}}, log: [{type: '????', cs: 'X', alt: 1}], days: {}, xp: 0, points: 50};
   const s = C.validateImport(old); assert.ok(s.cards.UNKFW && s.cards.UNKFW.count === 2 && s.cards.A320 && !s.cards['????']); assert.equal(s.log[0].type, 'UNKFW');
+});
+t('display teams by airframe: a training Hawk on RRR is not the Red Arrows, a listed serial is', () => {
+  assert.ok(!/[\u2013\u2014]/.test(JSON.stringify(teams)), 'no dashes');
+  const ra = teams.teams.find(x => x.id === 'red-arrows'); assert.ok(ra.airframes.length >= 14 && ra.sources.length);
+  for (const t of teams.teams) { assert.ok(t.name && t.country && t.sources.length, t.id); for (const a of t.airframes) assert.ok(a.reg || a.hex); }
+  const valley = {hex: '43c9ff', callsign: 'RRR1234', reg: 'ZK010', type: 'HAWK', alt: 3000, gs: 300, dbFlags: 1, op: ''};
+  assert.equal(C.teamFor(valley), null); assert.equal(C.tierFor(valley, idx.get('HAWK')), 'legendary', 'a Hawk type is legendary anyway');
+  let r = C.applyCatch(null, valley, new Date(2026, 9, 21, 12), idx, table, null);
+  assert.equal(r.entry.team, undefined); assert.equal(C.setProgress(r.state, C.SETS.find(x => x.id === 'display')).got, 0);
+  const reds = {...valley, hex: '43c0ee', callsign: 'RRR8', reg: 'XX177'};
+  assert.equal(C.teamFor(reds).name, 'Red Arrows'); assert.equal(C.teamFor({hex: '43C0EE'}).name, 'Red Arrows', 'hex alone'); assert.equal(C.teamFor({reg: 'xx242'}).name, 'Red Arrows', 'serial alone');
+  r = C.applyCatch(r.state, reds, new Date(2026, 9, 21, 12), idx, table, null);
+  assert.equal(r.entry.team, 'Red Arrows'); assert.equal(r.tier, 'legendary'); assert.ok(C.setProgress(r.state, C.SETS.find(x => x.id === 'display')).done);
+  assert.equal(C.teamFor({callsign: 'RED10'}).name, 'Red Arrows', 'team callsign fallback'); assert.equal(C.teamFor({callsign: 'RED11'}), null);
+  assert.equal(C.tierFor({callsign: 'RRR6612', type: 'A332'}, {tier: 'common'}), 'rare');
+});
+t('hex type overrides: 4984EE is the L-39, and old unidentified catches move to it without losing anything', () => {
+  assert.equal(C.hexType('4984EE'), 'L39'); assert.equal(idx.get('L39').name, 'Aero L-39 / L-39NG Albatros');
+  assert.ok(!/[\u2013\u2014]/.test(JSON.stringify(hexTypes) + JSON.stringify(ranges)), 'no dashes');
+  const base = {callsign: 'BTLE21', reg: '', type: '', alt: 8000, gs: 300, dbFlags: 0, op: '', category: 'A1'};
+  let s = C.applyCatch(null, {...base, hex: '4984ee'}, new Date('2026-10-20T10:00:00Z'), idx, table, null).state;
+  s = C.applyCatch(s, {...base, callsign: 'XYZ9', hex: '400abc'}, new Date('2026-10-20T10:05:00Z'), idx, table, null).state;
+  assert.equal(s.cards.UNKFW.count, 2); const pts = s.points, xp = s.xp, n0 = s.log.length;
+  const m = C.migrateHexTypes(C.validateImport(JSON.parse(JSON.stringify(s))), idx, table);
+  assert.equal(m.cards.UNKFW.count, 1); assert.equal(m.cards.L39.count, 1); assert.equal(m.cards.L39.last.cs, 'BTLE21');
+  assert.equal(m.cards.UNKFW.last.cs, 'XYZ9'); assert.equal(m.points, pts); assert.equal(m.xp, xp); assert.equal(m.log.length, n0);
+  assert.equal(m.log.find(e => e.cs === 'BTLE21').type, 'L39');
+  const one = C.migrateHexTypes(C.applyCatch(null, {...base, hex: '4984ee'}, new Date('2026-10-20T10:00:00Z'), idx, table, null).state, idx, table);
+  assert.ok(!one.cards.UNKFW && one.cards.L39, 'an emptied unidentified card is dropped');
+  assert.deepEqual(C.migrateHexTypes(JSON.parse(JSON.stringify(m)), idx, table), m, 'running it twice changes nothing');
+});
+t('ICAO blocks: 4984EE is Czechia, the military sub range gives the military bump', () => {
+  assert.equal(C.countryOf('4984EE'), 'Czechia'); assert.equal(C.countryOf('400abc'), 'United Kingdom'); assert.equal(C.countryOf('zzz'), '');
+  assert.ok(C.milHex('498420') && !C.milHex('4984ee') && C.milHex('43c0ee'));
+  const r = C.applyCatch(null, {hex: '4984ee', callsign: 'BTLE21', type: 'ZZZZ', alt: 8000, gs: 300, dbFlags: 0}, new Date(2026, 9, 21, 12), idx, table, null);
+  assert.equal(r.entry.origin, 'Czechia');
+  const mil = C.applyCatch(null, {hex: '498421', callsign: 'XYZ1', type: '', alt: 8000, gs: 300, dbFlags: 0, category: 'A1'}, new Date(2026, 9, 21, 12), idx, table, null);
+  assert.equal(mil.entry.origin, 'Czechia military'); assert.equal(mil.tier, 'rare'); assert.equal(mil.entry.mil, 1);
+  assert.equal(C.applyCatch(null, {hex: '4984ee', callsign: 'CEF21', type: '', alt: 8000, gs: 300, dbFlags: 1}, new Date(2026, 9, 21, 12), idx, table, null).entry.origin, 'Czechia military', 'dbFlags military');
 });
 console.log(n + ' passed');
