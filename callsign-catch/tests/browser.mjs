@@ -4,7 +4,8 @@
 //   python3 -m http.server 18660 --bind 127.0.0.1 &  node callsign-catch/tests/browser.mjs
 // Needs playwright-core (PW_MODULE=/path/to/playwright-core/index.js) and a Chromium (CHROMIUM=/path). SHOTS=dir for screenshots.
 import fs from 'fs'; import path from 'path';
-const BASE = process.env.BASE || 'http://127.0.0.1:18660', PAGE = BASE + '/callsign-catch/';
+// PAGE can point at a raw.githack preview, for example PAGE=https://raw.githack.com/<user>/<repo>/<hash>/callsign-catch/index.html
+const BASE = process.env.BASE || 'http://127.0.0.1:18660', PAGE = process.env.PAGE || BASE + '/callsign-catch/', ORIGIN = PAGE.replace(/\/callsign-catch\/.*$/, '');
 const SHOTS = process.env.SHOTS || '/tmp/cc-shots'; fs.mkdirSync(SHOTS, {recursive: true});
 const pw = await import(process.env.PW_MODULE || 'playwright-core').then(m => m.default || m);
 const exe = process.env.CHROMIUM || (() => { const root = path.join(process.env.HOME, '.cache/ms-playwright'); const d = fs.existsSync(root) && fs.readdirSync(root).filter(n => /^chromium-\d+/.test(n)).sort().pop(); return d ? path.join(root, d, 'chrome-linux64/chrome') : undefined; })();
@@ -15,21 +16,31 @@ const AC = {
   BAW2: {hex: '4005c2', flight: 'BAW2    ', r: 'G-EUUA', t: 'A320', alt_baro: 12000, gs: 300, seen: 1},
   BAW3: {hex: '4005c3', flight: 'BAW3    ', r: 'G-EUUB', t: 'A320', alt_baro: 9000, gs: 280, seen: 1},
   EZY9: {hex: '4005c4', flight: 'EZY9    ', r: 'G-EZAA', t: 'A319', alt_baro: 'ground', gs: 3, seen: 1},
+  HELI: {hex: '400777', flight: 'HELI    ', r: 'G-HELI', alt_baro: 1500, gs: 110, category: 'A7', seen: 1},
+  DRN1: {hex: '43c0a1', flight: 'DRN1    ', r: 'ZZ001', t: 'Q9', alt_baro: 9000, gs: 150, dbFlags: 1, seen: 1},
+  SQK1: {hex: '400778', flight: 'SQK1    ', r: 'G-SQKA', t: 'A319', alt_baro: 7000, gs: 250, squawk: '7700', seen: 1},
   RRR1: {hex: '43c001', flight: 'RRR1    ', r: 'XX177', t: 'HAWK', alt_baro: 4000, gs: 300, dbFlags: 1, seen: 1}};
 let calls = 0;
 async function open(viewport) {
   const ctx = await browser.newContext({viewport, deviceScaleFactor: 1, acceptDownloads: true, colorScheme: process.env.SCHEME || 'dark'}); const page = await ctx.newPage(), errors = [];
   page.on('console', m => { if (m.type() === 'error' && !/cloudflareinsights|ERR_FAILED/.test(m.text())) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
-  await ctx.route(u => !u.href.startsWith(BASE), r => {
+  await ctx.route(u => !u.href.startsWith(ORIGIN), r => {
     const u = r.request().url();
+    if (/raw\.githubusercontent\.com|githack\.com/.test(u)) return r.continue();
+    if (/hexdb\.io/.test(u)) return r.fulfill({status: 404, headers: {'access-control-allow-origin': '*'}, body: ''});
     if (/workers\.dev\/board/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: '{"today":[],"alltime":[]}'});
+    // The Worker's Planespotters relay: a photo for the A380 by hex, nothing for the rest.
+    if (/workers\.dev\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
+    if (/t\.plnspttrs\.net\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/cards/A388.webp', import.meta.url))});
     const m = u.match(/(?:api\.adsb\.lol|workers\.dev)\/v2\/(callsign|reg|hex)\/([^/?]+)/);
     if (!m) return r.abort(); calls++;
     const a = Object.values(AC).find(x => (m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex).toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
     return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({ac: a ? [a] : [], now: Date.now()})});
   });
   await page.addInitScript(() => { window.__ccFast = true; });
-  await page.goto(PAGE, {waitUntil: 'load'}); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
+  await page.goto(PAGE, {waitUntil: 'load'});
+  if (await page.$('.url-action-button')) await Promise.all([page.waitForNavigation(), page.click('.url-action-button')]);
+  await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
   await page.evaluate(() => { localStorage.clear(); }); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
   return {ctx, page, errors};
 }
@@ -43,9 +54,12 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   await page.waitForTimeout(1600);
   ok(await page.$eval('#reveal', d => d.classList.contains('tier-rare') && d.classList.contains('go')), `${label}: reveal glows rare for the A380`);
   ok(/37,000 ft/.test(await page.textContent('#reveal-card')) && /British Airways/.test(await page.textContent('#reveal-card')), `${label}: card carries altitude and operator`);
+  ok(await page.$eval('#reveal-card img.photo', i => i.src.startsWith('https://t.plnspttrs.net/') && i.complete && i.naturalWidth > 0) && /Test Spotter/.test(await page.textContent('#reveal-card .cc-credit')) && await page.$eval('#reveal-card .cc-credit a', a => a.href.startsWith('https://www.planespotters.net/photo/')), `${label}: exact airframe photo shows with its credit and link`);
+  ok(await page.$eval('#reveal-card .cc-photo', e => { const t = e.querySelector('.cc-title').getBoundingClientRect(), b = e.getBoundingClientRect(); return t.bottom <= b.bottom + 0.5 && t.top >= b.top; }), `${label}: card name sits inside the photo, not over the frame`);
   await page.screenshot({path: path.join(SHOTS, `${label}-reveal-rare.png`)});
   await closeReveal(page);
   ok(await page.$eval('#hangar', h => !!h.querySelector('.cc-card[data-code="A388"]:not(.empty)')), `${label}: hangar shows the A380 as owned`);
+  ok(await page.$eval('.cc-card[data-code="A388"] img.photo', i => /plnspttrs/.test(i.src)), `${label}: hangar keeps the photo of the plane you caught`);
   ok(await page.textContent('#stat-types') === '1' && await page.textContent('#stat-points') === '60', `${label}: counts and points update`);
   s = await go(page, 'BAW1'); ok(/already caught/.test(s), `${label}: same callsign twice in a day is refused`);
   const before = calls; s = await go(page, 'BAW1'); ok(calls === before, `${label}: a same day repeat makes no lookup`);
@@ -53,6 +67,7 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   s = await go(page, 'NOPE1'); ok(/can't hear/.test(s), `${label}: not found is a friendly message`);
   await go(page, 'BAW2'); await closeReveal(page); s = await go(page, 'BAW3');
   ok(/Another/.test(s) && await page.$eval('.cc-card[data-code="A320"] .cc-count', e => e.textContent.includes('2')), `${label}: duplicate type adds XP and a tally`);
+  ok(await page.$eval('.cc-card[data-code="A320"]', c => { const i = c.querySelector('img.photo'), cr = c.querySelector('.cc-credit'); return !!i && i.src.includes('/img/photos/A320.webp') && !!cr && /CC|Public domain/i.test(cr.textContent) && !!cr.querySelector('a[href^="https://commons.wikimedia.org/"]'); }), `${label}: type photo from Commons carries its credit and licence`);
   ok(+(await page.textContent('#stat-xp')) > 0, `${label}: XP counted`); await closeReveal(page);
   await go(page, 'RRR1'); await page.waitForTimeout(1600);
   ok(await page.$eval('#reveal', d => d.classList.contains('tier-legendary')), `${label}: display team Hawk is legendary`);
@@ -81,6 +96,21 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     ok(/One lookup every/.test(await page.textContent('#status')), 'submits are rate limited');
   }
   ok(errors.length === 0, `${label}: no console errors ${JSON.stringify(errors)}`);
+  // Unknown, drone and squawk catches, then every caught card must show a loaded picture.
+  const imgsOk = sel => page.$$eval(sel, cs => cs.map(c => { const i = c.querySelector('.cc-photo img'), sv = c.querySelector('.cc-photo svg'); return {code: c.dataset.code, ok: i ? i.complete && i.naturalWidth > 0 : !!sv, img: !!i}; }));
+  const waitImgs = () => page.waitForFunction(() => [...document.querySelectorAll('.cc-card:not(.empty) .cc-photo img')].every(i => i.complete), null, {timeout: 15000}).catch(() => {});
+  for (const cs of ['HELI', 'DRN1', 'SQK1']) {
+    const st = await go(page, cs); await waitImgs();
+    const rv = await imgsOk('#reveal-card .cc-card');
+    ok(rv.length === 1 && rv[0].ok && rv[0].img, `${label}: ${cs} reveal shows a loaded image ${JSON.stringify(rv)}`);
+    if (cs === 'HELI') ok(/New type discovered/.test(st) && rv[0].code === 'UNKHE' && /400777/i.test(await page.textContent('#reveal-card')), `${label}: unknown helicopter still catches, with hex and a new type bonus`);
+    if (cs === 'SQK1') ok(/Legendary squawk/.test(await page.textContent('#reveal-card .cc-squawk')) && await page.$eval('#reveal-card .cc-card', c => c.classList.contains('sq')), `${label}: squawk badge shows on the card`);
+    await closeReveal(page);
+  }
+  ok(await page.textContent('#stat-moments') === '1', `${label}: rare moments tally counts the squawk`);
+  await waitImgs();
+  const hang = await imgsOk('#hangar .cc-card:not(.empty)');
+  ok(hang.length >= 5 && hang.every(h => h.ok && h.img), `${label}: every caught card in the hangar shows a loaded image ${JSON.stringify(hang.filter(h => !h.ok || !h.img))}`);
   await ctx.close();
 }
 await browser.close();

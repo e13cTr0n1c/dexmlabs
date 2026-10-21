@@ -1,7 +1,7 @@
-import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR} from './config.mjs';
+import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS} from './config.mjs';
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
-import {cardArt, setArtManifest} from './art.mjs';
+import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot} from './art.mjs';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -15,36 +15,37 @@ $('#catch-form').addEventListener('submit', e => {
   submit($('#cs').value);
 });
 const getJSON = n => fetch(`./data/${n}.json`).then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
-let table, specials, art;
-try { [table, specials, art] = await Promise.all(['types', 'specials', 'art'].map(getJSON)); }
+let table, specials, art, photos;
+try { [table, specials, art, photos] = await Promise.all(['types', 'specials', 'art', 'photos'].map(getJSON)); }
 catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad'); throw e; }
-setArtManifest(art.codes);
+setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
 const load = () => { try { return C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))) || C.emptyState(); } catch { return C.emptyState(); } };
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
-const save = () => { try { localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
+// Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
+const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
 const now = () => new Date(window.__ccNow || Date.now());
 const wanted = () => C.wantedFor(now(), table, specials);
 const Tier = t => t[0].toUpperCase() + t.slice(1);
 const fmtTime = iso => new Date(iso).toLocaleString('en-GB', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'});
 
 function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
-  const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
-  return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}" data-code="${esc(info.code)}">
-<div class="cc-top"><span class="cc-code">${esc(info.code)}</span><span class="cc-tier">${owned ? Tier(tier) : '???'}</span></div>
-<div class="cc-art">${cardArt(info, tier, owned, eager)}</div>
-<h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3>
-<p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(info.code)}${extra}</p>${owned ? log + `<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p>` : ''}</article>`;
+  const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}${entry.reg ? `<div><dt>Registration</dt><dd>${esc(entry.reg)}</dd></div>` : ''}${info.unknown && entry.hex ? `<div><dt>Hex</dt><dd>${esc(entry.hex.toUpperCase())}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
+  const sq = entry && C.SQUAWKS[entry.sq] ? `<p class="cc-squawk"><b>Legendary squawk</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
+  return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}" data-code="${esc(info.code)}"><div class="cc-in">
+<div class="cc-photo">${cardArt(info, tier, owned, eager, entry)}<div class="cc-top"><span class="cc-code">${esc(info.code)}</span><span class="cc-tier">${owned ? Tier(tier) : 'Locked'}</span></div>
+<div class="cc-title"><h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p></div></div>
+${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${log}<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p></div>` : ''}</div></article>`;
 }
 
 function renderStats() {
   const t = C.totals(state);
-  $('#stat-types').textContent = t.types; $('#stat-catches').textContent = t.catches; $('#stat-points').textContent = t.points.toLocaleString('en-GB'); $('#stat-xp').textContent = t.xp;
+  $('#stat-types').textContent = t.types; $('#stat-catches').textContent = t.catches; $('#stat-points').textContent = t.points.toLocaleString('en-GB'); $('#stat-xp').textContent = t.xp; $('#stat-moments').textContent = t.moments;
 }
 function renderWanted() {
   const w = wanted(), info = C.typeInfo(w.code, idx, table), got = state.wantedHits[C.dayKey(now())];
-  $('#wanted').innerHTML = `<p class="eyebrow">Wanted today, double points</p><div class="wanted-row"><div class="wanted-art">${cardArt(info, info.tier, true)}</div><div><h2>${esc(w.name)}</h2><p class="muted">${esc(info.code)} · ${Tier(info.tier)} · ${POINTS[info.tier] * 2} pts on your first one today</p>${got ? '<p class="ok">Caught. Well spotted.</p>' : ''}</div></div>`;
+  $('#wanted').innerHTML = `<p class="eyebrow">Wanted today, double points</p><div class="wanted-row"><div class="wanted-art">${cardArt(info, info.tier, true, true)}</div><div><h2>${esc(w.name)}</h2><p class="muted">${esc(info.code)} · ${Tier(info.tier)} · ${POINTS[info.tier] * 2} pts on your first one today</p>${got ? '<p class="ok">Caught. Well spotted.</p>' : ''}</div></div>`;
 }
 function renderHangar() {
   const set = C.SETS.find(s => s.id === filter);
@@ -86,14 +87,47 @@ async function submit(raw) {
     if (r.error) return say((MSG[r.error] || MSG.offline)(label), 'bad');
     const live = C.pickLive(r.data);
     if (!live.ok) return say((MSG[live.reason] || MSG.notfound)(label), 'bad');
+    if (!live.ac.type) await fillType(live.ac);
+    const spot = spotPhoto(live.ac);
     const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
     if (res.status === 'today') return say(MSG.today(live.ac.callsign), 'bad');
+    const photo = await spot; if (photo) res.entry.photo = photo;
     state = res.state; save(); render();
-    say(res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
+    say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
     reveal(res); postCatch(live.ac.callsign);
   } catch (e) {
     console.error(e); say('Something went wrong with that one. Try again in a moment.', 'bad');
   } finally { setTimeout(() => { btn.disabled = false; btn.textContent = 'Catch it'; btn.removeAttribute('aria-busy'); }, 400); }
+}
+
+// The feed sometimes has no type. Ask hexdb.io, a free aircraft database, by the airframe's hex code before falling back.
+async function fillType(ac) {
+  if (!ac.hex) return;
+  try {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 3000);
+    const r = await fetch(`https://hexdb.io/api/v1/aircraft/${encodeURIComponent(ac.hex)}`, {signal: ctl.signal}); clearTimeout(timer);
+    if (!r.ok) return;
+    const j = await r.json(), t = String(j.ICAOTypeCode || '').toUpperCase().trim();
+    if (/^[A-Z0-9]{2,4}$/.test(t)) ac.type = t;
+    if (!ac.reg && j.Registration) ac.reg = String(j.Registration).slice(0, 10);
+    if (!ac.op && j.RegisteredOwners) ac.op = String(j.RegisteredOwners).slice(0, 40);
+  } catch {}
+}
+
+// A photo of the exact airframe from Planespotters.net, if one exists. Never holds a catch up for long.
+async function spotPhoto(ac) {
+  if (!SPOT_API) return null;
+  for (const path of [ac.hex && 'hex/' + encodeURIComponent(ac.hex), ac.reg && 'reg/' + encodeURIComponent(ac.reg)].filter(Boolean)) {
+    try {
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 3500);
+      const r = await fetch(`${SPOT_API}/${path}`, {signal: ctl.signal}); clearTimeout(timer);
+      if (!r.ok) continue;
+      const p = ((await r.json()).photos || [])[0];
+      const ph = p && safeSpot({src: (p.thumbnail_large || p.thumbnail || {}).src, by: String(p.photographer || '').slice(0, 60), link: p.link});
+      if (ph) return ph;
+    } catch {}
+  }
+  return null;
 }
 
 function reveal(res) {

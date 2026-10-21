@@ -7,7 +7,9 @@ const idx = C.indexTypes(table); let n = 0; const t = (name, fn) => { fn(); n++;
 const live = (o = {}) => C.pickLive({ac: [Object.assign({flight: 'BAW1  ', r: 'G-XLEA', hex: '4005c1', t: 'A388', alt_baro: 37000, gs: 488, seen: 1}, o)]}).ac;
 t('table: at least 150 types, valid tiers and categories, unique codes, reward fields', () => {
   assert.ok(table.types.length >= 150); assert.equal(new Set(table.types.map(x => x.code)).size, table.types.length);
-  for (const x of table.types) { assert.ok(C.TIERS.includes(x.tier), x.code); assert.ok(x.name && x.fact && x.maker !== undefined, x.code); assert.deepEqual(Object.keys(x.reward).sort(), ['code', 'label', 'url']); }
+  for (const x of table.types) { assert.ok(C.TIERS.includes(x.tier), x.code); assert.ok(x.name, x.code);
+    if (x.gen) { assert.ok(/^[A-Z][0-8C][A-Z-]$/.test(x.d) && 'LMHJ-'.includes(x.w), x.code); continue; }
+    assert.ok(x.fact && x.maker !== undefined, x.code); assert.deepEqual(Object.keys(x.reward).sort(), ['code', 'label', 'url']); }
   assert.ok(!/[\u2013\u2014]/.test(JSON.stringify(table) + JSON.stringify(specials)), 'no dashes');
 });
 t('rarity by type: A320 and 737 common, 747 and A380 rare, Beluga and An-124 legendary', () => {
@@ -15,9 +17,9 @@ t('rarity by type: A320 and 737 common, 747 and A380 rare, Beluga and An-124 leg
   for (const c of ['B744', 'B748', 'A388', 'A35K', 'B77F']) assert.equal(idx.get(c).tier, 'rare', c);
   for (const c of ['A3ST', 'A337', 'A124', 'E3TF', 'HAWK', 'BLCF']) assert.equal(idx.get(c).tier, 'legendary', c);
 });
-t('unknown types default to uncommon; military flag and display callsigns are legendary', () => {
+t('unknown types default to uncommon; military operators lift to at least rare, display callsigns are legendary', () => {
   const u = C.typeInfo('ZZZZ', idx, table); assert.equal(u.tier, 'uncommon'); assert.equal(C.tierFor({}, u), 'uncommon');
-  assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('A320')), 'legendary');
+  assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('A320')), 'rare'); assert.equal(C.tierFor({dbFlags: 1, callsign: 'ASCOT1'}, idx.get('B744')), 'legendary');
   assert.equal(C.tierFor({callsign: 'RRR1'}, idx.get('A320')), 'legendary');
 });
 t('query parsing: callsign, registration and hex', () => {
@@ -63,9 +65,48 @@ t('rewards only after a legendary catch with a code', () => {
   assert.equal(C.rewardFor(idx.get('HAWK'), 'legendary'), null, 'empty for now');
 });
 t('import validation and share text', () => {
-  assert.equal(C.validateImport({v: 9}), null); assert.deepEqual(C.validateImport({v: 1, cards: {'<x>': {tier: 'rare', count: 1}, '????': {tier: 'uncommon', count: 1}}, log: []}).cards, {'????': {tier: 'uncommon', count: 1}});
+  assert.equal(C.validateImport({v: 9}), null); assert.deepEqual(C.validateImport({v: 1, cards: {'<x>': {tier: 'rare', count: 1}, '????': {tier: 'uncommon', count: 1}}, log: []}).cards, {UNKFW: {code: 'UNKFW', tier: 'uncommon', count: 1}});
   const r = C.applyCatch(null, live(), new Date(2026, 9, 21, 12), idx, table, null);
   assert.ok(C.validateImport(JSON.parse(JSON.stringify(r.state))));
   assert.match(C.shareText(r.entry, r.info, r.tier), /I caught an Airbus A380 ✈ Rare[\s\S]*dexmlabs\.app\/callsign-catch\//);
+});
+
+t('full ICAO list: L-39, helicopters and drones are in with sensible tiers', () => {
+  assert.ok(table.types.length > 2000);
+  const L39 = C.typeInfo('L39', idx, table), q9 = C.typeInfo('Q9', idx, table), mi8 = C.typeInfo('MI8', idx, table);
+  assert.equal(L39.cat, 'fighter'); assert.ok(['rare', 'legendary'].includes(L39.tier));
+  assert.equal(q9.cat, 'drone'); assert.equal(q9.tier, 'legendary'); assert.equal(mi8.cat, 'heli'); assert.ok(/helicopter with two turboprop engines/.test(mi8.fact), mi8.fact);
+});
+t('an unknown type never loses a catch: generic card by class plus a one off bonus', () => {
+  const base = {hex: 'abc123', callsign: 'XYZ1', reg: 'G-ABCD', alt: 3000, gs: 100, dbFlags: 0, op: ''};
+  let s = C.emptyState();
+  const r1 = C.applyCatch(s, {...base, type: '', category: 'A7'}, new Date('2026-10-21T10:00:00Z'), idx, table, null);
+  assert.equal(r1.info.code, 'UNKHE'); assert.equal(r1.info.cat, 'heli'); assert.ok(r1.newType); assert.equal(r1.gain, 25 + 25);
+  const r2 = C.applyCatch(r1.state, {...base, callsign: 'XYZ2', type: '', category: 'B6'}, new Date('2026-10-21T10:01:00Z'), idx, table, null);
+  assert.equal(r2.info.code, 'UNKUV'); assert.equal(r2.info.cat, 'drone');
+  const r3 = C.applyCatch(r2.state, {...base, callsign: 'XYZ3', type: 'ZZ9Q', category: 'A1'}, new Date('2026-10-21T10:02:00Z'), idx, table, null);
+  assert.equal(r3.info.code, 'ZZ9Q'); assert.ok(r3.newType);
+  const r4 = C.applyCatch(r3.state, {...base, callsign: 'XYZ4', type: 'ZZ9Q', category: 'A1'}, new Date('2026-10-21T10:03:00Z'), idx, table, null);
+  assert.equal(r4.status, 'dupe'); assert.ok(!r4.newType);
+  assert.ok(C.validateImport(JSON.parse(JSON.stringify(r4.state))), 'unknown cards survive export and import');
+});
+t('military operators lift a type to at least rare; squawks give a badge and no points', () => {
+  const info = C.typeInfo('A332', idx, table);
+  assert.equal(C.tierFor({callsign: 'BAW12', dbFlags: 0}, info), info.tier);
+  assert.equal(C.tierFor({callsign: 'RRR6612', dbFlags: 0}, {tier: 'common'}), 'legendary', 'RRR stays a display style legendary');
+  assert.equal(C.tierFor({callsign: 'ASCOT481', dbFlags: 0}, {tier: 'common'}), 'rare');
+  assert.equal(C.tierFor({callsign: 'XYZ', dbFlags: 1}, {tier: 'rare'}), 'legendary');
+  const ac = {hex: 'abc124', callsign: 'EZY77', reg: 'G-EZZZ', type: 'A319', alt: 9000, gs: 250, dbFlags: 0, op: '', squawk: '7700'};
+  const quiet = C.applyCatch(C.emptyState(), {...ac, squawk: '1200'}, new Date('2026-10-21T11:00:00Z'), idx, table, null);
+  const loud = C.applyCatch(C.emptyState(), ac, new Date('2026-10-21T11:00:00Z'), idx, table, null);
+  assert.equal(loud.gain, quiet.gain); assert.equal(loud.entry.sq, '7700'); assert.equal(C.totals(loud.state).moments, 1);
+  assert.ok(/general emergency/.test(C.SQUAWKS['7700']) && /radio failure/.test(C.SQUAWKS['7600']));
+});
+t('Rotor Club and Unmanned sets use real table codes', () => {
+  for (const id of ['rotor', 'unmanned']) for (const c of C.SETS.find(x => x.id === id).codes) assert.ok(idx.get(c), c);
+});
+t('old saves migrate: a ???? card becomes the unidentified card instead of being lost', () => {
+  const old = {v: 1, cards: {'????': {code: '????', tier: 'uncommon', count: 2}, A320: {code: 'A320', tier: 'common', count: 1}}, log: [{type: '????', cs: 'X', alt: 1}], days: {}, xp: 0, points: 50};
+  const s = C.validateImport(old); assert.ok(s.cards.UNKFW && s.cards.UNKFW.count === 2 && s.cards.A320 && !s.cards['????']); assert.equal(s.log[0].type, 'UNKFW');
 });
 console.log(n + ' passed');
