@@ -145,6 +145,17 @@ export function pickVariant({hexdb, desc, photoLink} = {}) {
 }
 const cleanVariants = v => Array.isArray(v) ? [...new Set(v.filter(x => typeof x === 'string' && x && x.length <= 40))] : [];
 // Older saves have no variants: rebuild them from the log entries that carry one (entry.var or a photo link).
+// When a type is promoted in the table (for example the X-59 to legendary), saved cards catch up and the first catch is re-scored.
+export function upgradeTiers(state, idx, table) {
+  for (const c of Object.values(state.cards || {})) {
+    const info = typeInfo(c.code, idx, table);
+    if (!info || info.unknown || TIERS.indexOf(info.tier) <= TIERS.indexOf(c.tier)) continue;
+    const diff = (POINTS[info.tier] || 0) - (POINTS[c.tier] || 0);
+    c.tier = info.tier; if (c.first) c.first.tier = info.tier; if (c.last) c.last.tier = info.tier;
+    if (diff > 0) state.points = (state.points || 0) + diff;
+  }
+  return state;
+}
 export function backfillVariants(state) {
   const s = state; if (!s || !s.cards) return s;
   for (const c of Object.values(s.cards)) c.variants = cleanVariants(c.variants);

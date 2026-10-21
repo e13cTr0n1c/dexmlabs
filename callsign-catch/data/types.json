@@ -2725,7 +2725,7 @@
 {"code":"X47B","name":"Northrop Grumman X-47B","tier":"uncommon","cat":"narrow","d":"L1J","w":"M","gen":1},
 {"code":"X49","name":"Sikorsky X-49 SpeedHawk","tier":"uncommon","cat":"heli","d":"H2T","w":"M","gen":1},
 {"code":"X55","name":"Lockhed Martin X-55","tier":"uncommon","cat":"narrow","d":"L2J","w":"M","gen":1},
-{"code":"X59","name":"Lockheed Martin X-59 QueSST","tier":"uncommon","cat":"narrow","d":"L1J","w":"M","gen":1},
+{"code":"X59","name":"Lockheed Martin X-59 QueSST","maker":"Lockheed Martin","tier":"legendary","cat":"fighter","fact":"A one off NASA research jet built to make a quiet supersonic thump instead of a sonic boom.","reward":{"url":"","label":"","code":""},"source":"https://www.nasa.gov/mission/quesst/"},
 {"code":"XA41","name":"Xtremair XA-41","tier":"common","cat":"prop","d":"L1P","w":"L","gen":1},
 {"code":"XA42","name":"Xtremair XA-42","tier":"common","cat":"prop","d":"L1P","w":"L","gen":1},
 {"code":"XA85","name":"Raj Hamsa XA-85","tier":"common","cat":"prop","d":"L1P","w":"L","gen":1},

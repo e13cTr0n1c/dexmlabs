@@ -24,7 +24,7 @@ catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh t
 C.setTeams(teams); C.setHexTypes(hexTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
-const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.backfillVariants(C.migrateHexTypes(s, idx, table)) : C.emptyState(); } catch { return C.emptyState(); } };
+const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
 // Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
 const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
@@ -182,7 +182,7 @@ function exportFile() {
   a.href = URL.createObjectURL(blob); a.download = `callsign-catch-${C.dayKey(now())}.json`; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function importFile(file) {
-  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.backfillVariants(C.migrateHexTypes(s, idx, table)); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
+  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 

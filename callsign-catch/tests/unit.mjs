@@ -195,3 +195,8 @@ t('validateImport and backfill: Arthur\'s real export keeps every card and point
   assert.deepEqual(mixed.cards.H60.variants, ['UH-60 Black Hawk']);
 });
 console.log(n + ' passed');
+t('a promoted type upgrades saved cards and tops up points', () => {
+  const s = C.emptyState(); s.points = 25; s.cards.X59 = {code: 'X59', tier: 'uncommon', count: 1, first: {tier: 'uncommon'}, last: {tier: 'uncommon'}, variants: []};
+  C.upgradeTiers(s, idx, table); assert.equal(s.cards.X59.tier, 'legendary'); assert.equal(s.points, 150);
+  C.upgradeTiers(s, idx, table); assert.equal(s.points, 150, 'only once');
+});
