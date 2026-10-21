@@ -5,7 +5,10 @@ export const G = 9.81, G0 = 9.80665, SOUND = 340, DEG = 180 / Math.PI, D = Math.
 // so it flies with the same feel, only bigger and slower to turn.
 export const VEHICLES = {
   f9: {id: 'f9', name: 'Slim booster', short: 'Slim', dry: 20000, thrust: 440000, isp: 300, axial: 19, legsDrag: 5, side: 90, fins: 33, rate: 14 * D, acc: 32 * D, rcsFlow: 0.9, height: 42.5, radius: 1.85, legs: true},
-  sh: {id: 'sh', name: 'Giant booster', short: 'Giant', dry: 180000, thrust: 3960000, isp: 300, axial: 171, legsDrag: 0, side: 810, fins: 297, rate: 10 * D, acc: 20 * D, rcsFlow: 0.9, height: 71, radius: 4.5, legs: false, pin: 63}
+  sh: {id: 'sh', name: 'Giant booster', short: 'Giant', dry: 180000, thrust: 3960000, isp: 300, axial: 171, legsDrag: 0, side: 810, fins: 297, rate: 10 * D, acc: 20 * D, rcsFlow: 0.9, height: 71, radius: 4.5, legs: false, pin: 63},
+  // The Giant ship, the upper stage. No grid fins: four flaps steer it in a belly flop, falling sideways at about 90 m/s.
+  // Q/E pitch it with the flaps, which need airflow; with the engine lit the gimbal flips it upright fast. Pins under the forward flaps.
+  ship: {id: 'ship', name: 'Giant ship', short: 'Ship', dry: 100000, thrust: 2300000, isp: 330, axial: 60, legsDrag: 0, side: 210, fins: 0, rate: 10 * D, acc: 20 * D, flipRate: 55 * D, flipAcc: 120 * D, rcsFlow: 0.9, height: 50, radius: 4.5, legs: false, pin: 41, flaps: true, lim: [-112 * D, 20 * D]}
 };
 const V0 = VEHICLES.f9;
 export const DRY = V0.dry, THRUST = V0.thrust, ISP = V0.isp;
@@ -86,14 +89,20 @@ export const closeArms = s => s.done || s.armsCmd ? s : {...s, armsCmd: 1};
 // One step. input: {rot: -1|0|1, gim: -1|0|1}. Throttle is set on the state, legs with deployLegs, arms with closeArms.
 export function step(w, s0, input = {}, dt = 1 / 60) {
   const s = {...s0}; if (s.done) return s;
-  const v = vehicleOf(w), k = v.dry / V0.dry, rot = input.rot || 0, gim = input.gim || 0;
+  const v = vehicleOf(w), k = v.dry / V0.dry, rot = input.rot || 0; let gim = input.gim || 0;
   // Attitude: rate command. The flight computer holds the attitude when you let go.
-  const want = rot * v.rate; let a = 0;
-  if (s.rcs > 0 && Math.abs(want - s.omega) > 1e-6) { a = Math.sign(want - s.omega) * v.acc; s.rcs = Math.max(0, s.rcs - v.rcsFlow * dt); }
-  s.omega += a * dt; if (Math.abs(s.omega - want) < v.acc * dt && s.rcs > 0) s.omega = want;
-  const q = 0.5 * rho(s.y) * (s.vx * s.vx + s.vy * s.vy);
+  const q = 0.5 * rho(s.y) * (s.vx * s.vx + s.vy * s.vy), th0 = s.fuel > 0 ? s.throttle : 0;
+  // The ship pitches with its flaps and cold gas at the booster's rate. Lit, its engine gimbal throws it through the flip much faster,
+  // fading out over the last 20 degrees, so the hover feels like the boosters.
+  const fb = v.flaps && th0 > 0 ? Math.min(1, Math.max(0, (-s.angle - 22 * D) / (14 * D))) : 0, rate = v.rate + (v.flipRate || 0) * fb, acc = v.acc + (v.flipAcc || 0) * fb;
+  const want = rot * rate; let a = 0;
+  if (s.rcs > 0 && Math.abs(want - s.omega) > 1e-6) { a = Math.sign(want - s.omega) * acc; s.rcs = Math.max(0, s.rcs - v.rcsFlow * dt); }
+  s.omega += a * dt; if (Math.abs(s.omega - want) < acc * dt && s.rcs > 0) s.omega = want;
   s.angle += (s.omega + (w.level ? turbulence(w, s.t) : 0) * Math.min(1.6, 0.4 + q / 6000)) * dt;
-  if (Math.abs(s.angle) > RCS.limit) { s.angle = Math.sign(s.angle) * RCS.limit; s.omega = 0; s.limit = true; } else s.limit = false;
+  const lo = v.lim ? v.lim[0] : -RCS.limit, hi = v.lim ? v.lim[1] : RCS.limit;
+  if (s.angle < lo || s.angle > hi) { s.angle = Math.max(lo, Math.min(hi, s.angle)); s.omega = 0; s.limit = true; } else s.limit = false;
+  // Ship flaps: with the engine off, A tucks them in (less drag, fall faster), D spreads them out (more drag, slower).
+  if (v.flaps) { const fw = th0 > 0 ? 0 : gim, fd = fw - (s.flaps || 0); s.flaps = (s.flaps || 0) + Math.sign(fd) * Math.min(Math.abs(fd), 1.2 * dt); if (th0 <= 0) gim = 0; }
   const gw = gim * GIMBAL.max, gd = gw - s.gimbal; s.gimbal += Math.sign(gd) * Math.min(Math.abs(gd), GIMBAL.slew * dt);
   s.fins = Math.min(1, (s.fins || 0) + dt / 1.5);
   // Legs.
@@ -101,11 +110,12 @@ export function step(w, s0, input = {}, dt = 1 / 60) {
   const speed = Math.hypot(s.vx, s.vy);
   if (s.legs > 0 && speed > LEGS.maxSpeed) s.legsBroken = true;
   // Forces.
-  const m = v.dry + s.fuel, th = s.fuel > 0 ? s.throttle : 0, F = th * v.thrust, ta = s.angle + (th > 0 ? s.gimbal : 0);
+  const m = v.dry + s.fuel, th = s.fuel > 0 ? s.throttle : 0, F = th * v.thrust * (1 - 0.6 * fb), // mid flip the gimbal turns most of the thrust into torque
+    ta = s.angle + (th > 0 ? s.gimbal : 0);
   const r = rho(s.y), wx = w.level ? wind(w, s.y, s.t) : 0, rx = s.vx - wx, ry = s.vy;
   const ux = Math.sin(s.angle), uy = Math.cos(s.angle), nx = uy, ny = -ux;
   const va = rx * ux + ry * uy, vn = rx * nx + ry * ny, ax = v.axial + v.legsDrag * s.legs * (s.legsBroken ? 0 : 1);
-  const Fa = -0.5 * r * ax * Math.abs(va) * va, Fn = -0.5 * r * v.side * Math.abs(vn) * vn;
+  const Fa = -0.5 * r * ax * Math.abs(va) * va, Fn = -0.5 * r * v.side * (1 + 0.45 * (s.flaps || 0)) * Math.abs(vn) * vn;
   // Grid fins: falling base first, leaning glides you the way you lean, like the engine does under thrust.
   const Fl = ry < 0 ? 0.5 * r * (rx * rx + ry * ry) * v.fins * Math.sin(s.angle) * Math.min(1, -ry / 20) : 0;
   const fx = F * Math.sin(ta) + Fa * ux + Fn * nx + Fl, fy = F * Math.cos(ta) + Fa * uy + Fn * ny;
@@ -144,14 +154,14 @@ function towerStep(w, s, dt) {
     if (s.arms >= 1) {
       const c = catchWindow(w, s), dx = Math.abs(s.x);
       if (inWindow(w, s)) { s.done = true; s.landed = true; s.caught = true; s.touch = {impact: Math.max(0, -c.vy), slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: dx, dy: Math.abs(c.dy)}; s.y = s.armY - v.pin; return s; }
-      if (dx < v.radius + 4 && s.armY > s.y && s.armY < s.y + v.height) { s.done = true; s.landed = false; s.touch = {impact: Math.max(0, -c.vy), slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: dx}; s.fault = {k: 'clip', text: whyMiss(c) + ' The arms closed on the side of the booster instead of under the pins.'}; return s; }
+      if (dx < v.radius + 4 && s.armY > s.y && s.armY < s.y + v.height) { s.done = true; s.landed = false; s.touch = {impact: Math.max(0, -c.vy), slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: dx}; s.fault = {k: 'clip', text: whyMiss(c) + ` The arms closed on the side of the ${v.flaps ? 'ship' : 'booster'} instead of under the pins.`}; return s; }
       s.armsCmd = 2; s.misses = (s.misses || 0) + 1; s.lastMiss = whyMiss(c);
     }
   } else if (s.armsCmd === 2) { s.arms = Math.max(0, s.arms - dt / T.reopen); if (s.arms <= 0) s.armsCmd = 0; }
   // Hitting the tower or the ground.
-  const half = v.radius;
-  if (s.x + half > T.x0 && s.x - half < T.x1 && s.y < T.top) { s.done = true; s.landed = false; s.touch = {impact: -s.vy, slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: Math.abs(s.x)}; s.fault = {k: 'tower', text: 'You flew into the tower.'}; return s; }
-  if (s.y <= 0) { s.done = true; s.landed = false; s.touch = {impact: -s.vy, slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: Math.abs(s.x)}; s.fault = {k: 'ground', text: Math.abs(s.x) < 60 ? 'It came down on the pad. This booster has no legs: the tower has to catch it.' : 'It came down on the ground, away from the tower.'}; return s; }
+  const half = v.radius, ex = v.flaps && Math.abs(s.angle) > 0.5 ? Math.sin(s.angle) * v.height : 0, bx0 = s.x + Math.min(0, ex) - half, bx1 = s.x + Math.max(0, ex) + half;
+  if (bx1 > T.x0 && bx0 < T.x1 && s.y < T.top) { s.done = true; s.landed = false; s.touch = {impact: -s.vy, slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: Math.abs(s.x)}; s.fault = {k: 'tower', text: v.flaps && Math.abs(s.angle) > 0.5 ? 'You flew into the tower still flat on your belly. Flip upright well beside it.' : 'You flew into the tower.'}; return s; }
+  if (s.y <= 0) { s.done = true; s.landed = false; s.touch = {impact: -s.vy, slide: Math.abs(s.vx), tilt: Math.abs(s.angle), dist: Math.abs(s.x)}; s.fault = {k: 'ground', text: v.flaps ? (Math.abs(s.angle) > 0.5 ? 'The ship hit the ground before it flipped upright. Light the engine and flip earlier.' : Math.abs(s.x) < 60 ? 'It came down on the pad. The ship has no legs here: the tower has to catch it.' : 'The ship came down on the ground, away from the tower.') : Math.abs(s.x) < 60 ? 'It came down on the pad. This booster has no legs: the tower has to catch it.' : 'It came down on the ground, away from the tower.'}; return s; }
   if (Math.abs(s.x) > 6000 || s.y > 30000) { s.done = true; s.landed = false; s.fault = {k: 'range', text: 'You flew out of the recovery area.'}; }
   return s;
 }
@@ -167,6 +177,9 @@ export const deployLegs = s => s.done || s.legsOut ? s : {...s, legsOut: true};
 // Height at which a full throttle burn from now would stop you, ignoring drag. The burn cue on the screen.
 export function stopHeight(s, v = V0) { const m = v.dry + s.fuel, a = v.thrust / m - G; return a > 0 && s.vy < 0 ? s.vy * s.vy / (2 * a) : 0; }
 
+// Ship: the height above the arms to start the flip, so a full burn after it still stops you. The FLIP cue on the screen.
+export function flipHeight(s, v) { const a = v.thrust / (v.dry + s.fuel) - G, vy = Math.min(0, s.vy); return a > 0 ? vy * vy / (2 * a * FLIP.margin) + FLIP.time * -vy + FLIP.pad : 0; }
+export const FLIP = {margin: 0.75, time: 1.6, pad: 40, lead: 75}; // lead: flip about this far out from the arms, the flip carries you in
 // Score: soft, level, still, centred, fuel left, times the level multiplier. Catches have their own window.
 function partsRaw(s, w) {
   const t = s.touch, L = w.level, f = s.fuel / w.fuel;

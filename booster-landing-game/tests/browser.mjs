@@ -4,7 +4,8 @@
 //   python3 -m http.server 18473 --bind 127.0.0.1 &  node booster-landing-game/tests/browser.mjs
 // Needs playwright or playwright-core (PW_MODULE=/path/to/node_modules/playwright-core) and a Chromium (CHROMIUM=/path).
 import fs from 'fs'; import path from 'path'; import {fileURLToPath} from 'url';
-const here = path.dirname(fileURLToPath(import.meta.url)), shots = path.join(here, '..', 'screenshots');
+const here = path.dirname(fileURLToPath(import.meta.url)), shots = path.join(here, '..', 'screenshots'), shipShots = process.env.SHIP_SHOTS || '/workspace/shots/ship-catch';
+fs.mkdirSync(shipShots, {recursive: true});
 const BASE = process.env.BASE || 'http://127.0.0.1:18473';
 const pw = await import(process.env.PW_MODULE || 'playwright-core').then(m => m.default || m);
 const exe = process.env.CHROMIUM || (() => { const root = path.join(process.env.HOME, '.cache/ms-playwright'); const d = fs.existsSync(root) && fs.readdirSync(root).filter(n => /^chromium-\d+/.test(n)).sort().pop(); return d ? path.join(root, d, 'chrome-linux64/chrome') : undefined; })();
@@ -15,7 +16,7 @@ async function open(viewport) {
   page.on('console', m => { if (m.type() === 'error' && !(m.location()?.url || '').startsWith('https://') && !/cloudflareinsights/.test(m.text())) errors.push(m.text()); }); page.on('pageerror', e => errors.push(String(e)));
   page.on('response', r => { if (r.status() >= 400 && r.url().startsWith(BASE)) missing.push(r.url()); });
   await ctx.route(u => !u.href.startsWith(BASE), r => r.abort()); // nothing leaves the box, no analytics from tests
-  await page.goto(BASE + '/booster-landing-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.BoosterGame && document.querySelectorAll('[data-level]').length === 7);
+  await page.goto(BASE + '/booster-landing-game/', {waitUntil: 'load'}); await page.waitForFunction(() => window.BoosterGame && document.querySelectorAll('[data-level]').length === 9);
   return {ctx, page, errors, missing};
 }
 // The pilot runs inside the page and only presses keys, 20 times a second.
@@ -40,7 +41,7 @@ const D = await open({width: 1440, height: 900});
 ok(D.errors.length === 0, 'desktop loads with no console errors ' + JSON.stringify(D.errors));
 ok(D.missing.length === 0, 'every local file resolves ' + JSON.stringify(D.missing));
 ok(await D.page.evaluate(() => !!document.querySelector('.dexm-support-site') && !!document.querySelector('#result .dexm-support')), 'support buttons on the page and on the finish screen');
-ok(await D.page.evaluate(() => document.querySelectorAll('.mission').length === 2 && document.querySelectorAll('.mission canvas').length === 2 && !!document.getElementById('assist')), 'mission select shows both vehicles, their levels and the arm assist switch');
+ok(await D.page.evaluate(() => document.querySelectorAll('.mission').length === 3 && document.querySelectorAll('.mission canvas').length === 3 && !!document.getElementById('assist')), 'mission select shows both vehicles, their levels and the arm assist switch');
 const note = 'Independent fan-made game inspired by real reusable rockets. Not affiliated with or endorsed by SpaceX.';
 ok(await D.page.evaluate(n => document.querySelector('.site-footer').textContent.includes(n) && document.querySelector('.disclaimer').textContent.includes(n) && document.body.textContent.split(n).length > 2 && !/spacex/i.test(document.body.textContent.split(n).join('')), note), 'fan-made notice on the title and the footer, SpaceX nowhere else');
 await D.page.screenshot({path: path.join(shots, '1-missions.png')});
@@ -81,6 +82,44 @@ ok(await D.page.evaluate(() => window.BoosterGame.state().mach < 1), 'night star
 await D.page.keyboard.press('p'); ok(await D.page.evaluate(() => !document.getElementById('paused').hidden), 'P pauses');
 await D.page.keyboard.press('p');
 await D.ctx.close();
+// 4b. Ship Catch and Double Catch, on the desktop and at 390 px: the belly flop, the flip, the catch, the double.
+const W8 = (pg, f, arg, t = 150000) => pg.waitForFunction(f, arg, {timeout: t, polling: 50});
+async function shipRun(pg, tag) {
+  await pg.evaluate(() => window.BoosterGame.last = null);
+  await pg.evaluate(() => window.BoosterGame.start('ship-catch', {assist: false})); await W8(pg, () => window.BoosterGame.state()?.t > 0.2);
+  ok(await pg.evaluate(() => window.BoosterGame.world().v.id === 'ship' && Math.abs(window.BoosterGame.state().angle * 180 / Math.PI + 90) < 1), `${tag}: Ship Catch loads with the ship flat in a belly flop`);
+  await pg.evaluate(PILOT); await W8(pg, () => { const s = window.BoosterGame.state(); return s.done || s.t > 25; });
+  await pg.locator('#sky').screenshot({path: path.join(shipShots, `${tag}-1-belly-flop.png`)});
+  await W8(pg, () => { const s = window.BoosterGame.state(); return s.done || (s.throttle > 0 && s.angle > -60 * Math.PI / 180 && s.angle < -30 * Math.PI / 180); });
+  await pg.locator('#sky').screenshot({path: path.join(shipShots, `${tag}-2-flip.png`)});
+  await W8(pg, () => window.BoosterGame.last); const r = await pg.evaluate(() => window.BoosterGame.last); console.log(tag, 'ship-catch', JSON.stringify(r));
+  ok(r.caught && r.score > 0 && r.vehicle === 'ship', `${tag}: the keyboard pilot flips the ship and catches it`);
+  await pg.waitForTimeout(1200); await pg.locator('#sky').screenshot({path: path.join(shipShots, `${tag}-3-catch.png`)});
+  ok(await pg.evaluate(() => /Ship caught/.test(document.getElementById('result-head').textContent) && !document.getElementById('next').hidden), `${tag}: the result says ship caught and offers the Double Catch`);
+  // a fail: no flip, flat into the ground (desktop only, it is a long fall)
+  if (tag === 'desktop') { await pg.evaluate(() => window.BoosterGame.last = null); await pg.evaluate(() => window.BoosterGame.start('ship-catch')); await W8(pg, () => window.BoosterGame.state()?.t > 0.2);
+  await W8(pg, () => window.BoosterGame.last, null, 200000); const f = await pg.evaluate(() => window.BoosterGame.last);
+  ok(!f.landed && f.fault === 'ground' && /before it flipped/.test(await pg.evaluate(() => document.getElementById('result-text').textContent)), `${tag}: with no flip the ship hits the ground and the result says why`); }
+  // Double Catch: booster, then N, then the ship
+  await pg.evaluate(() => window.BoosterGame.last = null); await pg.evaluate(() => window.BoosterGame.start('double-catch', {assist: false})); await W8(pg, () => window.BoosterGame.state()?.t > 0.2);
+  ok(await pg.evaluate(() => window.BoosterGame.world().v.id === 'sh' && /Double Catch 1 of 2/.test(document.getElementById('flight-h').textContent)), `${tag}: Double Catch starts with the giant booster`);
+  await pg.evaluate(PILOT); await W8(pg, () => window.BoosterGame.last); const d1 = await pg.evaluate(() => window.BoosterGame.last);
+  ok(d1.caught && d1.double?.stage === 1 && !d1.double.done, `${tag}: Double Catch booster caught, the ship is next`);
+  await pg.waitForTimeout(600); await pg.evaluate(() => window.BoosterGame.last = null); await pg.keyboard.press('n'); await W8(pg, () => window.BoosterGame.state()?.t > 0.2);
+  ok(await pg.evaluate(() => window.BoosterGame.world().v.id === 'ship' && /Double Catch 2 of 2/.test(document.getElementById('flight-h').textContent)), `${tag}: N brings the ship in`);
+  await pg.evaluate(PILOT); await W8(pg, () => window.BoosterGame.last); const d2 = await pg.evaluate(() => window.BoosterGame.last); console.log(tag, 'double', JSON.stringify(d2));
+  ok(d2.caught && d2.double?.done && d2.double.total === Math.round((d2.double.scores[0] + d2.double.scores[1]) * 1.25), `${tag}: Double Catch total is both scores plus 25%`);
+  await pg.waitForTimeout(1200); await pg.locator('#sky').screenshot({path: path.join(shipShots, `${tag}-4-double-catch.png`)});
+  await pg.screenshot({path: path.join(shipShots, `${tag}-5-double-result.png`)});
+  ok(await pg.evaluate(() => /Double Catch!/.test(document.getElementById('result-head').textContent) && JSON.parse(localStorage.getItem('booster:stats')).best['double-catch'] > 0), `${tag}: the result shows the Double Catch and keeps the best`);
+}
+{ const S = await open({width: 1440, height: 900}); await S.page.screenshot({path: path.join(shipShots, 'desktop-0-title.png')}); await shipRun(S.page, 'desktop'); ok(S.errors.length === 0, 'Ship Catch desktop has no console errors ' + JSON.stringify(S.errors)); await S.ctx.close(); }
+{ const S = await open({width: 390, height: 844}); await shipRun(S.page, 'phone'); ok(await S.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'phone: Ship Catch fits the width'); ok(S.errors.length === 0, 'Ship Catch phone has no console errors ' + JSON.stringify(S.errors)); await S.ctx.close(); }
+// Deep link
+{ const S = await open({width: 1440, height: 900}); await S.page.goto(BASE + '/booster-landing-game/?level=ship-catch', {waitUntil: 'load'}); await S.page.waitForFunction(() => window.BoosterGame?.state()?.t > 0.2);
+  ok(await S.page.evaluate(() => window.BoosterGame.level() === 'ship-catch' && window.BoosterGame.world().v.id === 'ship'), '?level=ship-catch opens straight into Ship Catch');
+  await S.page.goto(BASE + '/booster-landing-game/?level=double-catch', {waitUntil: 'load'}); await S.page.waitForFunction(() => window.BoosterGame?.state()?.t > 0.2);
+  ok(await S.page.evaluate(() => window.BoosterGame.level() === 'double-catch' && window.BoosterGame.world().v.id === 'sh'), '?level=double-catch opens the Double Catch'); await S.ctx.close(); }
 // 5. Phone: touch buttons, no sideways overflow.
 const M = await open({width: 390, height: 844});
 ok(await M.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'phone title fits the width');

@@ -40,6 +40,36 @@ await t('Page: title, structured data, support links, the fan-made notice and no
   const note = 'Independent fan-made game inspired by real reusable rockets. Not affiliated with or endorsed by SpaceX.';
   assert.ok(h.split(note).length - 1 >= 2, 'notice on the title and the footer'); assert.match(h, /class="footer-disclaimer">Independent fan-made game/); assert.ok(!/spacex/i.test(h.split(note).join('')), 'SpaceX only in the notice');
   const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.ok(!/[\u2013\u2014]|\s-\s/.test(text)); });
+// Ship Catch and Double Catch
+await t('Ship Catch: the ship starts flat in a belly flop, falls at about 90 m/s in thick air, and the flaps glide and brake it', () => { const L = level('ship-catch'), w = P.makeWorld(L, 3);
+  assert.equal(w.v.id, 'ship'); assert.equal(w.kind, 'tower'); near(w.start.angle * P.DEG, -90, 1e-9, 'flat'); assert.ok(w.fuel < P.makeWorld(level('catch-calm'), 3).fuel / 3, 'a small landing burn only');
+  const calm = {...w, level: {...L, wind: {base: 0, gust: 0, turb: 0}}};
+  let s = {...w.start, y: 2500, vx: 0, vy: -60}; for (let i = 0; i < 60 * 12; i++) s = P.step(calm, s); assert.ok(-s.vy > 75 && -s.vy < 105, s.vy); near(s.vx, 0, 0.5, 'no drift flat');
+  for (const [rot, sign] of [[-1, -1], [1, 1]]) { let u = {...w.start, y: 2500, vx: 0, vy: -90}; for (let i = 0; i < 60 * 2; i++) u = P.step(calm, u, {rot}); for (let i = 0; i < 60 * 4; i++) u = P.step(calm, u); assert.equal(Math.sign(u.vx), sign, `rot ${rot} vx ${u.vx}`); }
+  let a = {...w.start, y: 2500, vx: 0, vy: -90}, b = {...a}; for (let i = 0; i < 60 * 6; i++) { a = P.step(calm, a, {gim: -1}); b = P.step(calm, b, {gim: 1}); } assert.ok(-a.vy > -b.vy + 5, `tucked ${a.vy} spread ${b.vy}`); assert.equal(a.gimbal, 0); });
+await t('Ship Catch: lit, the gimbal flips it upright in a few seconds; unlit it pitches at the booster rate and holds its angle', () => { const w = P.makeWorld(level('ship-catch'), 3);
+  let s = {...w.start, y: 900, vy: -90, throttle: 1}, n = 0; while (s.angle < -0.1 && n < 600) { s = P.step(w, s, {rot: 1}); n++; } assert.ok(n / 60 < 3.5, `flip ${n / 60} s`); assert.ok(s.angle > -0.1);
+  let u = {...w.start, y: 3000}; for (let i = 0; i < 60; i++) u = P.step(w, u, {rot: 1}); assert.ok(u.angle * P.DEG > -84 && u.angle * P.DEG < -80, u.angle * P.DEG); for (let i = 0; i < 60; i++) u = P.step(w, u); const a = u.angle; for (let i = 0; i < 60; i++) u = P.step(w, u); near(u.angle, a, 0.01, 'holds'); });
+await t('Ship Catch: a careful pilot catches it, and catching scores like the tower with a ×3 level', () => { const L = level('ship-catch'); let ok = 0; for (let k = 0; k < 20; k++) { const w = P.makeWorld(L, k * 7919 + 3), s = fly(w); if (s.caught && P.score(s, w) > 0) ok++; } assert.ok(ok >= 18, `${ok}/20`);
+  const w = P.makeWorld(L, 3), s = fly(w); assert.ok(s.caught); assert.ok(Math.abs(s.angle) < P.CATCH.tilt); assert.equal(P.parts(s, w).mult, 3); });
+await t('Ship Catch: a late, sloppy "decent player" still catches it a fair share of the time', () => { const L = level('ship-catch'); let ok = 0; for (let k = 0; k < 30; k++) if (fly(P.makeWorld(L, k * 7919 + 3), {steps: true, lag: 0.35, err: 0.15, every: 6, rand: P.rng(k)}).caught) ok++; console.log(`    human-ish ship catch ${Math.round(ok / 30 * 100)}%`); assert.ok(ok / 30 >= 0.5, ok); });
+await t('Ship Catch fails: no flip hits the ground flat, a flip over the tower hits it, a late flip cannot stop, and the arms clip a ship out of the window', () => { const w = P.makeWorld(level('ship-catch'), 3);
+  let s = {...w.start}; for (let i = 0; i < 60 * 400 && !s.done; i++) s = P.step(w, s); assert.equal(s.fault.k, 'ground'); assert.match(s.fault.text, /before it flipped/);
+  let t2 = {...w.start, x: -10, y: 120, vx: 0, vy: -10}; t2 = P.step(w, t2); assert.equal(t2.fault?.k, 'tower'); assert.match(t2.fault.text, /flat on your belly/);
+  let l = {...w.start, x: 30, y: 150, vx: 0, vy: -90, throttle: 1}; for (let i = 0; i < 60 * 30 && !l.done; i++) l = P.step(w, l, {rot: l.angle < 0 ? 1 : 0}); assert.ok(!l.caught && ['ground', 'tower'].includes(l.fault.k), l.fault?.k);
+  const hov = o => ({...w.start, angle: 0, x: 0, vx: 0, vy: 0, y: P.TOWER.armY - w.v.pin, throttle: P.hoverThrottle(w.v.dry + w.start.fuel, w.v), ...o});
+  let c = P.closeArms(hov()); for (let i = 0; i < 90 && !c.done; i++) { c.throttle = P.hoverThrottle(w.v.dry + c.fuel, w.v); c = P.step(w, c); } assert.equal(c.caught, true);
+  let m = P.closeArms(hov({y: P.TOWER.armY - w.v.pin + 10})); for (let i = 0; i < 90 && !m.done; i++) { m.throttle = P.hoverThrottle(w.v.dry + m.fuel, w.v); m = P.step(w, m); } assert.equal(m.fault?.k, 'clip'); assert.match(m.fault.text, /side of the ship/);
+  let tl = P.closeArms(hov({angle: 10 * Math.PI / 180})); for (let i = 0; i < 60 && !tl.done; i++) { tl.throttle = P.hoverThrottle(w.v.dry + tl.fuel, w.v); tl = P.step(w, tl); } assert.ok(!tl.caught); });
+await t('Double Catch: the booster stage then the ship, both catchable by the careful pilot', () => { const D = level('double-catch'); assert.deepEqual(D.double, ['double-booster', 'ship-catch']); const b = level('double-booster');
+  assert.equal(b.vehicle, 'sh'); assert.equal(b.mission, 'shipcatch'); assert.ok(!LEVELS.includes(b)); for (const id of D.double) { const w = P.makeWorld(level(id), 11), s = fly(w); assert.ok(s.caught, id); } });
+await t('Names: no real vehicle names on the levels, missions or vehicles', async () => { const {MISSIONS} = await import('../js/levels.js'); const txt = JSON.stringify([LEVELS, MISSIONS, P.VEHICLES]) + fs.readFileSync(new URL('../js/draw-vehicles.js', import.meta.url), 'utf8') + fs.readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.ok(!/starship|super heavy|spacex|falcon/i.test(txt)); assert.match(txt, /Giant ship/); });
+await t('Page: Ship Catch in the description, the FAQ and its schema, the level list and a deep link, Flight 15 named once in the text', () => { const h = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const meta = h.match(/<meta name="description" content="([^"]+)"/)[1]; assert.match(meta, /ship catch/i); const head = h.slice(0, h.indexOf('</title>')) + h.match(/<meta[^>]+(og|twitter):[^>]+>/g).join('');
+  assert.ok(!/starship|super heavy|spacex|falcon|flight 15/i.test(head + meta), 'no product names in the title, meta or share tags');
+  const faq = JSON.parse(h.match(/<script type="application\/ld\+json">(\{[^<]*FAQPage[^<]*)<\/script>/)[1]); assert.ok(faq.mainEntity.some(q => /ship catch/i.test(q.name)) && faq.mainEntity.some(q => /Double Catch/.test(q.name)));
+  const text = h.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' '); assert.equal(text.split('Flight 15').length - 1, 1); assert.match(text, /Ship Catch/); assert.match(h, /\?level=ship-catch/); assert.match(text, /Double Catch, booster then ship/); });
 // Daily Drop
 const Dd = await import('../js/daily.js'), {dailyLevel} = await import('../js/daily-level.js');
 await t('Daily Drop: the UK date, puzzle numbers from 2026-10-20, and the next drop at UK midnight across the clock change', () => {
@@ -49,7 +79,7 @@ await t('Daily Drop: the UK date, puzzle numbers from 2026-10-20, and the next d
   assert.equal(new Date(Dd.nextDrop(new Date('2026-10-25T12:00:00Z'))).toISOString(), '2026-10-26T00:00:00.000Z');
   assert.equal(new Date(Dd.nextDrop(new Date('2027-03-28T12:00:00Z'))).toISOString(), '2027-03-28T23:00:00.000Z'); assert.match(Dd.countdown(new Date('2026-10-20T22:00:00Z')), /^1:00:00$/); });
 await t('Daily Drop: the same flight all day for everyone, a different one tomorrow, and the levels untouched', () => { const a = dailyLevel('2026-10-21'), b = dailyLevel('2026-10-21'), c = dailyLevel('2026-10-22');
-  assert.deepEqual(a, b); assert.notDeepEqual(a.start, c.start); assert.equal(a.no, 1); assert.equal(a.start.jitter, 0); assert.equal(LEVELS.length, 7); assert.ok(!LEVELS.some(L => L.daily));
+  assert.deepEqual(a, b); assert.notDeepEqual(a.start, c.start); assert.equal(a.no, 1); assert.equal(a.start.jitter, 0); assert.equal(LEVELS.length, 9); assert.ok(!LEVELS.some(L => L.daily));
   assert.deepEqual(P.makeWorld(a, a.seed).start, P.makeWorld(b, b.seed).start); });
 await t('Daily Drop: one scored attempt a day is kept, practice never overwrites it', () => { const m = new Map(), ls = {getItem: k => m.get(k) ?? null, setItem: (k, v) => m.set(k, v)}, S = Dd.makeStore('x', ls);
   assert.equal(S.put('2026-10-21', {score: 900}), true); assert.equal(S.put('2026-10-21', {score: 10}), false); assert.equal(S.get('2026-10-21').score, 900); S.put('2026-10-22', {score: 1}); assert.equal(S.streak('2026-10-22'), 2); });
