@@ -49,8 +49,11 @@ const closeReveal = async page => { if (await page.isVisible('#reveal')) await p
 for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {width: 390, height: 844}]]) {
   const {ctx, page, errors} = await open(vp);
   ok(await page.$eval('.dexm-homebar', e => !!e) && /adsb\.lol/.test(await page.textContent('.credit')), `${label}: homebar and adsb.lol credit`);
+  const boardText = () => page.$$eval('#flapboard .flap', c => c.map(x => x.textContent).join('').trim());
   let s = await go(page, 'BAW1');
   ok(/Caught/.test(s) && await page.isVisible('#reveal'), `${label}: live A380 is caught and revealed`);
+  ok(await boardText() === 'CAUGHT' && await page.$eval('#sound', b => b.getAttribute('aria-pressed') === 'false' && /off/i.test(b.textContent)), `${label}: board says CAUGHT and sound is off by default`);
+  ok((await page.$$eval('#wanted-flap .flap', c => c.map(x => x.textContent).join(''))).replace(/\s+/g, ' ').trim().length > 3, `${label}: wanted plane on the flap board`);
   await page.waitForTimeout(1600);
   ok(await page.$eval('#reveal', d => d.classList.contains('tier-rare') && d.classList.contains('go')), `${label}: reveal glows rare for the A380`);
   ok(/37,000 ft/.test(await page.textContent('#reveal-card')) && /British Airways/.test(await page.textContent('#reveal-card')), `${label}: card carries altitude and operator`);
@@ -64,6 +67,7 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   s = await go(page, 'BAW1'); ok(/already caught/.test(s), `${label}: same callsign twice in a day is refused`);
   const before = calls; s = await go(page, 'BAW1'); ok(calls === before, `${label}: a same day repeat makes no lookup`);
   s = await go(page, 'EZY9'); ok(/on the ground/.test(s) && !(await page.isVisible('#reveal')), `${label}: on the ground is no catch`);
+  ok(await boardText() === 'NOT AIRBORNE', `${label}: departures board says NOT AIRBORNE`);
   s = await go(page, 'NOPE1'); ok(/can't hear/.test(s), `${label}: not found is a friendly message`);
   await go(page, 'BAW2'); await closeReveal(page); s = await go(page, 'BAW3');
   ok(/Another/.test(s) && await page.$eval('.cc-card[data-code="A320"] .cc-count', e => e.textContent.includes('2')), `${label}: duplicate type adds XP and a tally`);

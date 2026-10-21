@@ -1,6 +1,8 @@
 import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS} from './config.mjs';
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
+import {flapTo} from './flap.mjs';
+import {clack, chime, thud, soundOn, setSound} from './sound.mjs';
 import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot} from './art.mjs';
 
 const $ = s => document.querySelector(s);
@@ -43,9 +45,11 @@ function renderStats() {
   const t = C.totals(state);
   $('#stat-types').textContent = t.types; $('#stat-catches').textContent = t.catches; $('#stat-points').textContent = t.points.toLocaleString('en-GB'); $('#stat-xp').textContent = t.xp; $('#stat-moments').textContent = t.moments;
 }
+let wantedShown = false;
 function renderWanted() {
   const w = wanted(), info = C.typeInfo(w.code, idx, table), got = state.wantedHits[C.dayKey(now())];
-  $('#wanted').innerHTML = `<p class="eyebrow">Wanted today, double points</p><div class="wanted-row"><div class="wanted-art">${cardArt(info, info.tier, true, true)}</div><div><h2>${esc(w.name)}</h2><p class="muted">${esc(info.code)} · ${Tier(info.tier)} · ${POINTS[info.tier] * 2} pts on your first one today</p>${got ? '<p class="ok">Caught. Well spotted.</p>' : ''}</div></div>`;
+  $('#wanted').innerHTML = `<p class="eyebrow">Wanted today, double points</p><div class="wanted-row"><div class="wanted-art">${cardArt(info, info.tier, true, true)}</div><div><h2 class="vh">${esc(w.name)}</h2><span class="flapboard small" id="wanted-flap" aria-hidden="true"></span><p class="muted">${esc(info.code)} · ${Tier(info.tier)} · ${POINTS[info.tier] * 2} pts on your first one today</p>${got ? '<p class="ok">Caught. Well spotted.</p>' : ''}</div></div>`;
+  flapTo($('#wanted-flap'), w.name.replace(/[^A-Za-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(), {instant: wantedShown, onTick: wantedShown ? null : clack}); wantedShown = true;
 }
 function renderHangar() {
   const set = C.SETS.find(s => s.id === filter);
@@ -63,6 +67,11 @@ function renderHangar() {
 }
 function render() { renderStats(); renderWanted(); renderHangar(); }
 
+// The departures board above the status line: the callsign while I check it, then the result in one or two words.
+const board = (word, opts = {}) => flapTo($('#flapboard'), word, {min: 12, onTick: clack, ...opts});
+// A chunky hit or miss on the catch box, cleared again so the next one can play.
+let pulseTimer;
+function pulse(kind, tier) { const cb = $('.catch'); clearTimeout(pulseTimer); cb.className = 'catch'; void cb.offsetWidth; cb.classList.add(kind); if (tier) cb.classList.add('tier-' + tier); pulseTimer = setTimeout(() => { cb.className = 'catch'; }, 1600); }
 function say(msg, kind = '') { const el = $('#status'); el.textContent = msg; el.className = 'status ' + kind; }
 const MSG = {notfound: q => `I can't hear ${q} right now. Check the spelling, or it may be out of range of the receivers.`,
   ground: q => `${q} is on the ground. It has to be flying to count, so try again once it's airborne.`,
@@ -81,22 +90,26 @@ async function submit(raw) {
   if ((state.days[C.dayKey(now())] || []).includes(label)) return say(MSG.today(label), 'bad');
   lastSubmit = t; recent.push(t);
   const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking...'; btn.setAttribute('aria-busy', 'true');
+  const WORD = {busy: 'BUSY', offline: 'NO SIGNAL', notfound: 'NOT FOUND', ground: 'NOT AIRBORNE', stale: 'GONE QUIET'};
+  const miss = w => { board(w); thud(); pulse('miss'); };
+  board(label);
   say(`Listening for ${label}...`, 'wait');
   try {
     const r = await lookup(q);
-    if (r.error) return say((MSG[r.error] || MSG.offline)(label), 'bad');
+    if (r.error) { miss(WORD[r.error] || 'NO SIGNAL'); return say((MSG[r.error] || MSG.offline)(label), 'bad'); }
     const live = C.pickLive(r.data);
-    if (!live.ok) return say((MSG[live.reason] || MSG.notfound)(label), 'bad');
+    if (!live.ok) { miss(WORD[live.reason] || 'NOT FOUND'); return say((MSG[live.reason] || MSG.notfound)(label), 'bad'); }
     if (!live.ac.type) await fillType(live.ac);
     const spot = spotPhoto(live.ac);
     const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
-    if (res.status === 'today') return say(MSG.today(live.ac.callsign), 'bad');
+    if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(live.ac.callsign), 'bad'); }
     const photo = await spot; if (photo) res.entry.photo = photo;
     state = res.state; save(); render();
     say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
-    reveal(res); postCatch(live.ac.callsign);
+    board(res.newType ? 'NEW TYPE' : 'CAUGHT'); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
+    reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(live.ac.callsign);
   } catch (e) {
-    console.error(e); say('Something went wrong with that one. Try again in a moment.', 'bad');
+    console.error(e); miss('TRY AGAIN'); say('Something went wrong with that one. Try again in a moment.', 'bad');
   } finally { setTimeout(() => { btn.disabled = false; btn.textContent = 'Catch it'; btn.removeAttribute('aria-busy'); }, 400); }
 }
 
@@ -157,6 +170,8 @@ async function importFile(file) {
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 
+const sb = $('#sound'), showSound = () => { const on = soundOn(); sb.textContent = on ? 'Sound on' : 'Sound off'; sb.setAttribute('aria-pressed', String(on)); };
+sb.addEventListener('click', () => { setSound(!soundOn()); showSound(); if (soundOn()) chime('common'); }); showSound();
 $('#set-all').addEventListener('click', () => { filter = 'all'; renderHangar(); });
 $('#sets').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { filter = filter === b.dataset.set ? 'all' : b.dataset.set; renderHangar(); } });
 $('#close').addEventListener('click', () => { const d = $('#reveal'); d.classList.remove('go'); d.close ? d.close() : d.removeAttribute('open'); });
@@ -176,5 +191,5 @@ render();
 const deep = new URLSearchParams(location.search).get('cs');
 if (deep && C.parseQuery(deep)) { $('#cs').value = deep.toUpperCase().slice(0, 10); say(`Spotted overhead: ${deep.toUpperCase().slice(0, 10)}. Press Catch it to check it's flying.`, 'wait'); }
 // resetGap is for the browser test only: it clears the gap between lookups (or with -1 sets it to now).
-ready = true;
+ready = true; board('READY', {instant: true});
 window.CallsignCatch = {state: () => state, submit, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};

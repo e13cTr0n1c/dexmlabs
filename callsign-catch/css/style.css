@@ -31,7 +31,7 @@ button:hover,.file-btn:hover{border-color:var(--radar-ink)}
 .drop{border:1px dashed var(--legendary);padding:8px 12px;border-radius:10px;color:var(--legendary);max-width:600px}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);max-width:600px;margin:8px 0 18px;border:1px solid var(--edge);border-radius:14px;background:var(--panel);overflow:hidden}
 .stats div{padding:12px 14px;border-left:1px solid var(--edge)}.stats div:first-child{border-left:0}
-.stats b{display:block;font:900 28px/1.05 var(--head);color:var(--ink)}.stats div:nth-child(3) b{color:var(--acid-ink)}.stats span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.stats b{display:block;font:900 28px/1.05 var(--head);color:var(--ink)}.stats div:nth-child(3) b{color:var(--acid-ink)}.stats span{font-size:11px;white-space:nowrap;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
 .wanted{position:relative;background:linear-gradient(120deg,color-mix(in srgb,var(--legendary) 14%,var(--panel)),var(--panel) 60%);border:1px solid color-mix(in srgb,var(--legendary) 50%,var(--edge));border-radius:16px;padding:12px;max-width:600px;overflow:hidden}
 .wanted .eyebrow{color:var(--legendary);margin-bottom:10px}.wanted h2{margin:0 0 4px;font-size:22px}.wanted p{margin:0}
 .wanted-row{display:flex;gap:14px;align-items:center}.wanted-art{flex:none;width:150px;aspect-ratio:16/10;border-radius:10px;overflow:hidden;position:relative;background:#000;border:1px solid color-mix(in srgb,var(--legendary) 50%,transparent)}
@@ -74,8 +74,8 @@ button:hover,.file-btn:hover{border-color:var(--radar-ink)}
 .cc-card.empty .cc-name{color:var(--muted);text-shadow:none;font-size:14px}.cc-card.empty .cc-pts{color:var(--muted);text-shadow:none}
 /* Foil for rare and legendary */
 .tier-rare:not(.empty) .cc-photo::before,.tier-legendary:not(.empty) .cc-photo::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(115deg,transparent 20%,#ff6ad533 35%,#6ad6ff33 45%,#d6ff0033 55%,transparent 70%);background-size:250% 250%;mix-blend-mode:color-dodge;opacity:.55;animation:foil 6s ease-in-out infinite alternate}
-.tier-legendary:not(.empty){background:linear-gradient(150deg,#fff2b0,var(--legendary) 20%,#7a4d00 45%,var(--legendary) 70%,#fff2b0);box-shadow:0 0 30px -8px var(--legendary),0 14px 30px -18px #000}
-.tier-rare:not(.empty){box-shadow:0 0 24px -10px var(--rare),0 14px 30px -18px #000}
+.cc-card.tier-legendary:not(.empty){background:linear-gradient(150deg,#fff2b0,var(--legendary) 20%,#7a4d00 45%,var(--legendary) 70%,#fff2b0);box-shadow:0 0 30px -8px var(--legendary),0 14px 30px -18px #000}
+.cc-card.tier-rare:not(.empty){box-shadow:0 0 24px -10px var(--rare),0 14px 30px -18px #000}
 .log-h{margin-top:28px}.logbook{list-style:none;padding:0;margin:0;display:grid;gap:4px}.logbook li{padding:6px 10px;border-left:2px solid var(--edge);overflow-wrap:anywhere}
 .lt{font-weight:800}.lt.tier-common{color:var(--common)}.lt.tier-uncommon{color:var(--uncommon)}.lt.tier-rare{color:var(--rare)}.lt.tier-legendary{color:var(--legendary)}
 .board{margin-top:28px}
@@ -118,3 +118,29 @@ button:hover,.file-btn:hover{border-color:var(--radar-ink)}
 .cc-card.sq:not(.empty){--c:var(--legendary);background:linear-gradient(150deg,#fff2b0,var(--legendary) 20%,#7a4d00 45%,var(--legendary) 70%,#fff2b0);box-shadow:0 0 30px -8px var(--legendary),0 14px 30px -18px #000}
 .cc-card.sq:not(.empty) .cc-photo::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(115deg,transparent 20%,#ff6ad533 35%,#6ad6ff33 45%,#d6ff0033 55%,transparent 70%);background-size:250% 250%;mix-blend-mode:color-dodge;opacity:.55;animation:foil 6s ease-in-out infinite alternate}
 @media (max-width:560px){.hangar .cc-squawk span{display:none}}
+/* Departures board: split flap cells for the callsign check, the result and the wanted plane */
+.board-row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.flapboard{display:inline-flex;flex-wrap:wrap;gap:3px;padding:6px;border-radius:8px;background:#050706;border:1px solid #1f2a22;box-shadow:inset 0 2px 8px #000}
+.flap{position:relative;display:inline-grid;place-items:center;width:1.45em;height:1.9em;border-radius:3px;background:linear-gradient(180deg,#1a1f1b 0 49%,#0c0f0d 51% 100%);color:var(--acid);font:900 20px/1 var(--mono);box-shadow:0 1px 0 #000,inset 0 1px 0 #ffffff14;overflow:hidden;perspective:200px}
+.flap::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#000c}
+.flap>span{display:block;transform-origin:50% 50%;text-shadow:0 0 6px color-mix(in srgb,var(--acid) 55%,transparent)}
+.flap.flip>span{animation:flapdown .09s ease-in}
+@keyframes flapdown{0%{transform:rotateX(-80deg);opacity:.35}100%{transform:none;opacity:1}}
+.flapboard.small{padding:4px;gap:2px;margin:2px 0 6px}.flapboard.small .flap{width:1.2em;height:1.6em;font-size:15px}
+.sound{min-height:38px;padding:0 12px;font-size:12px;border-radius:20px}.sound[aria-pressed=true]{border-color:var(--acid-ink);color:var(--acid-ink)}
+.vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:root[data-theme=light] .flapboard{background:#0a0d0b;border-color:#0a0d0b}
+/* Radar backdrop behind the hero */
+.hero{position:relative;isolation:isolate;overflow-x:clip}
+.hero::before{content:"";position:absolute;z-index:-1;right:-8%;top:-40px;width:min(560px,80vw);aspect-ratio:1;border-radius:50%;pointer-events:none;
+ background:conic-gradient(from 0deg,color-mix(in srgb,var(--radar) 26%,transparent),transparent 14%),repeating-radial-gradient(circle,transparent 0 46px,color-mix(in srgb,var(--radar) 16%,transparent) 47px 48px);
+ -webkit-mask:radial-gradient(circle,#000 55%,transparent 70%);mask:radial-gradient(circle,#000 55%,transparent 70%);opacity:.55;animation:spin 7s linear infinite}
+:root[data-theme=light] .hero::before{opacity:.35}
+/* Chunky hit and miss on the catch box */
+.catch.hit{animation:hit .6s cubic-bezier(.2,1.6,.4,1)}.catch.hit{box-shadow:0 0 0 3px var(--acid-ink),0 0 40px -6px var(--acid-ink)}
+.catch.hit.tier-rare{box-shadow:0 0 0 3px var(--rare),0 0 46px -6px var(--rare)}.catch.hit.tier-legendary{box-shadow:0 0 0 3px var(--legendary),0 0 56px -4px var(--legendary)}
+.catch.miss{animation:miss .42s ease}
+@keyframes hit{0%{transform:scale(1)}30%{transform:scale(1.045)}60%{transform:scale(.985)}100%{transform:scale(1)}}
+@keyframes miss{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+@media (max-width:560px){.flap{font-size:16px;width:1.35em}.flapboard.small .flap{font-size:12px}.hero::before{right:-30%;top:-10px}}
+@media (prefers-reduced-motion:reduce){.flap.flip>span,.catch.hit,.catch.miss,.hero::before{animation:none}}
