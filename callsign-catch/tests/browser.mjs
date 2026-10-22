@@ -147,6 +147,35 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     }
     await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
   }
+  if (label === 'desktop') {
+    // Gift codes with a throwaway code and a test gift served in place of the real one.
+    const C = await import(new URL('../js/core.mjs', import.meta.url).href);
+    const tg = [await C.sealGift('test', 'TestCode', {greeting: 'Test greeting', cards: [{reg: 'G-BOAC', type: 'CONC', note: 'test note', giftPhoto: {src: 'https://upload.wikimedia.org/x.jpg', by: 'A', licence: 'CC BY-SA 3.0', link: 'https://commons.wikimedia.org/wiki/File:X.jpg'}}, {cs: 'RFR70001', reg: 'ZK425', hex: '43c7a2', type: 'EUFI', sq: '7700', mil: 1}]})];
+    await page.route('**/data/gifts.json', r => r.fulfill({contentType: 'application/json', body: JSON.stringify(tg)}));
+    let posts = 0; await page.route('**/catch', r => { posts++; r.abort(); });
+    await page.evaluate(() => { document.querySelector('.redeem-box').open = true; });
+    await page.fill('#redeem-code', 'nope'); await page.click('#redeem button');
+    await page.waitForFunction(() => /did not work/.test(document.getElementById('status').textContent)); ok(true, 'gift: a wrong code is refused in the page');
+    await page.fill('#redeem-code', 'TESTcode'); await page.click('#redeem button');
+    await page.waitForSelector('#gift-fx:not([hidden])'); const fx = await page.evaluate(() => ({text: document.querySelector('.gift-text').textContent, hearts: document.querySelectorAll('.gift-sky i').length}));
+    ok(fx.text === 'Test greeting' && fx.hearts > 10, 'gift: the heart animation appears with the greeting from the sealed payload');
+    await page.screenshot({path: path.join(SHOTS, 'gift-fx.png')});
+    const t0 = Date.now(); await page.keyboard.press('Escape'); await page.waitForSelector('#gift-fx', {state: 'hidden'});
+    ok(Date.now() - t0 < 1500, 'gift: a key press skips the animation');
+    const st = await page.evaluate(() => window.CallsignCatch.state());
+    ok(st.cards.CONC && st.cards.CONC.tier === 'mythic' && st.log.filter(e => e.gift).length === 2 && await page.$('#hangar .cc-card[data-code="CONC"]'), 'gift: both gift cards are in the hangar at Mythic');
+    ok(posts === 0, 'gift: gift cards are never posted to the leaderboard');
+    await page.fill('#redeem-code', 'testcode'); await page.click('#redeem button');
+    await page.waitForFunction(() => /already been used/.test(document.getElementById('status').textContent)); ok(true, 'gift: a second redeem is refused in the page');
+    // Reduced motion: a still heart and the text, no floating hearts, and a tap skips.
+    await page.evaluate(() => { const s = window.CallsignCatch.state(); s.redeemed = []; }); await page.emulateMedia({reducedMotion: 'reduce'});
+    await page.fill('#redeem-code', 'TestCode'); await page.click('#redeem button'); await page.waitForSelector('#gift-fx:not([hidden])');
+    const still = await page.evaluate(() => ({still: document.getElementById('gift-fx').classList.contains('still'), hearts: document.querySelectorAll('.gift-sky i').length, anim: getComputedStyle(document.querySelector('.gift-heart')).animationName, text: document.querySelector('.gift-text').textContent}));
+    ok(still.still && still.hearts === 0 && still.anim === 'none' && still.text === 'Test greeting', 'gift: reduced motion shows a still heart and the text ' + JSON.stringify(still));
+    await page.click('#gift-fx'); await page.waitForSelector('#gift-fx', {state: 'hidden'}); ok(true, 'gift: a tap skips it');
+    await page.emulateMedia({reducedMotion: 'no-preference'}); await page.unroute('**/catch'); await page.unroute('**/data/gifts.json');
+    await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
+  }
   ok(errors.length === 0, `${label}: no console errors ${JSON.stringify(errors)}`);
   await go(page, 'BTLE21'); ok(await page.$eval('#reveal-card .cc-card', c => c.dataset.code === 'L39') && /L-39NG/.test(await page.textContent('#reveal-card')), `${label}: blank type 4984EE becomes the L-39 card`); await closeReveal(page);
   await go(page, 'CZM1'); ok(await page.textContent('#reveal-card .cc-origin') === 'Czechia military', `${label}: unidentified military jet shows its country`); await closeReveal(page);
