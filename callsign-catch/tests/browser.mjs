@@ -136,7 +136,15 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     await page.setInputFiles('#import', new URL('fixtures/arthur-hangar.json', import.meta.url).pathname);
     await page.waitForFunction(() => /Imported/.test(document.getElementById('status').textContent));
     const ai = await page.evaluate(() => window.CallsignCatch.state()), raw = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-hangar.json', import.meta.url)));
-    ok(ai.points === raw.points && Object.keys(ai.cards).length === Object.keys(raw.cards).length && JSON.stringify(ai.cards.H60.variants) === '["S-70 Firehawk"]', 'Arthur\'s old export imports with every card and point, H60 backfilled with Firehawk');
+    const credit = ai.log.reduce((n, e) => n + (e.regradeCredited || 0), 0); const keptCards = Object.keys(raw.cards).every(k => ai.cards[k] || (ai.retired && ai.retired[k])); console.log('hangar fixture', raw.points, '+', credit, '=', ai.points, Object.keys(raw.cards).length, '->', Object.keys(ai.cards).length); ok(ai.points === raw.points + credit && keptCards && JSON.stringify(ai.cards.H60.variants) === '["S-70 Firehawk"]', 'Arthur\'s old export imports with every card and point (plus any shortfall credit), H60 backfilled with Firehawk');
+    if (process.env.ARTHUR_EXPORT) {
+      // Arthur's real export (a backup copy): import it, export again, and check nothing was lost.
+      await page.setInputFiles('#import', process.env.ARTHUR_EXPORT); await page.waitForFunction(() => /Imported/.test(document.getElementById('status').textContent));
+      const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('#export')]); const again = path.join(SHOTS, 'arthur-again.json'); await dl2.saveAs(again);
+      const {execFileSync} = await import('child_process'); let outp = '', good = true;
+      try { outp = execFileSync('node', [new URL('lossless.mjs', import.meta.url).pathname, process.env.ARTHUR_EXPORT, again], {encoding: 'utf8'}); } catch (e) { good = false; outp = String(e.stdout || e); }
+      console.log(outp.trim()); ok(good && /PASS lossless/.test(outp), "Arthur's real export imports in the browser and exports again with every field");
+    }
     await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
   }
   ok(errors.length === 0, `${label}: no console errors ${JSON.stringify(errors)}`);
