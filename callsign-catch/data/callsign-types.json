@@ -1,0 +1,9 @@
+{
+ "note": "Types for military callsign prefixes the feeds leave untyped. A prefix only counts when the rest of the callsign is digits. Only prefixes with a source are listed.",
+ "prefixes": {
+  "HNCHMN": {
+   "type": "Q9B",
+   "source": "Arthur's catch of HNCHMN14 (hex 43c975), shown by Flightradar24 as an RAF Protector RG1; Protector is flown by 31 and XIII Squadrons from RAF Waddington, https://www.raf.mod.uk/aircraft/current-aircraft/protector-rg-mk-1-mq-9b11/"
+  }
+ }
+}
