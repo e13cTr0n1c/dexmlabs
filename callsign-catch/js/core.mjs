@@ -217,6 +217,7 @@ export const boardCallsign = e => { const c = norm(e && e.cs); return /^[A-Z0-9]
 
 // What to send the board, or null to send nothing. A hex keyed catch (X) goes only when the Worker can verify a hex.
 export function boardPayload(e, acceptsHex) {
+  if (e && e.gift) return null; // gift cards count in the deck and albums but never go to the board
   const hex = /^[0-9a-f]{6}$/.test(String(e && e.hex || '')) ? e.hex : '', cs = boardCallsign(e);
   if (cs) return {callsign: cs, hex, reg: (e && e.reg) || ''};
   if (acceptsHex && hex) { const f = norm(e.flight != null ? e.flight : e.cs); return {callsign: /^[A-Z0-9]{1,8}$/.test(f) && f !== hex.toUpperCase() ? f : '', hex, reg: e.reg || ''}; }
@@ -327,7 +328,7 @@ export function creditShortfalls(state, idx, table) {
   const toppedUp = e => { const c = s.cards && s.cards[e.type]; return !!(c && c.first && c.first.t === e.t && TIERS.indexOf(orig(c.first)) > TIERS.indexOf(orig(e))); };
   const order = [...s.log].reverse().filter(Boolean); order.sort((a, b) => toppedUp(b) - toppedUp(a));
   for (const e of order) {
-    if (!e.type) continue;
+    if (!e.type || e.gift) continue;
     const info = typeInfo(e.type, idx, table), tier = [e.tier, info.unknown ? null : info.tier, liveryFloor(liveryFor(e))].filter(t => TIERS.includes(t)).reduce((a, b) => TIERS.indexOf(b) > TIERS.indexOf(a) ? b : a, 'common');
     const due = (firstOf[e.type] === e.t ? POINTS : DUPLICATE_XP)[tier] || 0, short = due - num(e.gain) - num(e.regradeCredited) - num(e.regradeCovered);
     if (short <= 0) continue;
@@ -480,7 +481,7 @@ export function totals(state) { const s = state || emptyState(), c = Object.valu
 export function shareText(entry, info, tier) {
   const T = tier[0].toUpperCase() + tier.slice(1);
   const an = /^[AEIOU]/i.test(info.name) ? 'an' : 'a';
-  return `I caught ${an} ${info.name} ✈ ${T}\n${entry.cs} at ${entry.alt.toLocaleString('en-GB')} ft${entry.gs != null ? ', ' + entry.gs + ' kt' : ''}\nCallsign Catch: dexmlabs.app/callsign-catch/`;
+  return `I caught ${an} ${info.name} ✈ ${T}\n${entry.cs} at ${entry.alt != null ? entry.alt.toLocaleString('en-GB') : '?'} ft${entry.gs != null ? ', ' + entry.gs + ' kt' : ''}\nCallsign Catch: dexmlabs.app/callsign-catch/`;
 }
 
 // Import: accept only a well formed collection.
@@ -506,3 +507,43 @@ export function validateImport(obj) {
 }
 // Reward only after a legendary catch of that type, and only when it has a code and a link.
 export function rewardFor(info, tier) { const r = info.reward || {}; return tier === 'legendary' && r.url && r.code ? r : null; }
+
+// Gift codes. The source holds only a salted hash of the lowercased code and an AES-GCM sealed payload whose key is
+// derived from the code with PBKDF2, so nothing readable about a gift is in the repo until the right code is typed.
+const b64 = u => { let x = ''; for (const c of new Uint8Array(u)) x += String.fromCharCode(c); return btoa(x); }, unb64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+const te = new TextEncoder();
+export const giftNorm = c => String(c || '').trim().toLowerCase();
+export async function giftHash(code, salt) { return b64(await crypto.subtle.digest('SHA-256', te.encode(salt + ':' + giftNorm(code)))); }
+async function giftKey(code, kdfSalt) {
+  const base = await crypto.subtle.importKey('raw', te.encode(giftNorm(code)), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name: 'PBKDF2', salt: unb64(kdfSalt), iterations: 200000, hash: 'SHA-256'}, base, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+}
+const rnd = n => b64(crypto.getRandomValues(new Uint8Array(n)));
+export async function sealGift(id, code, payload) {
+  const salt = rnd(16), kdfSalt = rnd(16), iv = rnd(12), key = await giftKey(code, kdfSalt);
+  const data = b64(await crypto.subtle.encrypt({name: 'AES-GCM', iv: unb64(iv)}, key, te.encode(JSON.stringify(payload))));
+  return {id, salt, hash: await giftHash(code, salt), kdfSalt, iv, data};
+}
+export async function openGift(code, g) {
+  const key = await giftKey(code, g.kdfSalt);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name: 'AES-GCM', iv: unb64(g.iv)}, key, unb64(g.data))));
+}
+// Redeem a code on a save, once per save. Returns {status: 'ok' | 'already' | 'wrong', state, greeting, entries}.
+export async function redeemGift(state, code, gifts, when) {
+  const s = state; let g = null;
+  for (const x of gifts || []) if (x && x.salt && x.hash === await giftHash(code, x.salt)) { g = x; break; }
+  if (!g) return {status: 'wrong', state: s};
+  s.redeemed = Array.isArray(s.redeemed) ? s.redeemed : [];
+  if (s.redeemed.includes(g.id)) return {status: 'already', state: s};
+  let pl; try { pl = await openGift(code, g); } catch { return {status: 'wrong', state: s}; }
+  const at = new Date(when).toISOString(), entries = [];
+  for (const c of pl.cards || []) {
+    const e = {...c, gift: true, giftedAt: at, tier: 'mythic', gain: 0}; if (!e.t) e.t = at;
+    s.log.unshift(e); entries.push(e);
+    const card = s.cards[e.type];
+    if (!card) s.cards[e.type] = {code: e.type, tier: 'mythic', count: 1, first: e, last: e, variants: e.var ? [e.var] : []};
+    else { card.count = (card.count | 0) + 1; card.tier = 'mythic'; card.last = e; if (e.var && Array.isArray(card.variants) && !card.variants.includes(e.var)) card.variants.push(e.var); }
+  }
+  s.redeemed.push(g.id);
+  return {status: 'ok', state: s, greeting: pl.greeting || '', entries};
+}

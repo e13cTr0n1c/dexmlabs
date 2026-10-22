@@ -92,7 +92,7 @@ function renderHangar() {
     const pc = Math.round(100 * p.got / p.goal);
     return `<button type="button" class="set${filter === s.id ? ' on' : ''}${p.done ? ' done' : ''}" data-set="${s.id}" aria-pressed="${filter === s.id}" style="--p:${pc}"><span class="badge" aria-hidden="true"><b>${p.done ? '\u2713' : pc + '%'}</b></span><span>${esc(s.name)}</span><span class="bar"><i style="width:${Math.round(100 * p.got / p.goal)}%"></i></span><small>${p.got}/${p.goal}${s.desc ? ' · ' + esc(s.desc) : ''}</small></button>`; }).join('');
   $('#set-all').setAttribute('aria-pressed', filter === 'all'); $('#set-all').classList.toggle('on', filter === 'all');
-  $('#logbook').innerHTML = state.log.slice(0, 12).map(e => `<li><span class="lt tier-${e.tier}">${esc(e.type)}</span> ${esc(e.cs)} <span class="muted">${esc(fmtTime(e.t))} · ${esc(e.alt.toLocaleString('en-GB'))} ft · +${e.gain || 0}</span></li>`).join('') || '<li class="muted">Your catches will be logged here.</li>';
+  $('#logbook').innerHTML = state.log.slice(0, 12).map(e => `<li><span class="lt tier-${e.tier}">${esc(e.type)}</span> ${esc(e.cs)} <span class="muted">${esc(fmtTime(e.t))} · ${esc(e.alt != null ? e.alt.toLocaleString('en-GB') : '')} ft · +${e.gain || 0}</span></li>`).join('') || '<li class="muted">Your catches will be logged here.</li>';
 }
 // Commons photos are looked up after the cards are drawn, so a slow or failed lookup never holds a card up.
 const wikiStore = (() => { try { return localStorage; } catch { return null; } })();
@@ -319,6 +319,24 @@ $('#detail').addEventListener('click', e => { if (e.target === $('#detail')) clo
 $('#share').addEventListener('click', () => share($('#reveal').dataset.share));
 $('#export').addEventListener('click', exportFile);
 $('#import').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
+// Redeem a gift code. Only a salted hash and a sealed payload are in the source; the greeting and cards appear after.
+let gifts = null; const getGifts = async () => gifts || (gifts = await fetch('./data/gifts.json').then(r => r.json()).catch(() => []));
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function giftShow(greeting) { return new Promise(done => {
+  const o = $('#gift-fx'), still = reduceMotion(); o.querySelector('.gift-text').textContent = greeting; o.classList.toggle('still', still);
+  const sky = o.querySelector('.gift-sky'); sky.innerHTML = still ? '' : Array.from({length: 22}, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 8) * 0.25}s;--s:${0.6 + (i % 5) * 0.2}">&#10084;</i>`).join('');
+  o.hidden = false; let t;
+  const end = () => { clearTimeout(t); o.hidden = true; sky.innerHTML = ''; removeEventListener('keydown', end); o.removeEventListener('click', end); done(); };
+  t = setTimeout(end, still ? 2500 : 3600); addEventListener('keydown', end); o.addEventListener('click', end); }); }
+async function redeem() {
+  const box = $('#redeem-code'), code = box.value; if (!code.trim()) return;
+  const r = await C.redeemGift(state, code, await getGifts(), now());
+  if (r.status === 'wrong') { say('That code did not work.'); return; }
+  if (r.status === 'already') { say('That code has already been used on this save.'); return; }
+  box.value = ''; save(); await giftShow(r.greeting); render();
+  say(r.entries.length + ' gift cards added to your hangar.'); const c = $('#hangar .cc-card[data-code="' + r.entries[0].type + '"]'); if (c) c.scrollIntoView({block: 'center'});
+}
+$('#redeem').addEventListener('submit', e => { e.preventDefault(); redeem(); });
 $('#board').hidden = !LEADERBOARD_API;
 // Leaderboard: only when LEADERBOARD_API is set. The Worker checks every catch against the live feed itself.
 const player = (() => { try { let p = localStorage.getItem('callsign:player'); if (!p) { p = [...crypto.getRandomValues(new Uint8Array(10))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('callsign:player', p); } return p; } catch { return ''; } })();

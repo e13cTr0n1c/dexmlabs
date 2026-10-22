@@ -43,10 +43,13 @@ export const safeSpot = (p, now = Date.now()) => p && /^https:\/\/[a-z0-9.-]+\.(
 // What to show, best first: the exact airframe photo from Planespotters, the self hosted type photo, a Commons photo
 // looked up live from the type's Wikipedia page, the type or family render, then a silhouette for its category.
 // The card first shows the best picture it has without the network; upgradeArt() and the error handler move it along.
-export const ART_CHAIN = ['spot', 'photo', 'commons', 'render', 'silhouette'];
+// A gift card carries its own Commons photo with its licence and credit.
+export const giftPhoto = e => { const p = e && e.gift && e.giftPhoto; return p && /^https:\/\/upload\.wikimedia\.org\/[\w./%-]+$/.test(p.src || '') && /^https:\/\/commons\.wikimedia\.org\/wiki\/[\w.:%()-]+$/.test(p.link || '') ? p : null; };
+export const ART_CHAIN = ['gift', 'spot', 'photo', 'commons', 'render', 'silhouette'];
 export function renderKey(info, entry) { return entry && entry.mil && manifest.has(info.code + '_TKR') ? info.code + '_TKR' : artKey(info); }
 export function artStages(info, entry) {
   const st = [];
+  if (giftPhoto(entry)) st.push('gift');
   if (safeSpot(entry && entry.photo)) st.push('spot');
   if (photos[info.code]) st.push('photo');
   if (wikiTitle(info)) st.push('commons');
@@ -56,6 +59,7 @@ export function artStages(info, entry) {
 function stageHTML(stage, info, tier, entry, lazy) {
   const spot = safeSpot(entry && entry.photo);
   // Planespotters asks for the thumbnail itself to link to the photo page, as a plain link.
+  if (stage === 'gift') { const g = giftPhoto(entry); return `<a class="spot-link" href="${escA(g.link)}" target="_blank" rel="noopener"><img class="photo" data-stage="gift" src="${escA(g.src)}" alt="${escA(info.name)}" width="640" height="400"${lazy} decoding="async"></a>`; }
   if (stage === 'spot') return `<a class="spot-link" href="${escA(spot.link)}" target="_blank" rel="noopener"><img class="photo" data-stage="spot" src="${escA(spot.src)}" alt="${escA((entry.reg || entry.cs) + ', the ' + info.name + ' you caught')}" width="420" height="280"${lazy} decoding="async"></a>`;
   if (stage === 'photo') return `<img class="photo" data-stage="photo" src="./img/photos/${escA(info.code)}.webp" alt="${escA(info.name)}" width="640" height="400"${lazy} decoding="async">`;
   if (stage === 'render') return `<img class="art" data-stage="render" src="./img/cards/${escA(renderKey(info, entry))}.webp" alt="" width="360" height="240"${lazy} decoding="async">`;
@@ -164,8 +168,11 @@ export async function upgradeArt(root, f = fetch, store = null) {
 // The credit each photo licence asks for, as a small line on the card.
 export function photoCredit(info, entry, owned) {
   if (!owned) return '';
+  const note = entry && entry.gift && entry.note ? `<p class="cc-gift">${escA(entry.note)}</p>` : '', g = giftPhoto(entry);
+  if (g) return `<p class="cc-credit">Photo <a href="${escA(g.link)}" target="_blank" rel="noopener">${escA(g.by)}</a>, ${escA(g.licence)}, via Wikimedia Commons</p>${note}`;
   const spot = safeSpot(entry && entry.photo);
-  if (spot) return `<p class="cc-credit">Photo <a href="${escA(spot.link)}" target="_blank" rel="noopener">${escA(spot.by || 'Planespotters.net')}</a> via Planespotters.net</p>`;
+  if (note && !spot) return note + (photos[info.code] ? creditHTML(photos[info.code]) : '');
+  if (spot) return note + `<p class="cc-credit">Photo <a href="${escA(spot.link)}" target="_blank" rel="noopener">${escA(spot.by || 'Planespotters.net')}</a> via Planespotters.net</p>`;
   const p = photos[info.code];
   if (!p) return '';
   return creditHTML(p);
