@@ -5,15 +5,54 @@ export const STORE_KEY = 'callsign:collection';
 
 export function indexTypes(table) { const m = new Map(); for (const t of table.types) m.set(t.code, t); return m; }
 
-// What did the player type? A hex code, a registration or a callsign.
+// What did the player type? A hex code, a registration or a callsign, and often more than one could fit:
+// ZZ171 is an RAF registration but could be a callsign, and a short military callsign can be just X.
+// kind is the best guess; kinds lists every lookup worth making. Matching is exact, so asking more never widens a match.
+export const norm = s => String(s || '').trim().toUpperCase().replace(/[\s-]+/g, '');
 export function parseQuery(raw) {
-  const q = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
-  if (!q || q.length > 10) return null;
-  if (/^~?[0-9A-F]{6}$/.test(q) && /\d/.test(q) && !/^[A-Z]{3}\d/.test(q)) return {kind: 'hex', value: q.replace('~', '').toLowerCase()};
-  if (/^[A-Z0-9]{1,2}-[A-Z0-9]{2,5}$/.test(q) || /^N\d{1,5}[A-Z]{0,2}$/.test(q)) return {kind: 'reg', value: q};
-  if (/^[A-Z0-9]{2,8}$/.test(q)) return {kind: 'callsign', value: q};
-  return null;
+  const q = String(raw || '').trim().toUpperCase().replace(/\s+/g, '').replace(/^~(?=[0-9A-F]{6}$)/, '');
+  if (!q || q.length > 10 || !/^[A-Z0-9]+(-[A-Z0-9]+)?$/.test(q)) return null;
+  const flat = q.replace('-', ''); if (flat.length > 8) return null;
+  const hex = /^[0-9A-F]{6}$/.test(q), dash = q.includes('-'), letters = /[A-Z]/.test(q), digits = /\d/.test(q);
+  const kinds = [];
+  if (hex && digits && !/^[A-Z]{3}\d/.test(q)) kinds.push('hex');
+  if (dash || (kinds.length && !letters)) kinds.push('reg'); // 088204 is valid hex but also a US serial typed without its dash
+  else if (!kinds.length) {
+    kinds.push('callsign');
+    if (letters && flat.length >= 3) kinds.push('reg'); // ZZ171, N123AB, D1234 style registrations with no dash
+    if (hex && !kinds.includes('hex')) kinds.push('hex'); // BAE146 looks like a callsign but is valid hex too
+  }
+  const kind = kinds[0];
+  return {kind, value: kind === 'hex' ? q.toLowerCase() : q, kinds};
 }
+// The value to send for one kind of lookup.
+export const queryValue = (q, kind) => kind === 'hex' ? q.value.toLowerCase() : q.value.toUpperCase();
+// Only aircraft whose callsign, registration or hex is exactly what was typed. Dashes and spaces are ignored,
+// so 088204 finds 08-8204, but X never matches XYZ12. Returns the airframes found, one per hex.
+export function exactMatches(q, list) {
+  const v = norm(q.value), out = new Map();
+  for (const a of list || []) {
+    if (!a) continue;
+    const hex = String(a.hex || '').replace('~', '').toUpperCase();
+    const hit = (q.kinds || [q.kind]).some(k => k === 'hex' ? hex === v : k === 'reg' ? norm(a.r) === v : norm(a.flight) === v);
+    if (!hit) continue;
+    const key = hex || norm(a.r) + '|' + norm(a.flight), prev = out.get(key);
+    if (!prev || (a.seen != null && (prev.seen == null || a.seen < prev.seen))) out.set(key, a);
+  }
+  return [...out.values()];
+}
+// Several different airframes answer to the same text (two flights both calling X). Then I ask for the hex instead of guessing.
+// Only the live ones count, so one flying and one parked is not ambiguous.
+export function resolveMatches(q, list) {
+  const m = exactMatches(q, list);
+  const live = m.filter(a => a.alt_baro !== 'ground' && typeof a.alt_baro === 'number' && (a.seen == null || a.seen < 60));
+  if (live.length > 1) return {ambiguous: true, matches: live};
+  return {ambiguous: false, resp: {ac: live.length ? live : m}};
+}
+// A callsign too short or odd to tell one flight from another: blank, under three characters, or no letters at all.
+export const oddCallsign = cs => { const c = norm(cs); return !c || c.length < 3 || !/[A-Z]/.test(c); };
+// The key a catch is stored under for the once a day rule: the callsign, or the hex when the callsign is odd.
+export const catchKey = ac => (oddCallsign(ac.flight != null ? ac.flight : ac.callsign) ? (String(ac.hex || '').replace('~', '') || ac.reg || ac.callsign) : ac.callsign).toUpperCase();
 
 // The broad class of an aircraft with no known type: from the ADS-B emitter category, else the ICAO description.
 export function classOf(ac, desc) {
@@ -109,11 +148,34 @@ export function pickLive(resp) {
   if (!list.length) return {ok: false, reason: 'notfound'};
   const now = list.find(a => a.alt_baro !== 'ground' && typeof a.alt_baro === 'number' && (a.seen == null || a.seen < 60));
   if (!now) return {ok: false, reason: list.some(a => a.alt_baro === 'ground') ? 'ground' : 'stale', ac: list[0]};
-  return {ok: true, ac: {hex: now.hex || '', callsign: String(now.flight || '').trim() || String(now.r || '').trim(), reg: String(now.r || '').trim(), type: String(now.t || '').trim().toUpperCase(), op: String(now.ownOp || now.operator || '').trim(), alt: Math.round(now.alt_baro), gs: now.gs != null ? Math.round(now.gs) : null, dbFlags: now.dbFlags | 0, category: String(now.category || ''), desc: String(now.desc || '').slice(0, 60), squawk: String(now.squawk || '')}};
+  return {ok: true, ac: {hex: String(now.hex || '').replace('~', ''), flight: String(now.flight || '').trim(), callsign: String(now.flight || '').trim() || String(now.r || '').trim() || String(now.hex || '').replace('~', '').toUpperCase(), reg: String(now.r || '').trim(), type: String(now.t || '').trim().toUpperCase(), op: String(now.ownOp || now.operator || '').trim(), alt: Math.round(now.alt_baro), gs: now.gs != null ? Math.round(now.gs) : null, dbFlags: now.dbFlags | 0, category: String(now.category || ''), desc: String(now.desc || '').slice(0, 60), squawk: String(now.squawk || '')}};
 }
 
 export function dayKey(date) { const d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-export function emptyState() { return {v: 1, cards: {}, log: [], days: {}, xp: 0, points: 0, night: 0, wantedHits: {}}; }
+export function emptyState() { return {v: 1, cards: {}, log: [], days: {}, xp: 0, points: 0, night: 0, wantedHits: {}, pending: []}; }
+
+// Pending sightings: seen on another tracker but not in our feed yet. Saved with no points, rechecked for a while,
+// then confirmed into a real catch through applyCatch, or dropped when the window closes.
+export const PENDING_MS = 2 * 3600e3, PENDING_MAX = 10;
+export function addPending(state, q, when) {
+  const s = state || emptyState(), t = +new Date(when); s.pending = cleanPending(s.pending, t);
+  const v = norm(q.value);
+  if (s.pending.some(p => norm(p.value) === v)) return {status: 'already', state: s};
+  if (s.pending.length >= PENDING_MAX) return {status: 'full', state: s};
+  s.pending.push({value: q.value.toUpperCase(), kinds: [...(q.kinds || [q.kind])], t: new Date(t).toISOString(), until: new Date(t + PENDING_MS).toISOString(), tries: 0});
+  return {status: 'added', state: s};
+}
+const KINDS = ['hex', 'reg', 'callsign'];
+export function cleanPending(list, now) {
+  return (Array.isArray(list) ? list : []).filter(p => p && typeof p.value === 'string' && /^[A-Z0-9-]{1,10}$/.test(p.value) && Array.isArray(p.kinds) && p.kinds.length && p.kinds.every(k => KINDS.includes(k)) && Date.parse(p.until) > +new Date(now) && Date.parse(p.until) - Date.parse(p.t) <= PENDING_MS).slice(0, PENDING_MAX);
+}
+// Drop the ones past their window. Returns what expired, so the page can say so.
+export function expirePending(state, now) {
+  const before = (state.pending || []).filter(Boolean); state.pending = cleanPending(before, now);
+  return before.filter(p => !state.pending.includes(p));
+}
+export const pendingQuery = p => ({kind: p.kinds[0], value: p.kinds[0] === 'hex' ? p.value.toLowerCase() : p.value, kinds: p.kinds});
+export function removePending(state, value) { const v = norm(value); state.pending = (state.pending || []).filter(p => norm(p.value) !== v); return state; }
 
 // Variants within one ICAO type, e.g. H60 covers the UH-60 Black Hawk and the S-70 Firehawk.
 // Sources, best first: hexdb.io 'Type' (e.g. 'UH-60L Blackhawk', 'S-70 I'), the Planespotters photo link slug
@@ -172,12 +234,12 @@ export function backfillVariants(state) {
 
 // Record a live aircraft. Returns {status: 'new' | 'dupe' | 'today', ...}.
 export function applyCatch(state, ac, when, idx, table, wanted) {
-  const s = state || emptyState(), day = dayKey(when), key = (ac.callsign || ac.reg || ac.hex).toUpperCase();
+  const s = state || emptyState(), day = dayKey(when), key = catchKey(ac);
   s.days[day] = s.days[day] || [];
   if (s.days[day].includes(key)) return {status: 'today', state: s};
   const info = typeInfo(ac.type, idx, table, ac), tier = tierFor(ac, info), code = info.code;
   const hour = new Date(when).getHours(), night = hour >= NIGHT_FROM && hour < NIGHT_TO;
-  const entry = {t: new Date(when).toISOString(), cs: key, reg: ac.reg || '', hex: ac.hex || '', type: code, op: ac.op || '', alt: ac.alt, gs: ac.gs, tier, night, cat: info.cat};
+  const entry = {t: new Date(when).toISOString(), cs: String(ac.callsign || ac.reg || ac.hex).toUpperCase().slice(0, 10), reg: ac.reg || '', hex: ac.hex || '', type: code, op: ac.op || '', alt: ac.alt, gs: ac.gs, tier, night, cat: info.cat};
   if (isMilitary(ac)) entry.mil = 1;
   if (info.unknown) { const o = originOf(ac); if (o) entry.origin = o; }
   const team = teamFor(ac); if (team) entry.team = team.name;
@@ -262,6 +324,7 @@ export function validateImport(obj) {
     if (o && typeof o === 'object') s.cards.UNKFW = n ? {...n, count: (n.count | 0) + (o.count | 0)} : {...o, code: 'UNKFW'}; }
   s.log = s.log.map(e => e && e.type === '????' ? {...e, type: 'UNKFW'} : e);
   for (const [k, c] of Object.entries(s.cards)) { if (!c || typeof c !== 'object' || !(c.count >= 1)) { delete s.cards[k]; continue; } if (!TIERS.includes(c.tier)) c.tier = 'uncommon'; if (!/^[A-Z0-9?]{2,8}$/.test(k)) { delete s.cards[k]; continue; } if ('variants' in c) c.variants = cleanVariants(c.variants); } // repair, never throw a whole hangar away over one odd card
+  s.pending = cleanPending(s.pending, Date.now());
   s.points = +s.points || 0; s.xp = +s.xp || 0; s.night = +s.night || 0; return s;
 }
 // Reward only after a legendary catch of that type, and only when it has a code and a link.

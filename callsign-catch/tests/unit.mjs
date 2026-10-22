@@ -25,9 +25,9 @@ t('unknown types default to uncommon; military operators lift to at least rare, 
   assert.equal(C.tierFor({callsign: 'RED1'}, idx.get('A320')), 'legendary');
 });
 t('query parsing: callsign, registration and hex', () => {
-  assert.deepEqual(C.parseQuery(' baw117 '), {kind: 'callsign', value: 'BAW117'});
-  assert.deepEqual(C.parseQuery('g-xlea'), {kind: 'reg', value: 'G-XLEA'});
-  assert.deepEqual(C.parseQuery('4ca7b5'), {kind: 'hex', value: '4ca7b5'});
+  assert.deepEqual(C.parseQuery(' baw117 '), {kind: 'callsign', value: 'BAW117', kinds: ['callsign', 'reg']});
+  assert.deepEqual(C.parseQuery('g-xlea'), {kind: 'reg', value: 'G-XLEA', kinds: ['reg']});
+  assert.deepEqual(C.parseQuery('4ca7b5'), {kind: 'hex', value: '4ca7b5', kinds: ['hex']});
   assert.equal(C.parseQuery(''), null); assert.equal(C.parseQuery('<script>'), null);
 });
 t('live only: ground, stale and not found never catch', () => {
@@ -56,7 +56,7 @@ t('special cards switch on only with a date', () => {
   assert.equal(C.wantedFor(new Date(Date.UTC(2026, 9, 21, 9)), table, sp).code, 'SHIP_CATCH');
 });
 t('sets and Night owl progress', () => {
-  let s = null; for (const [cs, ty] of [['A1', 'A319'], ['A2', 'A320'], ['A3', 'A20N'], ['A4', 'A321'], ['A5', 'A21N']]) s = C.applyCatch(s, live({flight: cs, t: ty}), new Date(2026, 9, 21, 2), idx, table, null).state;
+  let s = null; for (const [cs, ty] of [['A1', 'A319'], ['A2', 'A320'], ['A3', 'A20N'], ['A4', 'A321'], ['A5', 'A21N']]) s = C.applyCatch(s, live({flight: cs, t: ty, hex: '40000' + cs[1]}), new Date(2026, 9, 21, 2), idx, table, null).state;
   assert.ok(C.setProgress(s, C.SETS.find(x => x.id === 'airbus')).done);
   assert.equal(C.setProgress(s, C.SETS.find(x => x.id === 'night')).got, 3);
   assert.ok(C.setProgress(s, C.SETS.find(x => x.id === 'night')).done);
@@ -245,4 +245,72 @@ t('every catch is kept as its own record for the detail view', () => {
   let s = null; for (const [cs, r] of [['R26863', '00-26863'], ['CFR606', 'N485DF']]) s = C.applyCatch(s, live({flight: cs, r, t: 'H60', hex: cs === 'CFR606' ? 'a5fb7d' : 'ae21cf', variant: undefined}), new Date(2026, 9, 21, 12), idx, table, null).state;
   const mine = s.log.filter(e => e.type === 'H60'); assert.equal(mine.length, 2); assert.deepEqual(mine.map(e => e.reg), ['N485DF', '00-26863']); assert.ok(mine.every(e => e.hex && e.cs && e.t));
 });
+t('short and odd input: X, ZZ171, 08-8204, hex all parse; junk and over 8 characters do not', () => {
+  assert.deepEqual(C.parseQuery('x'), {kind: 'callsign', value: 'X', kinds: ['callsign']});
+  assert.deepEqual(C.parseQuery('zz171').kinds, ['callsign', 'reg']);
+  assert.deepEqual(C.parseQuery('08-8204'), {kind: 'reg', value: '08-8204', kinds: ['reg']});
+  assert.deepEqual(C.parseQuery('~AE07E1'), {kind: 'hex', value: 'ae07e1', kinds: ['hex']});
+  assert.deepEqual(C.parseQuery('BAE146').kinds, ['callsign', 'reg', 'hex']);
+  assert.deepEqual(C.parseQuery('123456').kinds, ['hex', 'reg']);
+  for (const bad of ['ABCDEFGHI', 'A_B', 'A--B', '-AB', 'AB-', 'RCH 131 X!', 'A-B-C']) assert.equal(C.parseQuery(bad), null, bad);
+  assert.equal(C.parseQuery('RCH 131').value, 'RCH131');
+});
+const fl = o => Object.assign({flight: 'X       ', r: '08-8204', hex: 'ae07e1', t: 'C17', alt_baro: 24000, gs: 410, seen: 2}, o);
+t('exact matching only: X never matches XYZ12, regs match without the dash, hex is case blind', () => {
+  const list = [fl(), fl({flight: 'XYZ12', hex: '400001', r: 'G-ABCD'}), fl({flight: 'RCH131', hex: 'ae1234', r: '87-0040', t: 'C5M'})];
+  assert.deepEqual(C.exactMatches(C.parseQuery('X'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('088204'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('08-8204'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('AE07E1'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('XY'), list), []);
+  assert.deepEqual(C.exactMatches(C.parseQuery('RCH13'), list), []);
+  assert.equal(C.exactMatches(C.parseQuery('X'), [fl(), fl({seen: 1})]).length, 1, 'one airframe from two kinds of lookup counts once');
+});
+t('ambiguity: two live aircraft both calling X ask for the hex; a parked twin does not count', () => {
+  const two = C.resolveMatches(C.parseQuery('X'), [fl(), fl({hex: 'ae0999', r: '09-9999'})]);
+  assert.ok(two.ambiguous); assert.equal(two.matches.length, 2);
+  const one = C.resolveMatches(C.parseQuery('X'), [fl(), fl({hex: 'ae0999', alt_baro: 'ground'})]);
+  assert.ok(!one.ambiguous); assert.ok(C.pickLive(one.resp).ok); assert.equal(C.pickLive(one.resp).ac.hex, 'ae07e1');
+  assert.equal(C.resolveMatches(C.parseQuery('Q'), [fl()]).resp.ac.length, 0);
+});
+t('a C-17 calling just X is banked, keyed on its hex, and two different X flights both count', () => {
+  const day = new Date(2026, 9, 22, 15);
+  const a = C.pickLive({ac: [fl()]}).ac; assert.equal(C.catchKey(a), 'AE07E1');
+  let r = C.applyCatch(null, a, day, idx, table, null); assert.equal(r.status, 'new'); assert.equal(r.entry.cs, 'X'); assert.equal(r.entry.hex, 'ae07e1');
+  assert.ok(r.state.days[C.dayKey(day)].includes('AE07E1'));
+  r = C.applyCatch(r.state, C.pickLive({ac: [fl({hex: 'ae0999', r: '09-9999'})]}).ac, day, idx, table, null); assert.equal(r.status, 'dupe');
+  r = C.applyCatch(r.state, a, day, idx, table, null); assert.equal(r.status, 'today');
+  const blank = C.pickLive({ac: [fl({flight: '', r: 'ZZ171', hex: '43c6a2'})]}).ac; assert.equal(C.catchKey(blank), '43C6A2'); assert.equal(blank.callsign, 'ZZ171');
+  assert.equal(C.catchKey(C.pickLive({ac: [fl({flight: 'RCH131 '})]}).ac), 'RCH131');
+  for (const odd of ['', 'X', '12', '1234']) assert.ok(C.oddCallsign(odd), odd);
+  for (const ok of ['RCH131', 'BAW1', 'ZZ171']) assert.ok(!C.oddCallsign(ok), ok);
+});
+t('pending sightings: saved with no points, deduped, capped, expire after two hours, survive import', () => {
+  const t0 = new Date(2026, 9, 22, 15), q = C.parseQuery('RCH131');
+  let r = C.addPending(null, q, t0); assert.equal(r.status, 'added'); const s = r.state;
+  assert.equal(s.points, 0); assert.equal(s.xp, 0); assert.equal(Object.keys(s.cards).length, 0); assert.equal(s.log.length, 0);
+  assert.equal(C.addPending(s, C.parseQuery('rch131'), t0).status, 'already');
+  for (let i = 0; i < 9; i++) C.addPending(s, C.parseQuery('TST' + i), t0);
+  assert.equal(C.addPending(s, C.parseQuery('TST99'), t0).status, 'full'); assert.equal(s.pending.length, 10);
+  assert.deepEqual(C.pendingQuery(s.pending[0]), {kind: 'callsign', value: 'RCH131', kinds: ['callsign', 'reg']});
+  assert.equal(C.expirePending(s, new Date(+t0 + 119 * 60e3)).length, 0);
+  const gone = C.expirePending(s, new Date(+t0 + 121 * 60e3)); assert.equal(gone.length, 10); assert.equal(s.pending.length, 0);
+  const back = C.validateImport({v: 1, cards: {}, log: [], pending: [{value: 'RCH131', kinds: ['callsign'], t: new Date().toISOString(), until: new Date(Date.now() + 3600e3).toISOString()}, {value: '<x>', kinds: ['callsign'], t: new Date().toISOString(), until: new Date(Date.now() + 3600e3).toISOString()}, {value: 'LONG', kinds: ['callsign'], t: new Date().toISOString(), until: new Date(Date.now() + 9e9).toISOString()}]});
+  assert.deepEqual(back.pending.map(p => p.value), ['RCH131']);
+  C.removePending(back, 'rch131'); assert.equal(back.pending.length, 0);
+});
+{
+  const {lookup} = await import('../js/api.mjs');
+  const res = (ac, status = 200) => Promise.resolve({ok: status === 200, status, json: async () => ({ac})});
+  const seen = [];
+  const f = url => { seen.push(url); return /fallback/.test(url) ? res(/callsign\/RCH131/.test(url) ? [fl({flight: 'RCH131', t: 'C5M', hex: 'ae1234'})] : []) : res(/callsign\/RCH131/.test(url) ? [fl({flight: 'RCH1310'})] : []); };
+  const fb = [{base: 'https://fallback.test', name: 'adsb.fi', paths: {hex: 'hex', reg: 'registration', callsign: 'callsign'}}];
+  let r = await lookup(C.parseQuery('RCH131'), f, fb);
+  assert.equal(r.source, 'adsb.fi'); assert.equal(C.exactMatches(C.parseQuery('RCH131'), r.data.ac)[0].hex, 'ae1234');
+  assert.ok(seen.some(u => /fallback\.test\/v2\/registration\/RCH131/.test(u)), 'fallback uses its own path names');
+  r = await lookup(C.parseQuery('NOPE1'), f, fb); assert.equal(r.source, 'adsb.lol'); assert.equal(r.data.ac.length, 0);
+  r = await lookup(C.parseQuery('X'), url => res([]).then(x => (/fallback/.test(url) ? x : {ok: false, status: 429})), fb); assert.equal(r.error, 'busy');
+  r = await lookup(C.parseQuery('X'), () => Promise.reject(new TypeError('Failed to fetch')), fb); assert.equal(r.error, 'offline');
+  n++; console.log('PASS lookup: main feed first, fallback feed only when nothing exact matched, busy and offline reported');
+}
 console.log(`${n} unit tests passed`);

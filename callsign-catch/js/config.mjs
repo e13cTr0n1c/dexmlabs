@@ -15,3 +15,9 @@ export const SPOT_API = LOOKUP_API ? LOOKUP_API + '/photos' : '';
 export const NEW_TYPE_BONUS = 25;
 // A small bonus the first time you catch a new variant of a type you already own, such as a Firehawk after a Black Hawk.
 export const NEW_VARIANT_BONUS = 10;
+// Second feeds asked when the main one has never heard of the aircraft. Each is {base, name, paths?}. Empty for now:
+// adsb.fi, airplanes.live and adsb.lol itself send no CORS header, so a browser cannot read them directly. A relay
+// route on the Worker, such as {base: LOOKUP_API + '/fi', name: 'adsb.fi', paths: {hex: 'hex', reg: 'registration', callsign: 'callsign'}}, would switch adsb.fi on.
+export const FALLBACK_APIS = [];
+// How often pending sightings are rechecked while the page is open.
+export const PENDING_EVERY_MS = 60000;
