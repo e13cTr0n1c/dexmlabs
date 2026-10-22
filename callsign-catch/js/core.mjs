@@ -1,6 +1,6 @@
 // Pure game rules: no DOM, no network. Shared by the page and the unit tests.
 import {POINTS, DUPLICATE_XP, NIGHT_FROM, NIGHT_TO, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
-export const TIERS = ['common', 'uncommon', 'rare', 'legendary'];
+export const TIERS = ['common', 'uncommon', 'rare', 'legendary', 'mythic'];
 export const STORE_KEY = 'callsign:collection';
 
 export function indexTypes(table) { const m = new Map(); for (const t of table.types) m.set(t.code, t); return m; }
@@ -128,8 +128,8 @@ export function migrateHexTypes(state, idx, table) {
   for (const e of s.log) {
     const to = e && /^UNK/.test(e.type) && (hexType(e.hex) || callsignType(e.cs)); if (!to) continue;
     const from = s.cards[e.type], info = typeInfo(to, idx, table), tier = TIERS.indexOf(e.tier) > TIERS.indexOf(info.tier) ? e.tier : info.tier;
-    if (from) { from.count--; if (from.count < 1) delete s.cards[e.type]; }
-    e.type = to; e.tier = tier;
+    if (from) { from.count--; if (from.count < 1) { s.retired = s.retired || {}; s.retired[e.type] = from; delete s.cards[e.type]; } } // an emptied card is kept in retired, never lost
+    (e.was = e.was || []).push({at: new Date().toISOString(), why: 'type identified', type: e.type, tier: e.tier}); e.type = to; e.tier = tier;
     const c = s.cards[to];
     if (c) { c.count++; if (TIERS.indexOf(tier) > TIERS.indexOf(c.tier)) c.tier = tier; if (!c.last || e.t > c.last.t) c.last = e; if (!c.first || e.t < c.first.t) c.first = e; }
     else s.cards[to] = {code: to, tier, count: 1, first: e, last: e};
@@ -150,8 +150,34 @@ export function liveryFor(ac) {
   return (hex && LIVERIES.hex.get(hex)) || (reg && LIVERIES.reg.get(reg)) || null;
 }
 const atLeast = (t, floor) => TIERS.indexOf(t) >= TIERS.indexOf(floor) ? t : floor;
-export const liveryFloor = l => l ? (l.unique ? 'legendary' : 'rare') : 'common';
-export function tierFor(ac, info) { return atLeast(baseTierFor(ac, info), liveryFloor(liveryFor(ac))); }
+export const liveryFloor = l => l ? (l.unique ? 'mythic' : 'rare') : 'common';
+// One of a kind airframes (data/one-offs.json) by registration or hex, and one of a kind types (oneOff in types.json).
+let ONEOFF = {hex: new Map(), reg: new Map()};
+export function setOneOffs(data) { ONEOFF = {hex: new Map(), reg: new Map()}; for (const a of (data && data.airframes) || []) { const v = {name: String(a.name || 'One of a kind'), source: a.source || ''}; if (a.hex) ONEOFF.hex.set(String(a.hex).toLowerCase(), v); if (a.reg) ONEOFF.reg.set(norm(a.reg), v); } }
+export function oneOffFor(ac, info) {
+  if (info && info.oneOff) return {name: (info.name || info.code) + ', one of a kind', source: typeof info.oneOff === 'string' ? info.oneOff : ''};
+  if (!ac) return null; const hex = String(ac.hex || '').replace('~', '').toLowerCase(), reg = norm(ac.reg != null ? ac.reg : ac.r);
+  return (hex && ONEOFF.hex.get(hex)) || (reg && ONEOFF.reg.get(reg)) || null;
+}
+const sqOf = ac => String((ac && (ac.squawk != null ? ac.squawk : ac.sq)) || '');
+// Why a catch is Mythic, or '' when it is not.
+export function mythicReason(ac, info, tierSoFar) {
+  const o = oneOffFor(ac, info); if (o) return 'one of a kind: ' + o.name;
+  const l = liveryFor(ac); if (l && l.unique) return 'one off livery: ' + l.name;
+  if (tierSoFar === 'legendary' && SQUAWKS[sqOf(ac)]) return 'legendary caught squawking ' + sqOf(ac);
+  return '';
+}
+export function tierFor(ac, info) { const t = atLeast(baseTierFor(ac, info), liveryFloor(liveryFor(ac))); return mythicReason(ac, info, atLeast(t, 'common') === 'mythic' ? 'legendary' : t) ? 'mythic' : t; }
+// Why a catch got its rarity, in plain words, kept on the record.
+export function tierReason(ac, info) {
+  const r = [`${info.unknown ? 'unlisted type' : 'type ' + info.code} is ${TIERS.includes(info.tier) ? info.tier : 'uncommon'}`];
+  const team = teamFor(ac); if (team) r.push('display team: ' + team.name);
+  if (isMilitary(ac)) r.push(info.cat === 'drone' ? 'military drone, at least rare' : 'military, one step up');
+  if (/^N\d{3}NA$/.test(String(ac.r || ac.reg || '')) || /^NASA\d/.test(String(ac.callsign || ''))) r.push('NASA research aircraft');
+  const l = liveryFor(ac); if (l && !l.unique) r.push('special livery: ' + l.name);
+  const m = mythicReason(ac, info, atLeast(baseTierFor(ac, info), liveryFloor(l)) === 'mythic' ? 'legendary' : atLeast(baseTierFor(ac, info), liveryFloor(l))); if (m) r.push('Mythic, ' + m);
+  return r.join('; ');
+}
 function baseTierFor(ac, info) {
   if (isDisplay(ac)) return 'legendary';
   if (info.cat === 'drone' && isMilitary(ac)) return atLeast(TIERS.includes(info.tier) ? info.tier : 'uncommon', 'rare') === 'rare' ? 'rare' : 'legendary'; // military drones: rare at least, legendary when the type is
@@ -164,13 +190,23 @@ function baseTierFor(ac, info) {
 // Emergency squawks earn a badge and nothing else, so nobody is rewarded for an emergency.
 export const SQUAWKS = {'7700': 'Squawking 7700, general emergency, at time of catch', '7600': 'Squawking 7600, radio failure, at time of catch', '7500': 'Squawking 7500 at time of catch (often a mis-set code)'};
 
+// A plain copy of the feed's aircraft object, kept on the catch: only numbers, short strings, booleans and small arrays.
+export function rawCopy(a) {
+  const o = {};
+  for (const [k, v] of Object.entries(a || {})) {
+    if (typeof v === 'number' || typeof v === 'boolean' || v === null) o[k] = v;
+    else if (typeof v === 'string') o[k] = v.slice(0, 120);
+    else if (Array.isArray(v) && v.length <= 20 && v.every(x => typeof x !== 'object')) o[k] = v.slice();
+  }
+  return o;
+}
 // The feed record that proves the aircraft is flying now.
 export function pickLive(resp) {
   const list = (resp && (resp.ac || resp.aircraft)) || [];
   if (!list.length) return {ok: false, reason: 'notfound'};
   const now = list.find(a => a.alt_baro !== 'ground' && typeof a.alt_baro === 'number' && (a.seen == null || a.seen < 60));
   if (!now) return {ok: false, reason: list.some(a => a.alt_baro === 'ground') ? 'ground' : 'stale', ac: list[0]};
-  return {ok: true, ac: {hex: String(now.hex || '').replace('~', ''), flight: String(now.flight || '').trim(), callsign: String(now.flight || '').trim() || String(now.r || '').trim() || String(now.hex || '').replace('~', '').toUpperCase(), reg: String(now.r || '').trim(), type: String(now.t || '').trim().toUpperCase(), op: String(now.ownOp || now.operator || '').trim(), alt: Math.round(now.alt_baro), gs: now.gs != null ? Math.round(now.gs) : null, dbFlags: now.dbFlags | 0, category: String(now.category || ''), desc: String(now.desc || '').slice(0, 60), squawk: String(now.squawk || '')}};
+  return {ok: true, ac: {raw: rawCopy(now), lat: typeof now.lat === 'number' ? now.lat : null, lon: typeof now.lon === 'number' ? now.lon : null, altGeom: typeof now.alt_geom === 'number' ? now.alt_geom : null, track: typeof now.track === 'number' ? now.track : null, hex: String(now.hex || '').replace('~', ''), flight: String(now.flight || '').trim(), callsign: String(now.flight || '').trim() || String(now.r || '').trim() || String(now.hex || '').replace('~', '').toUpperCase(), reg: String(now.r || '').trim(), type: String(now.t || '').trim().toUpperCase(), op: String(now.ownOp || now.operator || '').trim(), alt: Math.round(now.alt_baro), gs: now.gs != null ? Math.round(now.gs) : null, dbFlags: now.dbFlags | 0, category: String(now.category || ''), desc: String(now.desc || '').slice(0, 60), squawk: String(now.squawk || '')}};
 }
 
 export function dayKey(date) { const d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -178,6 +214,16 @@ export function emptyState() { return {v: 1, cards: {}, log: [], days: {}, xp: 0
 
 // The callsign the board Worker can check: the flight's own callsign when it is 2 to 8 letters and numbers and not odd.
 export const boardCallsign = e => { const c = norm(e && e.cs); return /^[A-Z0-9]{2,8}$/.test(c) && !oddCallsign(c) && !(e.hex && c === String(e.hex).toUpperCase()) ? c : ''; };
+
+// What to send the board, or null to send nothing. A hex keyed catch (X) goes only when the Worker can verify a hex.
+export function boardPayload(e, acceptsHex) {
+  const hex = /^[0-9a-f]{6}$/.test(String(e && e.hex || '')) ? e.hex : '', cs = boardCallsign(e);
+  if (cs) return {callsign: cs, hex, reg: (e && e.reg) || ''};
+  if (acceptsHex && hex) { const f = norm(e.flight != null ? e.flight : e.cs); return {callsign: /^[A-Z0-9]{1,8}$/.test(f) && f !== hex.toUpperCase() ? f : '', hex, reg: e.reg || ''}; }
+  return null;
+}
+// A new Planespotters answer for a catch. The earlier photo record stays on it as prev, so nothing is lost.
+export function refreshPhoto(old, ph) { const o = old && typeof old === 'object' ? {...old} : null; if (o) delete o.stale; return o && (o.src || o.link) ? {...ph, prev: o} : {...ph}; }
 
 // Pending sightings: seen on another tracker but not in our feed yet. Saved with no points, rechecked for a while,
 // then confirmed into a real catch through applyCatch, or dropped when the window closes.
@@ -236,14 +282,23 @@ const cleanVariants = v => Array.isArray(v) ? [...new Set(v.filter(x => typeof x
 // Older saves have no variants: rebuild them from the log entries that carry one (entry.var or a photo link).
 // When a type is promoted in the table (for example the X-59 to legendary), saved cards catch up and the first catch is re-scored.
 export function upgradeTiers(state, idx, table) {
-  // A catch whose airframe has since been listed as a special livery moves up, and its points with it, once.
+  // Saved catches that are Mythic now (one of a kind, a one off livery, or a Legendary on an emergency squawk) move up.
+  // The old tier is kept in was; the points follow in creditShortfalls.
+  for (const e of state.log || []) {
+    if (!e || e.tier === 'mythic') continue;
+    const info = typeInfo(e.type, idx, table), top = atLeast(TIERS.includes(e.tier) ? e.tier : 'uncommon', info.unknown ? 'common' : (info.tier || 'common'));
+    const m = mythicReason(e, info, top === 'mythic' ? 'legendary' : top); if (!m) continue;
+    (e.was = e.was || []).push({at: new Date().toISOString(), why: 'mythic', tier: e.tier}); e.tier = 'mythic'; e.mythic = m;
+    const c = state.cards && state.cards[e.type]; if (c) { c.tier = 'mythic'; for (const k of ['first', 'last']) if (c[k] && c[k].t === e.t) { (c[k].was = Array.isArray(c[k].was) ? c[k].was : []).push({at: new Date().toISOString(), why: 'mythic', tier: c[k].tier}); c[k].tier = 'mythic'; c[k].mythic = m; } }
+  }
+  // A catch whose airframe has since been listed as a special livery moves up, once.
   for (const e of state.log || []) {
     const l = e && liveryFor(e); if (!l) continue;
     e.liv = l.name; if (l.unique) e.uniq = 1;
     const to = atLeast(TIERS.includes(e.tier) ? e.tier : 'uncommon', liveryFloor(l)), c = state.cards && state.cards[e.type];
     if (to === e.tier) continue;
-    const first = c && c.first && c.first.t === e.t, diff = ((first ? POINTS : DUPLICATE_XP)[to] || 0) - ((first ? POINTS : DUPLICATE_XP)[e.tier] || 0);
-    e.tier = to; if (diff > 0) { state.points = (state.points || 0) + diff; if (!first) state.xp = (state.xp || 0) + diff; e.gain = (e.gain || 0) + diff; }
+    // The points follow in creditShortfalls, which pays any gap exactly once and keeps the original gain.
+    (e.was = e.was || []).push({at: new Date().toISOString(), why: 'special livery', tier: e.tier}); e.tier = to;
     if (c) { if (TIERS.indexOf(to) > TIERS.indexOf(c.tier)) c.tier = to; for (const k of ['first', 'last']) if (c[k] && c[k].t === e.t) c[k] = e; }
   }
   for (const c of Object.values(state.cards || {})) {
@@ -255,6 +310,38 @@ export function upgradeTiers(state, idx, table) {
   }
   return state;
 }
+// Points owed after a re-grade. Each catch should have earned at least what its tier pays now: POINTS for the catch
+// that opened its card, DUPLICATE_XP for the rest. gain is never changed. Points already topped up by an earlier card
+// upgrade show as points beyond the sum of gains; that surplus covers gaps first (regradeCovered), so nothing is paid
+// twice. Only a true shortfall is credited (regradeCredited). Running it again changes nothing.
+export function creditShortfalls(state, idx, table) {
+  const s = state; if (!s || !Array.isArray(s.log)) return {credited: 0, covered: 0, entries: []};
+  const num = x => +x || 0, firstOf = {};
+  for (const c of Object.values(s.cards || {})) if (c && c.first) firstOf[c.code] = c.first.t;
+  const sumGain = s.log.reduce((n, e) => n + (e ? num(e.gain) : 0), 0), paid = s.log.reduce((n, e) => n + (e ? num(e.regradeCredited) + num(e.regradeCovered) : 0), 0);
+  let surplus = Math.max(0, num(s.points) - sumGain - paid), credited = 0, covered = 0; const entries = [];
+  // A card upgrade raised the card's copy of its first catch but not the log entry: that catch is where the surplus went,
+  // so those are covered first, then the rest oldest first.
+  // Compared before any re-grade on this load, since the tiers in was are the ones saved with the catch.
+  const orig = x => (x && Array.isArray(x.was) && x.was.length && x.was[0].tier) || (x && x.tier);
+  const toppedUp = e => { const c = s.cards && s.cards[e.type]; return !!(c && c.first && c.first.t === e.t && TIERS.indexOf(orig(c.first)) > TIERS.indexOf(orig(e))); };
+  const order = [...s.log].reverse().filter(Boolean); order.sort((a, b) => toppedUp(b) - toppedUp(a));
+  for (const e of order) {
+    if (!e.type) continue;
+    const info = typeInfo(e.type, idx, table), tier = [e.tier, info.unknown ? null : info.tier, liveryFloor(liveryFor(e))].filter(t => TIERS.includes(t)).reduce((a, b) => TIERS.indexOf(b) > TIERS.indexOf(a) ? b : a, 'common');
+    const due = (firstOf[e.type] === e.t ? POINTS : DUPLICATE_XP)[tier] || 0, short = due - num(e.gain) - num(e.regradeCredited) - num(e.regradeCovered);
+    if (short <= 0) continue;
+    const cover = Math.min(short, surplus); surplus -= cover;
+    if (cover) { e.regradeCovered = num(e.regradeCovered) + cover; covered += cover; }
+    const pay = short - cover;
+    if (pay) { e.regradeCredited = num(e.regradeCredited) + pay; e.regradeWhy = tier === 'mythic' ? 'mythic' : 'regrade'; s.points = num(s.points) + pay; if (firstOf[e.type] !== e.t) s.xp = num(s.xp) + pay; credited += pay; }
+    entries.push({t: e.t, cs: e.cs, type: e.type, tier, why: tier === 'mythic' ? 'mythic' : 'regrade', gain: num(e.gain), due, covered: cover, credited: pay});
+  }
+  entries.sort((a, b) => a.t < b.t ? -1 : 1);
+  return {credited, covered, entries};
+}
+// Everything that runs on load and import, in order. Returns the state.
+export function regrade(s, idx, table) { upgradeTiers(backfillVariants(migrateHexTypes(s, idx, table)), idx, table); creditShortfalls(s, idx, table); return s; }
 export function backfillVariants(state) {
   const s = state; if (!s || !s.cards) return s;
   for (const c of Object.values(s.cards)) c.variants = cleanVariants(c.variants);
@@ -276,6 +363,18 @@ export function applyCatch(state, ac, when, idx, table, wanted) {
   const hour = new Date(when).getHours(), night = hour >= NIGHT_FROM && hour < NIGHT_TO;
   const entry = {t: new Date(when).toISOString(), cs: String(ac.callsign || ac.reg || ac.hex).toUpperCase().slice(0, 10), reg: ac.reg || '', hex: ac.hex || '', type: code, op: ac.op || '', alt: ac.alt, gs: ac.gs, tier, night, cat: info.cat};
   if (isMilitary(ac)) entry.mil = 1;
+  // Everything else the feed told us, so a record never loses data: position, squawk, where it came from and why it scored.
+  entry.why = tierReason(ac, info);
+  if (tier === 'mythic') entry.mythic = mythicReason(ac, info, 'legendary');
+  if (ac.squawk) entry.squawk = String(ac.squawk).slice(0, 4);
+  for (const k of ['lat', 'lon', 'altGeom', 'track']) if (typeof ac[k] === 'number') entry[k] = ac[k];
+  if (ac.flight != null) entry.flight = String(ac.flight).slice(0, 10);
+  if (ac.desc) entry.desc = String(ac.desc).slice(0, 60);
+  if (ac.category) entry.category = String(ac.category).slice(0, 4);
+  if (ac.feedType != null) entry.feedType = String(ac.feedType).slice(0, 8);
+  if (ac.typeFrom) entry.typeFrom = ac.typeFrom;
+  if (ac.source) entry.src = String(ac.source).slice(0, 40);
+  if (ac.raw && typeof ac.raw === 'object') entry.raw = ac.raw;
   if (info.unknown) { const o = originOf(ac); if (o) entry.origin = o; }
   const team = teamFor(ac); if (team) entry.team = team.name;
   const liv = liveryFor(ac); if (liv) { entry.liv = liv.name; if (liv.unique) entry.uniq = 1; }
@@ -313,11 +412,12 @@ export const SETS = [
   {id: 'rotor', name: 'Rotor Club', codes: ['EC35', 'EC45', 'A139', 'A169', 'A189', 'S92', 'H160', 'AS50', 'R44', 'R22', 'B06', 'B407', 'B429', 'H47', 'PUMA', 'EH10', 'LYNX', 'H64', 'H60', 'V22']},
   {id: 'unmanned', name: 'Unmanned', codes: ['Q9', 'Q9B', 'Q4', 'HRM9']},
   {id: 'display', name: 'Display teams', rule: 'display', goal: 1, desc: 'Catch a display team jet'},
-  {id: 'night', name: 'Night owl', rule: 'night', goal: 3, desc: 'Catch three between 00:00 and 05:00'}];
+  {id: 'night', name: 'Night owl', rule: 'night', goal: 3, desc: 'Catch three between 00:00 and 05:00'},
+  {id: 'mythic', name: 'Mythic', rule: 'mythic', goal: 1, desc: 'Catch a one of a kind'}];
 export function setProgress(state, set) {
   const s = state || emptyState();
   if (set.codes) { const missing = set.codes.filter(c => !s.cards[c]), got = set.codes.length - missing.length; return {got, goal: set.codes.length, done: !missing.length, missing}; }
-  const got = set.rule === 'night' ? s.night : s.log.filter(e => e.team).length;
+  const got = set.rule === 'night' ? s.night : set.rule === 'mythic' ? s.log.filter(e => e && e.tier === 'mythic').length : s.log.filter(e => e.team).length;
   return {got: Math.min(got, set.goal), goal: set.goal, done: got >= set.goal, missing: []};
 }
 
@@ -328,6 +428,7 @@ const CARGO_CS = /^(FDX|UPS|BCS|GTI|CLX|BOX|CKS|ABW|ABR|MPH|DHK|DAE|DHL|BDA|AHO|
 const LOGISTICS = new Set(['C17', 'C130', 'C30J', 'A400', 'C5M', 'C5', 'K35R', 'KC46', 'KC10', 'A332', 'A124', 'A225', 'C2', 'CN35', 'C295', 'IL76', 'KC39', 'C160', 'R135', 'MRTT']);
 export const VINTAGE = new Set(['SPIT', 'HURI', 'LANC', 'B17', 'P51', 'MOSQ', 'DC3', 'DC6', 'C46', 'JU52', 'VULC', 'DHC1', 'TIGR', 'DH82', 'HUNT', 'MS76']);
 export const DECK = [
+  {id: 'mythic', name: 'Mythic', test: (c, i, es) => c.tier === 'mythic' || es.some(e => e.tier === 'mythic')},
   {id: 'legendary', name: 'Legendary', test: c => c.tier === 'legendary'},
   {id: 'rare', name: 'Rare and up', test: c => TIERS.indexOf(c.tier) >= TIERS.indexOf('rare')},
   {id: 'longhaul', name: 'Long haul', test: (c, i) => (i.cat === 'wide' || i.cat === 'quad') && !CARGO_TYPES.has(i.code)},
@@ -391,8 +492,16 @@ export function validateImport(obj) {
   if (s.cards['????']) { const o = s.cards['????'], n = s.cards.UNKFW; delete s.cards['????'];
     if (o && typeof o === 'object') s.cards.UNKFW = n ? {...n, count: (n.count | 0) + (o.count | 0)} : {...o, code: 'UNKFW'}; }
   s.log = s.log.map(e => e && e.type === '????' ? {...e, type: 'UNKFW'} : e);
-  for (const [k, c] of Object.entries(s.cards)) { if (!c || typeof c !== 'object' || !(c.count >= 1)) { delete s.cards[k]; continue; } if (!TIERS.includes(c.tier)) c.tier = 'uncommon'; if (!/^[A-Z0-9?]{2,8}$/.test(k)) { delete s.cards[k]; continue; } if ('variants' in c) c.variants = cleanVariants(c.variants); } // repair, never throw a whole hangar away over one odd card
-  s.pending = cleanPending(s.pending, Date.now());
+  // Repair, never throw a whole hangar away over one odd card. Anything I can't use goes to quarantine, kept in the save and the export.
+  s.quarantine = Array.isArray(s.quarantine) ? s.quarantine.slice() : [];
+  for (const [k, c] of Object.entries(s.cards)) {
+    if (!c || typeof c !== 'object' || !(c.count >= 1) || !/^[A-Z0-9?]{2,8}$/.test(k)) { s.quarantine.push({kind: 'card', key: k, value: c}); delete s.cards[k]; continue; }
+    if (!TIERS.includes(c.tier)) { c.tierWas = c.tier; c.tier = 'uncommon'; }
+    if ('variants' in c) c.variants = cleanVariants(c.variants);
+  }
+  const keep = cleanPending(s.pending, Date.now());
+  for (const p of Array.isArray(s.pending) ? s.pending : []) if (!keep.includes(p)) s.quarantine.push({kind: 'pending', value: p});
+  s.pending = keep;
   s.points = +s.points || 0; s.xp = +s.xp || 0; s.night = +s.night || 0; return s;
 }
 // Reward only after a legendary catch of that type, and only when it has a code and a link.

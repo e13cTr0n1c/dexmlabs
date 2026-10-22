@@ -1,4 +1,4 @@
-import {POINTS, PENDING_EVERY_MS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
+import {POINTS, PENDING_EVERY_MS, BOARD_ACCEPTS_HEX, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
@@ -18,19 +18,29 @@ $('#catch-form').addEventListener('submit', e => {
   submit($('#cs').value);
 });
 const getJSON = n => fetch(`./data/${n}.json`).then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
-let table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes;
-try { [table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges', 'liveries', 'callsign-types'].map(getJSON)); }
+let table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes, oneOffs;
+try { [table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes, oneOffs] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges', 'liveries', 'callsign-types', 'one-offs'].map(getJSON)); }
 catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad'); throw e; }
-C.setTeams(teams); C.setHexTypes(hexTypes); C.setLiveries(liveries); C.setCallsignTypes(csTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
+C.setTeams(teams); C.setHexTypes(hexTypes); C.setLiveries(liveries); C.setCallsignTypes(csTypes); C.setOneOffs(oneOffs); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
-const dropStaleSpots = s => { for (const e of s.log || []) if (e && e.photo && !safeSpot(e.photo)) delete e.photo; for (const c of Object.values(s.cards || {})) for (const k of ['first', 'last']) if (c[k] && c[k].photo && !safeSpot(c[k].photo)) delete c[k].photo; return s; };
-const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); if (s) dropStaleSpots(s); return s ? C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
+// Planespotters: an answer older than 24 hours is never shown (safeSpot checks its date) and is asked for again.
+// The photo page link and the photographer stay on the record as provenance; the expired image address is marked stale.
+const dropStaleSpots = s => { const mark = p => { if (p && typeof p === 'object' && p.src && !safeSpot(p)) p.stale = 1; };
+  for (const e of s.log || []) mark(e && e.photo); for (const c of Object.values(s.cards || {})) for (const k of ['first', 'last']) mark(c[k] && c[k].photo); return s; };
+const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); if (s) dropStaleSpots(s); return s ? C.regrade(s, idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
 const infoOf = code => C.typeInfo(code, idx, table);
 let deck = 'all';
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
 // Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
-const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
+// Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
+// If the browser runs out of room, the backup goes first, then the raw feed copies on the oldest catches (newest 300 kept).
+const save = () => {
+  const write = () => localStorage.setItem(C.STORE_KEY, JSON.stringify(state));
+  try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); write(); return; } catch {}
+  try { localStorage.removeItem(C.STORE_KEY + ':backup'); write(); return; } catch {}
+  try { state.log.slice(300).forEach(e => { if (e && e.raw) { delete e.raw; e.rawTrimmed = 1; } }); write(); } catch {}
+};
 const now = () => new Date(window.__ccNow || Date.now());
 const wanted = () => C.wantedFor(now(), table, specials);
 const Tier = t => t[0].toUpperCase() + t.slice(1);
@@ -43,7 +53,7 @@ function variantChips(code) {
 }
 function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
   const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}${entry.reg ? `<div><dt>Registration</dt><dd>${esc(entry.reg)}</dd></div>` : ''}${info.unknown && entry.hex ? `<div><dt>Hex</dt><dd>${esc(entry.hex.toUpperCase())}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
-  const sq = entry && C.SQUAWKS[entry.sq] ? `<p class="cc-squawk"><b>Legendary squawk</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
+  const sq = entry && C.SQUAWKS[entry.sq] ? `<span class="sq-badge" aria-hidden="true">${esc(entry.sq)}</span><p class="cc-squawk"><b>${tier === 'mythic' ? 'Mythic squawk' : 'Legendary squawk'}</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
   const card = owned && state.cards[info.code], multi = !!(card && card.count > 1 && !extra.includes('XP'));
   const more = multi ? `<span class="cc-more">See all ${card.count} catches</span>` : '';
   return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}${multi ? ' multi' : ''}" data-code="${esc(info.code)}"${multi ? ` tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(info.name)}, see all ${card.count} catches"` : ''}><div class="cc-in">
@@ -66,7 +76,7 @@ function renderHangar() {
   const set = C.SETS.find(s => s.id === filter);
   let codes;
   if (set && set.codes) codes = set.codes;
-  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : !!e.team).map(e => e.type);
+  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : set.rule === 'mythic' ? e.tier === 'mythic' : !!e.team).map(e => e.type);
   else codes = [...new Set([...Object.keys(state.cards), ...C.SETS.flatMap(s => s.codes || [])])];
   if (deck !== 'all') { const keep = new Set(C.deckCodes(state, deck, infoOf)); codes = codes.filter(c => keep.has(c)); }
   codes = [...new Set(codes)].sort((a, b) => (!!state.cards[b] - !!state.cards[a]) || C.TIERS.indexOf(C.typeInfo(b, idx, table).tier) - C.TIERS.indexOf(C.typeInfo(a, idx, table).tier) || a.localeCompare(b));
@@ -95,7 +105,7 @@ async function refreshSpots() {
   try {
     const todo = Object.values(state.cards).map(c => c.last).filter(e => e && !safeSpot(e.photo) && (e.hex || e.reg) && !asked.has(e.hex || e.reg)).slice(0, 6);
     let got = 0;
-    for (const e of todo) { asked.add(e.hex || e.reg); const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (ph) { e.photo = ph; for (const x of state.log) if (x.t === e.t && x.type === e.type) x.photo = ph; got++; } }
+    for (const e of todo) { asked.add(e.hex || e.reg); const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (ph) { const merged = p => C.refreshPhoto(p, ph); e.photo = merged(e.photo); for (const x of state.log) if (x.t === e.t && x.type === e.type) x.photo = merged(x.photo); got++; } }
     if (got) { save(); renderHangar(); upgrade($('#hangar')); }
   } finally { refreshing = false; }
 }
@@ -123,7 +133,7 @@ function openDetail(code) {
   list.forEach(async (e, i) => {
     const k = e.hex || e.reg; if (e.photo || !k || asked.has(k)) return; asked.add(k);
     const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (!ph) return;
-    e.photo = ph; save();
+    e.photo = C.refreshPhoto(e.photo, ph); save();
     const li = $(`#detail-list [data-i="${i}"]`); if (ph && li && dlg.dataset.code === code) li.outerHTML = catchItem(info, e, i);
   });
 }
@@ -150,14 +160,17 @@ async function check(q) {
   const m = C.resolveMatches(q, r.data.ac);
   if (m.ambiguous) return {reason: 'ambiguous', matches: m.matches};
   const live = C.pickLive(m.resp);
+  if (live.ok) live.source = r.source;
   return live.ok ? {live, source: r.source} : {reason: live.reason};
 }
 // Fill in the type, variant and photo, then bank it. Shared by a normal catch and a confirmed pending one.
 async function bank(live) {
   const hexdbType = await fillType(live.ac);
-  if (!live.ac.type) live.ac.type = C.resolveType(live.ac);
+  if (live.ac.type) live.ac.typeFrom = live.ac.typeFrom || 'feed or hexdb';
+  else { live.ac.type = C.resolveType(live.ac); if (live.ac.type) live.ac.typeFrom = C.hexType(live.ac.hex) ? 'hex table' : 'callsign prefix'; }
   const photo = await spotPhoto(live.ac);
   live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
+  live.ac.source = live.source || '';
   const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
   if (res.status !== 'today') { if (photo) res.entry.photo = photo; state = res.state; save(); }
   return res;
@@ -165,8 +178,8 @@ async function bank(live) {
 function celebrate(res, lead = '') {
   render();
   say(lead + (res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`), 'ok');
-  board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
-  reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(res.entry);
+  board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.tier === 'mythic' ? 'legendary' : res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq && res.tier !== 'mythic' ? 'legendary' : res.tier);
+  reveal(res); setTimeout(() => chime(res.entry.sq || res.tier === 'mythic' ? 'legendary' : res.tier), 650); postCatch(res.entry);
 }
 
 // Pending sightings: no points until a feed hears the aircraft flying. Rechecked on open and every minute.
@@ -284,11 +297,11 @@ async function share(text) {
 }
 
 function exportFile() {
-  const blob = new Blob([JSON.stringify(state, (k, v) => k === 'photo' ? undefined : v, 1)], {type: 'application/json'}), a = document.createElement('a');
+  const blob = new Blob([JSON.stringify(state, null, 1)], {type: 'application/json'}), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `callsign-catch-${C.dayKey(now())}.json`; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function importFile(file) {
-  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
+  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.regrade(s, idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 
@@ -310,11 +323,11 @@ $('#board').hidden = !LEADERBOARD_API;
 // Leaderboard: only when LEADERBOARD_API is set. The Worker checks every catch against the live feed itself.
 const player = (() => { try { let p = localStorage.getItem('callsign:player'); if (!p) { p = [...crypto.getRandomValues(new Uint8Array(10))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('callsign:player', p); } return p; } catch { return ''; } })();
 const drawBoard = b => { $('#board-body').innerHTML = ['today', 'alltime'].map(k => `<div><h3>${k === 'today' ? 'Today' : 'All time'}</h3><ol>${(b[k] || []).map(e => `<li>${esc(e.nick)} <b>${esc(e.points)}</b></li>`).join('') || '<li class="muted">No catches yet.</li>'}</ol></div>`).join(''); };
-// The board Worker checks a catch by callsign and takes 2 to 8 letters and numbers, so a catch banked on its hex
-// (a callsign like X) cannot count there yet. I send the hex and registration as well, for when the Worker learns them.
+// The board Worker checks a catch live. A normal callsign always goes, with its hex and registration (an older Worker
+// ignores them). A hex keyed catch such as X goes only once BOARD_ACCEPTS_HEX says the Worker can check it by hex.
 async function postCatch(entry) { const nick = (localStorage.getItem('callsign:nick') || '').trim(); if (!LEADERBOARD_API || !nick) return;
-  const cs = C.boardCallsign(entry); if (!cs) return;
-  try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({callsign: cs, hex: entry.hex || '', reg: entry.reg || '', nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
+  const pl = C.boardPayload(entry, BOARD_ACCEPTS_HEX); if (!pl) return;
+  try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({...pl, nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
 if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') || ''; $('#nick').addEventListener('change', e => localStorage.setItem('callsign:nick', e.target.value.slice(0, 16))); fetch(LEADERBOARD_API + '/board').then(r => r.json()).then(drawBoard).catch(() => {}); }
 const drop = C.dropFor(now(), specials);
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }

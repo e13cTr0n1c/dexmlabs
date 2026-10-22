@@ -1,6 +1,7 @@
 // Everything worth retuning lives here.
-export const POINTS = {common: 10, uncommon: 25, rare: 60, legendary: 150};
-export const DUPLICATE_XP = {common: 2, uncommon: 5, rare: 12, legendary: 30};
+// Mythic sits above Legendary: one of a kind airframes, and a Legendary caught squawking an emergency code.
+export const POINTS = {common: 10, uncommon: 25, rare: 60, legendary: 150, mythic: 400};
+export const DUPLICATE_XP = {common: 2, uncommon: 5, rare: 12, legendary: 30, mythic: 80};
 // A relay that adds the CORS header adsb.lol does not send (see callsign-worker). Empty means ask adsb.lol directly.
 export const LOOKUP_API = 'https://callsign-catch.thearthurjones.workers.dev';
 // The optional leaderboard Worker. Empty keeps the board hidden.
@@ -23,3 +24,6 @@ export const NEW_VARIANT_BONUS = 10;
 export const FALLBACK_APIS = [];
 // How often pending sightings are rechecked while the page is open.
 export const PENDING_EVERY_MS = 60000;
+// Set true once the board Worker accepts a hex on /catch (the version in callsign-worker that checks hex keyed catches live).
+// Until then the page only posts catches with a real callsign; an older Worker just ignores the extra hex field.
+export const BOARD_ACCEPTS_HEX = false;
