@@ -18,13 +18,16 @@ $('#catch-form').addEventListener('submit', e => {
   submit($('#cs').value);
 });
 const getJSON = n => fetch(`./data/${n}.json`).then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
-let table, specials, art, photos, teams, hexTypes, ranges;
-try { [table, specials, art, photos, teams, hexTypes, ranges] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges'].map(getJSON)); }
+let table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes;
+try { [table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges', 'liveries', 'callsign-types'].map(getJSON)); }
 catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad'); throw e; }
-C.setTeams(teams); C.setHexTypes(hexTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
+C.setTeams(teams); C.setHexTypes(hexTypes); C.setLiveries(liveries); C.setCallsignTypes(csTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
-const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
+const dropStaleSpots = s => { for (const e of s.log || []) if (e && e.photo && !safeSpot(e.photo)) delete e.photo; for (const c of Object.values(s.cards || {})) for (const k of ['first', 'last']) if (c[k] && c[k].photo && !safeSpot(c[k].photo)) delete c[k].photo; return s; };
+const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); if (s) dropStaleSpots(s); return s ? C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
+const infoOf = code => C.typeInfo(code, idx, table);
+let deck = 'all';
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
 // Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
 const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
@@ -65,9 +68,16 @@ function renderHangar() {
   if (set && set.codes) codes = set.codes;
   else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : !!e.team).map(e => e.type);
   else codes = [...new Set([...Object.keys(state.cards), ...C.SETS.flatMap(s => s.codes || [])])];
+  if (deck !== 'all') { const keep = new Set(C.deckCodes(state, deck, infoOf)); codes = codes.filter(c => keep.has(c)); }
   codes = [...new Set(codes)].sort((a, b) => (!!state.cards[b] - !!state.cards[a]) || C.TIERS.indexOf(C.typeInfo(b, idx, table).tier) - C.TIERS.indexOf(C.typeInfo(a, idx, table).tier) || a.localeCompare(b));
   $('#hangar').innerHTML = codes.map(code => { const c = state.cards[code], info = C.typeInfo(code, idx, table);
-    return cardHTML(info, c ? c.tier : info.tier, c && c.last, !!c, c && c.count > 1 ? ` <span class="cc-count">×${c.count}</span>` : ''); }).join('') || '<p class="muted">Nothing here yet.</p>';
+    return cardHTML(info, c ? c.tier : info.tier, c && c.last, !!c, c && c.count > 1 ? ` <span class="cc-count">×${c.count}</span>` : ''); }).join('') || `<p class="muted">${deck !== 'all' ? 'No cards match that filter yet.' : 'Nothing here yet.'}</p>`;
+  const sp = set && set.codes ? C.setProgress(state, set) : null;
+  $('#set-missing').hidden = !sp;
+  if (sp) $('#set-missing').innerHTML = sp.done ? `<b>${esc(set.name)}: complete, ${sp.got}/${sp.goal}.</b>` : `<b>${esc(set.name)}: ${sp.got}/${sp.goal}.</b> Still to catch: ${sp.missing.map(c => esc(infoOf(c).name)).join(', ')}.`;
+  $('#deck').innerHTML = [{id: 'all', name: 'All cards'}, ...C.DECK].map(d => `<button type="button" class="chip${deck === d.id ? ' on' : ''}" data-deck="${d.id}" aria-pressed="${deck === d.id}">${esc(d.name)}</button>`).join('');
+  const mk = C.makersOwned(state, infoOf), ms = $('#deck-maker');
+  ms.innerHTML = `<option value="">By maker</option>` + mk.map(m => `<option value="${esc(m)}"${deck === 'maker:' + m ? ' selected' : ''}>${esc(m)}</option>`).join('');
   $('#sets').innerHTML = C.SETS.map(s => { const p = C.setProgress(state, s);
     const pc = Math.round(100 * p.got / p.goal);
     return `<button type="button" class="set${filter === s.id ? ' on' : ''}${p.done ? ' done' : ''}" data-set="${s.id}" aria-pressed="${filter === s.id}" style="--p:${pc}"><span class="badge" aria-hidden="true"><b>${p.done ? '\u2713' : pc + '%'}</b></span><span>${esc(s.name)}</span><span class="bar"><i style="width:${Math.round(100 * p.got / p.goal)}%"></i></span><small>${p.got}/${p.goal}${s.desc ? ' · ' + esc(s.desc) : ''}</small></button>`; }).join('');
@@ -77,7 +87,18 @@ function renderHangar() {
 // Commons photos are looked up after the cards are drawn, so a slow or failed lookup never holds a card up.
 const wikiStore = (() => { try { return localStorage; } catch { return null; } })();
 const upgrade = el => upgradeArt(el, fetch, wikiStore).catch(() => {});
-function render() { renderStats(); renderWanted(); renderHangar(); upgrade($('#hangar')); upgrade($('#wanted')); }
+function render() { renderStats(); renderWanted(); renderHangar(); upgrade($('#hangar')); upgrade($('#wanted')); refreshSpots(); }
+// Cards whose Planespotters answer has expired look it up again, a few at a time, once per visit.
+let refreshing = false;
+async function refreshSpots() {
+  if (refreshing) return; refreshing = true;
+  try {
+    const todo = Object.values(state.cards).map(c => c.last).filter(e => e && !safeSpot(e.photo) && (e.hex || e.reg) && !asked.has(e.hex || e.reg)).slice(0, 6);
+    let got = 0;
+    for (const e of todo) { asked.add(e.hex || e.reg); const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (ph) { e.photo = ph; for (const x of state.log) if (x.t === e.t && x.type === e.type) x.photo = ph; got++; } }
+    if (got) { save(); renderHangar(); upgrade($('#hangar')); }
+  } finally { refreshing = false; }
+}
 // A picture that fails to load (offline, Planespotters down) steps down the chain instead of leaving a gap.
 document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.closest('.art-slot')) nextArt(t, code => C.typeInfo(code, idx, table), upgrade); }, true);
 
@@ -134,7 +155,7 @@ async function check(q) {
 // Fill in the type, variant and photo, then bank it. Shared by a normal catch and a confirmed pending one.
 async function bank(live) {
   const hexdbType = await fillType(live.ac);
-  if (!live.ac.type) live.ac.type = C.hexType(live.ac.hex);
+  if (!live.ac.type) live.ac.type = C.resolveType(live.ac);
   const photo = await spotPhoto(live.ac);
   live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
   const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
@@ -145,7 +166,7 @@ function celebrate(res, lead = '') {
   render();
   say(lead + (res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`), 'ok');
   board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
-  reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(res.entry.cs);
+  reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(res.entry);
 }
 
 // Pending sightings: no points until a feed hears the aircraft flying. Rechecked on open and every minute.
@@ -234,7 +255,7 @@ async function spotPhoto(ac) {
       const r = await fetch(`${SPOT_API}/${path}`, {signal: ctl.signal}); clearTimeout(timer);
       if (!r.ok) continue;
       const p = ((await r.json()).photos || [])[0];
-      const ph = p && safeSpot({src: (p.thumbnail_large || p.thumbnail || {}).src, by: String(p.photographer || '').slice(0, 60), link: p.link});
+      const ph = p && safeSpot({src: (p.thumbnail_large || p.thumbnail || {}).src, by: String(p.photographer || '').slice(0, 60), link: p.link, at: Date.now()});
       if (ph) return ph;
     } catch {}
   }
@@ -263,7 +284,7 @@ async function share(text) {
 }
 
 function exportFile() {
-  const blob = new Blob([JSON.stringify(state, null, 1)], {type: 'application/json'}), a = document.createElement('a');
+  const blob = new Blob([JSON.stringify(state, (k, v) => k === 'photo' ? undefined : v, 1)], {type: 'application/json'}), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `callsign-catch-${C.dayKey(now())}.json`; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function importFile(file) {
@@ -274,6 +295,8 @@ async function importFile(file) {
 const sb = $('#sound'), showSound = () => { const on = soundOn(); sb.textContent = on ? 'Sound on' : 'Sound off'; sb.setAttribute('aria-pressed', String(on)); };
 sb.addEventListener('click', () => { setSound(!soundOn()); showSound(); if (soundOn()) chime('common'); }); showSound();
 $('#set-all').addEventListener('click', () => { filter = 'all'; renderHangar(); });
+$('#deck').addEventListener('click', e => { const b = e.target.closest('[data-deck]'); if (b) { deck = deck === b.dataset.deck ? 'all' : b.dataset.deck; renderHangar(); upgrade($('#hangar')); } });
+$('#deck-maker').addEventListener('change', e => { deck = e.target.value ? 'maker:' + e.target.value : 'all'; renderHangar(); upgrade($('#hangar')); });
 $('#sets').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { filter = filter === b.dataset.set ? 'all' : b.dataset.set; renderHangar(); } });
 $('#close').addEventListener('click', () => { const d = $('#reveal'); d.classList.remove('go'); d.close ? d.close() : d.removeAttribute('open'); });
 $('#hangar').addEventListener('click', e => { if (e.target.closest('a')) return; const c = e.target.closest('.cc-card.multi'); if (c) openDetail(c.dataset.code); });
@@ -287,8 +310,11 @@ $('#board').hidden = !LEADERBOARD_API;
 // Leaderboard: only when LEADERBOARD_API is set. The Worker checks every catch against the live feed itself.
 const player = (() => { try { let p = localStorage.getItem('callsign:player'); if (!p) { p = [...crypto.getRandomValues(new Uint8Array(10))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('callsign:player', p); } return p; } catch { return ''; } })();
 const drawBoard = b => { $('#board-body').innerHTML = ['today', 'alltime'].map(k => `<div><h3>${k === 'today' ? 'Today' : 'All time'}</h3><ol>${(b[k] || []).map(e => `<li>${esc(e.nick)} <b>${esc(e.points)}</b></li>`).join('') || '<li class="muted">No catches yet.</li>'}</ol></div>`).join(''); };
-async function postCatch(cs) { const nick = (localStorage.getItem('callsign:nick') || '').trim(); if (!LEADERBOARD_API || !nick) return;
-  try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({callsign: cs, nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
+// The board Worker checks a catch by callsign and takes 2 to 8 letters and numbers, so a catch banked on its hex
+// (a callsign like X) cannot count there yet. I send the hex and registration as well, for when the Worker learns them.
+async function postCatch(entry) { const nick = (localStorage.getItem('callsign:nick') || '').trim(); if (!LEADERBOARD_API || !nick) return;
+  const cs = C.boardCallsign(entry); if (!cs) return;
+  try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({callsign: cs, hex: entry.hex || '', reg: entry.reg || '', nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
 if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') || ''; $('#nick').addEventListener('change', e => localStorage.setItem('callsign:nick', e.target.value.slice(0, 16))); fetch(LEADERBOARD_API + '/board').then(r => r.json()).then(drawBoard).catch(() => {}); }
 const drop = C.dropFor(now(), specials);
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }

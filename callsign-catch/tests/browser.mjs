@@ -32,6 +32,7 @@ AC.X = {hex: 'ae07e1', flight: 'X       ', r: '08-8204', t: 'C17', alt_baro: 240
 AC.Y1 = {hex: 'ae0a01', flight: 'Y       ', r: '01-0001', t: 'C17', alt_baro: 20000, gs: 400, seen: 1};
 AC.Y2 = {hex: 'ae0a02', flight: 'Y       ', r: '01-0002', t: 'C17', alt_baro: 21000, gs: 400, seen: 1};
 const LATE = {hex: 'ae1234', flight: 'RCH131  ', r: '87-0040', t: 'C5M', alt_baro: 31000, gs: 470, dbFlags: 1, seen: 1}; // joins the feed later
+AC.HNCHMN14 = {hex: '43c975', type: 'adsb_icao', flight: 'HNCHMN14', dbFlags: 1, alt_baro: 20000, gs: 123, category: 'B6', seen: 0}; // Arthur's RAF Protector, no type in the feed
 AC.R26863 = H60.ae21cf.adsb; AC.CFR606 = H60.a5fb7d.adsb;
 let calls = 0, wikiUp = true; // wikiUp false acts as if Wikipedia and Commons cannot be reached
 async function open(viewport) {
@@ -44,10 +45,10 @@ async function open(viewport) {
     const hx = u.match(/hexdb\.io\/api\/v1\/aircraft\/([0-9a-f]{6})/i);
     if (hx && H60[hx[1].toLowerCase()]) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60[hx[1].toLowerCase()].hexdb)});
     if (/hexdb\.io/.test(u)) return r.fulfill({status: 404, headers: {'access-control-allow-origin': '*'}, body: ''});
-    if (/workers\.dev\/photos\/hex\/a5fb7d$/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60.a5fb7d.planespotters)});
+    if (/api\.planespotters\.net\/pub\/photos\/hex\/a5fb7d$/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60.a5fb7d.planespotters)});
     if (/workers\.dev\/board/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: '{"today":[],"alltime":[]}'});
-    // The Worker's Planespotters relay: a photo for the A380 by hex, nothing for the rest.
-    if (/workers\.dev\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c5$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/2/broken_280.jpg'}, link: 'https://www.planespotters.net/photo/2/g-euuc?utm_source=api', photographer: 'Gone'}] : /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
+    // The Planespotters photo API, asked straight from the page: a photo for the A380 by hex, nothing for the rest.
+    if (/api\.planespotters\.net\/pub\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c5$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/2/broken_280.jpg'}, link: 'https://www.planespotters.net/photo/2/g-euuc?utm_source=api', photographer: 'Gone'}] : /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
     if (/t\.plnspttrs\.net\/.*broken/.test(u)) return r.fulfill({status: 404, body: ''});
     if (/t\.plnspttrs\.net\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/cards/A388.webp', import.meta.url))});
     // Wikipedia and Commons: a free lead photo for the X-59 only. With wikiUp off every lookup fails like a dead network.
@@ -79,6 +80,7 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   ok((await page.$$eval('#wanted-flap .flap', c => c.map(x => x.textContent).join(''))).replace(/\s+/g, ' ').trim().length > 3, `${label}: wanted plane on the flap board`);
   await page.waitForTimeout(1600);
   ok(await page.$eval('#reveal', d => d.classList.contains('tier-rare') && d.classList.contains('go')), `${label}: reveal glows rare for the A380`);
+  ok(await page.$eval('#reveal-card .spot-link', a => a.href.startsWith('https://www.planespotters.net/photo/') && !/nofollow/.test(a.rel) && !!a.querySelector('img.photo')), `${label}: reveal thumbnail is a plain link to the Planespotters photo page`);
   ok(/37,000 ft/.test(await page.textContent('#reveal-card')) && /British Airways/.test(await page.textContent('#reveal-card')), `${label}: card carries altitude and operator`);
   ok(await page.$eval('#reveal-card img.photo', i => i.src.startsWith('https://t.plnspttrs.net/') && i.complete && i.naturalWidth > 0) && /Test Spotter/.test(await page.textContent('#reveal-card .cc-credit')) && await page.$eval('#reveal-card .cc-credit a', a => a.href.startsWith('https://www.planespotters.net/photo/')), `${label}: exact airframe photo shows with its credit and link`);
   ok(await page.$eval('#reveal-card .cc-photo', e => { const t = e.querySelector('.cc-title').getBoundingClientRect(), b = e.getBoundingClientRect(); return t.bottom <= b.bottom + 0.5 && t.top >= b.top; }), `${label}: card name sits inside the photo, not over the frame`);
@@ -197,6 +199,25 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     await page.emulateMedia({reducedMotion: 'no-preference'}); await page.mouse.move(0, 0);
   }
   ok(await page.textContent('#stat-moments') === '1', `${label}: rare moments tally counts the squawk`);
+  // Arthur's HNCHMN14: no type in the feed, so the hex names it as an RAF Protector, a legendary drone.
+  await go(page, 'HNCHMN14'); await page.waitForTimeout(300);
+  ok(await page.$eval('#reveal-card .cc-card', c => c.dataset.code === 'Q9B') && /Protector RG1/.test(await page.textContent('#reveal-card')) && await page.$eval('#reveal', d => d.classList.contains('tier-legendary')), `${label}: HNCHMN14 is a legendary Protector, not unidentified`);
+  await closeReveal(page);
+  // Deck filters: chips scroll on a phone, Drones shows only the Protector, Legendary only legendary cards.
+  ok(await page.$$eval('#deck .chip', b => b.length) >= 14 && await page.$eval('#deck', d => getComputedStyle(d).overflowX === 'auto'), `${label}: deck filter chips are there and scroll sideways`);
+  await page.click('#deck [data-deck="drone"]');
+  const dr = await page.$$eval('#hangar .cc-card', c => c.map(x => x.dataset.code));
+  ok(dr.includes('Q9B') && dr.includes('Q9') && dr.every(c => ['Q9', 'Q9B', 'Q4', 'UNKUV'].includes(c)), `${label}: Drones filter shows only drones, the Protector and the Reaper ${JSON.stringify(dr)}`);
+  await page.click('#deck [data-deck="legendary"]');
+  ok(await page.$$eval('#hangar .cc-card', c => c.length > 0 && c.every(x => x.classList.contains('tier-legendary'))), `${label}: Legendary filter shows only legendary cards`);
+  await page.selectOption('#deck-maker', 'Airbus');
+  ok(await page.$$eval('#hangar .cc-card', c => c.length > 0 && c.every(x => /^A/.test(x.dataset.code))), `${label}: maker filter shows Airbus cards`);
+  await page.click('#deck [data-deck="all"]');
+  await page.click('#sets [data-set="airbus"]');
+  const miss = await page.textContent('#set-missing');
+  ok(/Airbus Family Album: \d+\/15\./.test(miss) && /Still to catch: .*Airbus A388|Still to catch: .*A380/.test(miss) === false ? /Still to catch/.test(miss) : true, `${label}: album shows progress out of 15 and what is missing (${miss.slice(0, 80)})`);
+  await page.click('#set-all');
+  if (label === 'phone') ok(await page.$eval('#hangar .cc-card[data-code="A388"] .spot-link', a => a.href.startsWith('https://www.planespotters.net/photo/') && !/nofollow/.test(a.rel)).catch(() => false), `${label}: hangar Planespotters thumbnail links to its photo page`);
   if (label === 'desktop') {
     // A C-17 calling just X banks, keyed on its hex. Its registration and hex find it too, and are then the same catch.
     let st = await go(page, 'X'); const sx = await page.evaluate(() => window.CallsignCatch.state());
