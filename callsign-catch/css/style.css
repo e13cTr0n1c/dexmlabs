@@ -238,3 +238,4 @@ button:active:not(:disabled),.file-btn:active{transform:translateY(4px);box-shad
 .catch-item .cc-photo{border-radius:0}.catch-item .cc-credit{border-top:0}
 .catch-item dl{margin:0;padding:10px 12px}
 .detail-note{margin:12px 0 0;font-size:12px;color:#93a897}
+.pend-row{margin:0}.pend-save{border:2px dashed currentColor;background:none;color:inherit;padding:6px 12px;border-radius:8px;font-weight:700;cursor:pointer}.pending{margin:0 0 18px}.pend-tag{border:1px dashed currentColor;opacity:.85}.pend-x{margin-left:8px;background:none;border:1px solid currentColor;color:inherit;border-radius:6px;padding:2px 8px;cursor:pointer}

@@ -1,4 +1,4 @@
-import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
+import {POINTS, PENDING_EVERY_MS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
@@ -119,11 +119,65 @@ const MSG = {notfound: q => `I can't hear ${q} right now. Check the spelling, or
   stale: q => `${q} has gone quiet for over a minute. Try again when it shows up live.`,
   today: q => `You've already caught ${q} today. Find another one, or try it again tomorrow.`,
   busy: () => 'The tracker is busy. Give it a minute and try again.',
-  offline: () => "I couldn't reach the live tracker just now. Try again in a moment."};
+  offline: () => "I couldn't reach the live tracker just now. Try again in a moment.",
+  ambiguous: q => `More than one aircraft is answering to ${q} right now. Type the hex code or registration of the one you saw.`};
+
+// Ask the feeds, keep only exact matches, and say which live aircraft it is, or why not.
+async function check(q) {
+  const r = await lookup(q);
+  if (r.error) return {reason: r.error};
+  const m = C.resolveMatches(q, r.data.ac);
+  if (m.ambiguous) return {reason: 'ambiguous', matches: m.matches};
+  const live = C.pickLive(m.resp);
+  return live.ok ? {live, source: r.source} : {reason: live.reason};
+}
+// Fill in the type, variant and photo, then bank it. Shared by a normal catch and a confirmed pending one.
+async function bank(live) {
+  const hexdbType = await fillType(live.ac);
+  if (!live.ac.type) live.ac.type = C.hexType(live.ac.hex);
+  const photo = await spotPhoto(live.ac);
+  live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
+  const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
+  if (res.status !== 'today') { if (photo) res.entry.photo = photo; state = res.state; save(); }
+  return res;
+}
+function celebrate(res, lead = '') {
+  render();
+  say(lead + (res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`), 'ok');
+  board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
+  reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(res.entry.cs);
+}
+
+// Pending sightings: no points until a feed hears the aircraft flying. Rechecked on open and every minute.
+let lastMiss = null;
+function offerPending(q) { lastMiss = q; const b = $('#pend-save'); b.hidden = false; b.textContent = `Save ${q.value.toUpperCase()} as pending`; }
+function hidePendingOffer() { lastMiss = null; $('#pend-save').hidden = true; }
+function renderPending() {
+  const list = state.pending || [], box = $('#pending');
+  box.hidden = !list.length;
+  $('#pending-list').innerHTML = list.map(p => `<li class="pend"><span class="lt pend-tag">Pending</span> <b>${esc(p.value)}</b> <span class="muted">Unconfirmed, no points yet. Checking every minute until ${esc(fmtTime(p.until))}.</span> <button type="button" class="pend-x" data-v="${esc(p.value)}" aria-label="Remove pending ${esc(p.value)}">Remove</button></li>`).join('');
+}
+let checking = false;
+async function recheckPending() {
+  if (checking || !state.pending) return; checking = true;
+  try {
+    const gone = C.expirePending(state, now());
+    if (gone.length) { save(); say(`${gone.map(p => p.value).join(', ')} never showed up in the feed, so ${gone.length === 1 ? 'that pending sighting has' : 'those pending sightings have'} expired. No points lost.`, 'wait'); }
+    for (const p of [...state.pending]) {
+      let res = null;
+      try { const c = await check(C.pendingQuery(p)); p.tries = (p.tries | 0) + 1; if (c.live) res = await bank(c.live); } catch {}
+      if (!res) continue;
+      C.removePending(state, p.value); save();
+      if (res.status === 'today') { render(); say(`${p.value} showed up, but you've already caught it today.`, 'wait'); continue; }
+      celebrate(res, `Pending ${p.value} confirmed. `);
+    }
+    save(); renderPending();
+  } finally { checking = false; }
+}
 
 async function submit(raw) {
   const q = C.parseQuery(raw);
-  if (!q) return say('Type a callsign like BAW117, a registration like G-XLEA or a hex code like 4ca7b5.', 'bad');
+  if (!q) return say('Type a callsign like BAW117 or X, a registration like G-XLEA or ZZ171, or a hex code like 4ca7b5. Letters and numbers only, up to 8.', 'bad');
   const t = Date.now(); recent = recent.filter(x => t - x < 3600e3);
   if (t - lastSubmit < SUBMIT_GAP_MS) return say(`Easy, spotter. One lookup every ${SUBMIT_GAP_MS / 1000} seconds.`, 'bad');
   if (recent.length >= SUBMITS_PER_HOUR) return say("That's a lot of lookups this hour. Have a cuppa and come back soon.", 'bad');
@@ -131,26 +185,22 @@ async function submit(raw) {
   if ((state.days[C.dayKey(now())] || []).includes(label)) return say(MSG.today(label), 'bad');
   lastSubmit = t; recent.push(t);
   const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking...'; btn.setAttribute('aria-busy', 'true');
-  const WORD = {busy: 'BUSY', offline: 'NO SIGNAL', notfound: 'NOT FOUND', ground: 'NOT AIRBORNE', stale: 'GONE QUIET'};
+  const WORD = {ambiguous: 'TOO MANY', busy: 'BUSY', offline: 'NO SIGNAL', notfound: 'NOT FOUND', ground: 'NOT AIRBORNE', stale: 'GONE QUIET'};
   const miss = w => { board(w); thud(); pulse('miss'); };
   board(label);
   say(`Listening for ${label}...`, 'wait');
+  hidePendingOffer();
   try {
-    const r = await lookup(q);
-    if (r.error) { miss(WORD[r.error] || 'NO SIGNAL'); return say((MSG[r.error] || MSG.offline)(label), 'bad'); }
-    const live = C.pickLive(r.data);
-    if (!live.ok) { miss(WORD[live.reason] || 'NOT FOUND'); return say((MSG[live.reason] || MSG.notfound)(label), 'bad'); }
-    const hexdbType = await fillType(live.ac);
-    if (!live.ac.type) live.ac.type = C.hexType(live.ac.hex);
-    const photo = await spotPhoto(live.ac);
-    live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
-    const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
-    if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(live.ac.callsign), 'bad'); }
-    if (photo) res.entry.photo = photo;
-    state = res.state; save(); render();
-    say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
-    board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
-    reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(live.ac.callsign);
+    const c = await check(q);
+    if (!c.live) {
+      miss(WORD[c.reason] || 'NOT FOUND'); say((MSG[c.reason] || MSG.notfound)(label), 'bad');
+      if (c.reason === 'notfound' || c.reason === 'stale') offerPending(q);
+      return;
+    }
+    const res = await bank(c.live);
+    if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(c.live.ac.callsign), 'bad'); }
+    C.removePending(state, q.value); save(); renderPending();
+    celebrate(res);
   } catch (e) {
     console.error(e); miss('TRY AGAIN'); say('Something went wrong with that one. Try again in a moment.', 'bad');
   } finally { setTimeout(() => { btn.disabled = false; btn.textContent = 'Catch it'; btn.removeAttribute('aria-busy'); }, 400); }
@@ -243,8 +293,12 @@ if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') 
 const drop = C.dropFor(now(), specials);
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }
 render(); holo($('#hangar'));
+$('#pend-save').addEventListener('click', () => { if (!lastMiss) return; const r = C.addPending(state, lastMiss, now()); state = r.state; save(); renderPending(); hidePendingOffer();
+  say(r.status === 'added' ? `Saved ${lastMiss.value.toUpperCase()} as pending. I'll keep checking for two hours and turn it into a card if a feed hears it flying. No points until then.` : r.status === 'full' ? 'You already have ten pending sightings. Remove one first.' : 'That one is already pending.', r.status === 'added' ? 'wait' : 'bad'); });
+$('#pending-list').addEventListener('click', e => { const b = e.target.closest('.pend-x'); if (b) { C.removePending(state, b.dataset.v); save(); renderPending(); } });
+renderPending(); recheckPending(); setInterval(recheckPending, PENDING_EVERY_MS);
 const deep = new URLSearchParams(location.search).get('cs');
 if (deep && C.parseQuery(deep)) { $('#cs').value = deep.toUpperCase().slice(0, 10); say(`Spotted overhead: ${deep.toUpperCase().slice(0, 10)}. Press Catch it to check it's flying.`, 'wait'); }
 // resetGap is for the browser test only: it clears the gap between lookups (or with -1 sets it to now).
 ready = true; board('READY', {instant: true});
-window.CallsignCatch = {state: () => state, submit, openDetail, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};
+window.CallsignCatch = {state: () => state, submit, recheckPending, openDetail, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};

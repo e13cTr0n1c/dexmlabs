@@ -27,6 +27,11 @@ const AC = {
   RRR2: {hex: '43c9ff', flight: 'RRR2    ', r: 'ZK010', t: 'HAWK', alt_baro: 5000, gs: 320, dbFlags: 1, seen: 1}};
 // Arthur's two H60 catches (tests/fixtures/arthur-h60.json): a US Army Black Hawk and a Cal Fire Firehawk.
 const H60 = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-h60.json', import.meta.url))).sources;
+// Short and odd callsigns: a C-17 calling just X, and two live aircraft both calling Y.
+AC.X = {hex: 'ae07e1', flight: 'X       ', r: '08-8204', t: 'C17', alt_baro: 24000, gs: 410, dbFlags: 1, seen: 1};
+AC.Y1 = {hex: 'ae0a01', flight: 'Y       ', r: '01-0001', t: 'C17', alt_baro: 20000, gs: 400, seen: 1};
+AC.Y2 = {hex: 'ae0a02', flight: 'Y       ', r: '01-0002', t: 'C17', alt_baro: 21000, gs: 400, seen: 1};
+const LATE = {hex: 'ae1234', flight: 'RCH131  ', r: '87-0040', t: 'C5M', alt_baro: 31000, gs: 470, dbFlags: 1, seen: 1}; // joins the feed later
 AC.R26863 = H60.ae21cf.adsb; AC.CFR606 = H60.a5fb7d.adsb;
 let calls = 0, wikiUp = true; // wikiUp false acts as if Wikipedia and Commons cannot be reached
 async function open(viewport) {
@@ -52,8 +57,8 @@ async function open(viewport) {
     if (/upload\.wikimedia\.org\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/photos/A320.webp', import.meta.url))});
     const m = u.match(/(?:api\.adsb\.lol|workers\.dev)\/v2\/(callsign|reg|hex)\/([^/?]+)/);
     if (!m) return r.abort(); calls++;
-    const a = Object.values(AC).find(x => (m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex).toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
-    return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({ac: a ? [a] : [], now: Date.now()})});
+    const a = Object.values(AC).filter(x => String((m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex) || '').toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
+    return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({ac: a, now: Date.now()})});
   });
   await page.addInitScript(() => { window.__ccFast = true; });
   await page.goto(PAGE, {waitUntil: 'load'});
@@ -192,6 +197,35 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     await page.emulateMedia({reducedMotion: 'no-preference'}); await page.mouse.move(0, 0);
   }
   ok(await page.textContent('#stat-moments') === '1', `${label}: rare moments tally counts the squawk`);
+  if (label === 'desktop') {
+    // A C-17 calling just X banks, keyed on its hex. Its registration and hex find it too, and are then the same catch.
+    let st = await go(page, 'X'); const sx = await page.evaluate(() => window.CallsignCatch.state());
+    ok(/Caught|Another/.test(st) && sx.log[0].cs === 'X' && sx.log[0].hex === 'ae07e1' && Object.values(sx.days).flat().includes('AE07E1'), `${label}: callsign X banks, keyed on hex (${st})`); await closeReveal(page);
+    st = await go(page, '08-8204'); ok(/already caught/.test(st), `${label}: registration 08-8204 finds the same C-17 (${st})`);
+    st = await go(page, 'AE07E1'); ok(/already caught/.test(st), `${label}: hex AE07E1 finds the same C-17 (${st})`);
+    st = await go(page, 'Y'); ok(/More than one aircraft/.test(st) && await boardText() === 'TOO MANY' && !(await page.isVisible('#reveal')), `${label}: two live aircraft calling Y ask for the hex (${st})`);
+    st = await go(page, 'XY'); ok(/can't hear/.test(st), `${label}: XY does not match X`);
+    // RCH131 is not in the feed yet: save it as pending, no points, then it confirms once the feed hears it.
+    const p0 = (await page.evaluate(() => window.CallsignCatch.state())).points;
+    st = await go(page, 'RCH131'); ok(/can't hear/.test(st) && await page.isVisible('#pend-save'), `${label}: not found offers Save as pending`);
+    await page.click('#pend-save');
+    const sp = await page.evaluate(() => window.CallsignCatch.state());
+    ok(sp.pending.length === 1 && sp.points === p0 && !sp.cards.C5M && await page.isVisible('#pending') && /Pending/.test(await page.textContent('#pending-list')) && /no points/i.test(await page.textContent('#pending-list')), `${label}: pending sighting saved, clearly marked, no points`);
+    await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready); await page.waitForTimeout(300);
+    ok((await page.evaluate(() => window.CallsignCatch.state())).pending.length === 1, `${label}: pending survives a reload and is rechecked without confirming`);
+    AC.RCH131 = LATE; await page.evaluate(() => window.CallsignCatch.recheckPending()); await page.waitForTimeout(300);
+    const sc = await page.evaluate(() => window.CallsignCatch.state());
+    ok(!sc.pending.length && sc.cards.C5M && sc.points > p0 && /Pending RCH131 confirmed/.test(await page.textContent('#status')) && await page.isHidden('#pending'), `${label}: pending RCH131 confirms into a real card with points`);
+    await closeReveal(page);
+    // An old pending one expires cleanly with nothing awarded.
+    await page.evaluate(() => { const s = window.CallsignCatch.state(); s.pending = [{value: 'GHOST1', kinds: ['callsign'], t: new Date(Date.now() - 7300e3).toISOString(), until: new Date(Date.now() - 100e3).toISOString(), tries: 3}]; });
+    const p1 = (await page.evaluate(() => window.CallsignCatch.state())).points;
+    await page.evaluate(() => window.CallsignCatch.recheckPending());
+    const se = await page.evaluate(() => window.CallsignCatch.state());
+    ok(!se.pending.length && se.points === p1 && /expired/.test(await page.textContent('#status')), `${label}: expired pending drops cleanly with no points`);
+    delete AC.RCH131;
+  }
+  await page.evaluate(() => document.querySelectorAll('#hangar img[loading="lazy"]').forEach(i => { i.loading = 'eager'; })); // after a reload the cards below the fold have not loaded yet
   await waitImgs();
   const hang = await imgsOk('#hangar .cc-card:not(.empty)');
   ok(hang.length >= 5 && hang.every(h => h.ok && h.img), `${label}: every caught card in the hangar shows a loaded image ${JSON.stringify(hang.filter(h => !h.ok || !h.img))}`);
