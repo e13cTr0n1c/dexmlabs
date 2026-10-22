@@ -116,11 +116,17 @@ export function originOf(ac) { const c = countryOf(ac && ac.hex); return c ? c +
 let HEXTYPES = {};
 export function setHexTypes(data) { HEXTYPES = {}; for (const [k, v] of Object.entries((data && data.types) || {})) HEXTYPES[k.toLowerCase()] = String(v).toUpperCase(); }
 export const hexType = hex => HEXTYPES[String(hex || '').replace('~', '').toLowerCase()] || '';
+// Types for military callsign prefixes (data/callsign-types.json), e.g. HNCHMN14 is an RAF Protector.
+let CSTYPES = [];
+export function setCallsignTypes(data) { CSTYPES = Object.entries((data && data.prefixes) || {}).map(([k, v]) => [new RegExp('^' + k.replace(/[^A-Z0-9]/gi, '') + '\\d{0,4}$', 'i'), String(v.type || v).toUpperCase()]); }
+export const callsignType = cs => (CSTYPES.find(([re]) => re.test(norm(cs))) || [])[1] || '';
+// The best type when the feed has none: a listed hex first, then a known callsign prefix.
+export const resolveType = ac => String((ac && ac.type) || '').toUpperCase() || hexType(ac && ac.hex) || callsignType(ac && (ac.flight != null ? ac.flight : ac.callsign));
 // Old catches that became unidentified cards move to their real type once the hex is in the table. Points stay as earned.
 export function migrateHexTypes(state, idx, table) {
   const s = state; if (!s || !s.log) return s;
   for (const e of s.log) {
-    const to = e && /^UNK/.test(e.type) && hexType(e.hex); if (!to) continue;
+    const to = e && /^UNK/.test(e.type) && (hexType(e.hex) || callsignType(e.cs)); if (!to) continue;
     const from = s.cards[e.type], info = typeInfo(to, idx, table), tier = TIERS.indexOf(e.tier) > TIERS.indexOf(info.tier) ? e.tier : info.tier;
     if (from) { from.count--; if (from.count < 1) delete s.cards[e.type]; }
     e.type = to; e.tier = tier;
@@ -131,8 +137,24 @@ export function migrateHexTypes(state, idx, table) {
   for (const [k, c] of Object.entries(s.cards)) if (/^UNK/.test(k)) { const mine = s.log.filter(x => x.type === k); if (mine.length) { c.last = mine[0]; c.first = mine[mine.length - 1]; } }
   return s;
 }
-export function tierFor(ac, info) {
+// Special liveries (data/liveries.json), known by registration or hex. A 1/1 scheme is Legendary, any other at least Rare.
+let LIVERIES = {hex: new Map(), reg: new Map()};
+export function setLiveries(data) {
+  LIVERIES = {hex: new Map(), reg: new Map()};
+  for (const l of (data && data.liveries) || []) { const v = {name: String(l.name || 'Special livery'), unique: !!l.unique, source: l.source || ''};
+    if (l.hex) LIVERIES.hex.set(String(l.hex).toLowerCase(), v); if (l.reg) LIVERIES.reg.set(norm(l.reg), v); }
+}
+export function liveryFor(ac) {
+  if (!ac) return null;
+  const hex = String(ac.hex || '').replace('~', '').toLowerCase(), reg = norm(ac.reg != null ? ac.reg : ac.r);
+  return (hex && LIVERIES.hex.get(hex)) || (reg && LIVERIES.reg.get(reg)) || null;
+}
+const atLeast = (t, floor) => TIERS.indexOf(t) >= TIERS.indexOf(floor) ? t : floor;
+export const liveryFloor = l => l ? (l.unique ? 'legendary' : 'rare') : 'common';
+export function tierFor(ac, info) { return atLeast(baseTierFor(ac, info), liveryFloor(liveryFor(ac))); }
+function baseTierFor(ac, info) {
   if (isDisplay(ac)) return 'legendary';
+  if (info.cat === 'drone' && isMilitary(ac)) return atLeast(TIERS.includes(info.tier) ? info.tier : 'uncommon', 'rare') === 'rare' ? 'rare' : 'legendary'; // military drones: rare at least, legendary when the type is
   const base = TIERS.includes(info.tier) ? info.tier : 'uncommon';
   // NASA research aircraft (N8xxNA style registrations or NASA callsigns) are at least rare.
   if ((/^N\d{3}NA$/.test(String(ac.r || '')) || /^NASA\d/.test(String(ac.callsign || ''))) && TIERS.indexOf(base) < TIERS.indexOf('rare') && !isMilitary(ac)) return 'rare';
@@ -153,6 +175,9 @@ export function pickLive(resp) {
 
 export function dayKey(date) { const d = new Date(date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 export function emptyState() { return {v: 1, cards: {}, log: [], days: {}, xp: 0, points: 0, night: 0, wantedHits: {}, pending: []}; }
+
+// The callsign the board Worker can check: the flight's own callsign when it is 2 to 8 letters and numbers and not odd.
+export const boardCallsign = e => { const c = norm(e && e.cs); return /^[A-Z0-9]{2,8}$/.test(c) && !oddCallsign(c) && !(e.hex && c === String(e.hex).toUpperCase()) ? c : ''; };
 
 // Pending sightings: seen on another tracker but not in our feed yet. Saved with no points, rechecked for a while,
 // then confirmed into a real catch through applyCatch, or dropped when the window closes.
@@ -211,6 +236,16 @@ const cleanVariants = v => Array.isArray(v) ? [...new Set(v.filter(x => typeof x
 // Older saves have no variants: rebuild them from the log entries that carry one (entry.var or a photo link).
 // When a type is promoted in the table (for example the X-59 to legendary), saved cards catch up and the first catch is re-scored.
 export function upgradeTiers(state, idx, table) {
+  // A catch whose airframe has since been listed as a special livery moves up, and its points with it, once.
+  for (const e of state.log || []) {
+    const l = e && liveryFor(e); if (!l) continue;
+    e.liv = l.name; if (l.unique) e.uniq = 1;
+    const to = atLeast(TIERS.includes(e.tier) ? e.tier : 'uncommon', liveryFloor(l)), c = state.cards && state.cards[e.type];
+    if (to === e.tier) continue;
+    const first = c && c.first && c.first.t === e.t, diff = ((first ? POINTS : DUPLICATE_XP)[to] || 0) - ((first ? POINTS : DUPLICATE_XP)[e.tier] || 0);
+    e.tier = to; if (diff > 0) { state.points = (state.points || 0) + diff; if (!first) state.xp = (state.xp || 0) + diff; e.gain = (e.gain || 0) + diff; }
+    if (c) { if (TIERS.indexOf(to) > TIERS.indexOf(c.tier)) c.tier = to; for (const k of ['first', 'last']) if (c[k] && c[k].t === e.t) c[k] = e; }
+  }
   for (const c of Object.values(state.cards || {})) {
     const info = typeInfo(c.code, idx, table);
     if (!info || info.unknown || TIERS.indexOf(info.tier) <= TIERS.indexOf(c.tier)) continue;
@@ -243,6 +278,7 @@ export function applyCatch(state, ac, when, idx, table, wanted) {
   if (isMilitary(ac)) entry.mil = 1;
   if (info.unknown) { const o = originOf(ac); if (o) entry.origin = o; }
   const team = teamFor(ac); if (team) entry.team = team.name;
+  const liv = liveryFor(ac); if (liv) { entry.liv = liv.name; if (liv.unique) entry.uniq = 1; }
   if (SQUAWKS[ac.squawk]) entry.sq = ac.squawk;
   if (ac.variant) entry.var = String(ac.variant).slice(0, 40);
   const had = s.cards[code], isWanted = !!(wanted && wanted.code === code && !s.wantedHits[day]);
@@ -265,23 +301,55 @@ export function applyCatch(state, ac, when, idx, table, wanted) {
 }
 
 // Sets for the hangar. Each has a list of type codes (silhouettes until caught) or a rule.
+// Albums need one of every main type in the family, so the Airbus album is 15 types, not 5.
 export const SETS = [
-  {id: 'airbus', name: 'Airbus Family Album', codes: ['A319', 'A320', 'A20N', 'A321', 'A21N']},
-  {id: 'b737', name: '737 Club', codes: ['B738', 'B739', 'B38M', 'P8']},
+  {id: 'airbus', name: 'Airbus Family Album', codes: ['BCS1', 'BCS3', 'A318', 'A319', 'A320', 'A321', 'A19N', 'A20N', 'A21N', 'A332', 'A333', 'A339', 'A359', 'A35K', 'A388']},
+  {id: 'boeing', name: 'Boeing Family Album', codes: ['B737', 'B738', 'B739', 'B38M', 'B39M', 'B752', 'B763', 'B772', 'B77W', 'B788', 'B789', 'B78X', 'B744', 'B748']},
+  {id: 'b737', name: '737 Club', codes: ['B736', 'B737', 'B738', 'B739', 'B37M', 'B38M', 'B39M', 'P8']},
   {id: 'giants', name: 'Queens and Giants', codes: ['B744', 'B748', 'A388', 'BLCF', 'A124']},
   {id: 'longhaul', name: 'Long Haul Heroes', codes: ['B77W', 'B788', 'B789', 'A333', 'A359', 'A35K']},
   {id: 'military', name: 'Military Ops', codes: ['EUFI', 'F35', 'HAWK', 'A332', 'E3TF', 'B52', 'C17', 'C130', 'A400', 'R135']},
   {id: 'props', name: 'Props and Turboprops', codes: ['AT76', 'DH8D', 'PC12', 'C172', 'C130', 'A400']},
   {id: 'rotor', name: 'Rotor Club', codes: ['EC35', 'EC45', 'A139', 'A169', 'A189', 'S92', 'H160', 'AS50', 'R44', 'R22', 'B06', 'B407', 'B429', 'H47', 'PUMA', 'EH10', 'LYNX', 'H64', 'H60', 'V22']},
-  {id: 'unmanned', name: 'Unmanned', codes: ['Q9', 'Q4', 'HRM9']},
+  {id: 'unmanned', name: 'Unmanned', codes: ['Q9', 'Q9B', 'Q4', 'HRM9']},
   {id: 'display', name: 'Display teams', rule: 'display', goal: 1, desc: 'Catch a display team jet'},
   {id: 'night', name: 'Night owl', rule: 'night', goal: 3, desc: 'Catch three between 00:00 and 05:00'}];
 export function setProgress(state, set) {
   const s = state || emptyState();
-  if (set.codes) { const got = set.codes.filter(c => s.cards[c]).length; return {got, goal: set.codes.length, done: got === set.codes.length}; }
+  if (set.codes) { const missing = set.codes.filter(c => !s.cards[c]), got = set.codes.length - missing.length; return {got, goal: set.codes.length, done: !missing.length, missing}; }
   const got = set.rule === 'night' ? s.night : s.log.filter(e => e.team).length;
-  return {got: Math.min(got, set.goal), goal: set.goal, done: got >= set.goal};
+  return {got: Math.min(got, set.goal), goal: set.goal, done: got >= set.goal, missing: []};
 }
+
+// Deck filters for the hangar. Each tests one card: its type info and every catch of it.
+const BOMBERS = new Set(['B52', 'B1', 'B2', 'B21', 'TU95', 'T160', 'TU22', 'LANC', 'B17', 'MOSQ', 'VULC']);
+const CARGO_TYPES = new Set(['BLCF', 'A3ST', 'A337', 'A124', 'A225', 'SGUP', 'CL4G', 'SNS2', 'B74F', 'B77F', 'MD11', 'A30B']);
+const CARGO_CS = /^(FDX|UPS|BCS|GTI|CLX|BOX|CKS|ABW|ABR|MPH|DHK|DAE|DHL|BDA|AHO|SQC|CAO|GEC|NCA|CKK|KYE|TAY|SWN|ICV|ATN|PAC|MSX|EXS|BCY)\d/;
+const LOGISTICS = new Set(['C17', 'C130', 'C30J', 'A400', 'C5M', 'C5', 'K35R', 'KC46', 'KC10', 'A332', 'A124', 'A225', 'C2', 'CN35', 'C295', 'IL76', 'KC39', 'C160', 'R135', 'MRTT']);
+export const VINTAGE = new Set(['SPIT', 'HURI', 'LANC', 'B17', 'P51', 'MOSQ', 'DC3', 'DC6', 'C46', 'JU52', 'VULC', 'DHC1', 'TIGR', 'DH82', 'HUNT', 'MS76']);
+export const DECK = [
+  {id: 'legendary', name: 'Legendary', test: c => c.tier === 'legendary'},
+  {id: 'rare', name: 'Rare and up', test: c => TIERS.indexOf(c.tier) >= TIERS.indexOf('rare')},
+  {id: 'longhaul', name: 'Long haul', test: (c, i) => (i.cat === 'wide' || i.cat === 'quad') && !CARGO_TYPES.has(i.code)},
+  {id: 'fighter', name: 'Fighters', test: (c, i) => i.cat === 'fighter' && !VINTAGE.has(i.code)},
+  {id: 'bomber', name: 'Bombers', test: (c, i) => BOMBERS.has(i.code)},
+  {id: 'cargo', name: 'Cargo', test: (c, i, es) => CARGO_TYPES.has(i.code) || /freight|cargo|lifter|beluga|guppy/i.test(i.name) || es.some(e => CARGO_CS.test(String(e.cs || '')))},
+  {id: 'logistics', name: 'Military logistics', test: (c, i, es) => i.cat === 'miltransport' && !BOMBERS.has(i.code) || (LOGISTICS.has(i.code) && (i.cat !== 'wide' || es.some(e => e.mil)))},
+  {id: 'drone', name: 'Drones', test: (c, i) => i.cat === 'drone'},
+  {id: 'heli', name: 'Helicopters', test: (c, i) => i.cat === 'heli' || i.cat === 'gyro'},
+  {id: 'bizjet', name: 'Bizjets', test: (c, i) => i.cat === 'bizjet'},
+  {id: 'vintage', name: 'Vintage', test: (c, i) => VINTAGE.has(i.code)},
+  {id: 'livery', name: 'Special livery', test: (c, i, es) => es.some(e => e.liv)},
+  {id: 'display', name: 'Display teams', test: (c, i, es) => es.some(e => e.team)},
+  {id: 'military', name: 'Military', test: (c, i, es) => !!i.mil || ['fighter', 'military', 'miltransport'].includes(i.cat) || es.some(e => e.mil)}];
+// Owned cards that pass a deck filter, or a maker such as 'maker:Boeing'.
+export function deckCodes(state, id, infoFor) {
+  const s = state || emptyState(), f = DECK.find(d => d.id === id), maker = /^maker:/.test(id) ? id.slice(6) : '';
+  return Object.keys(s.cards).filter(code => { const c = s.cards[code], i = infoFor(code), es = s.log.filter(e => e && e.type === code);
+    if (!es.length && c.last) es.push(c.last);
+    return maker ? (i.maker || 'Unknown maker') === maker : f ? !!f.test(c, i, es) : true; });
+}
+export function makersOwned(state, infoFor) { return [...new Set(Object.keys((state || emptyState()).cards).map(c => infoFor(c).maker || 'Unknown maker'))].sort(); }
 
 // Today's wanted type, the same for everyone: a dated special card, otherwise a seeded pick by UTC date.
 // Weekdays draw uncommon and rare types, weekends rare and legendary; no type repeats within 14 days.

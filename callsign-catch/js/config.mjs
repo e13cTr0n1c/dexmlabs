@@ -8,9 +8,11 @@ export const LEADERBOARD_API = 'https://callsign-catch.thearthurjones.workers.de
 export const SUBMIT_GAP_MS = 6000;     // at least this long between lookups
 export const SUBMITS_PER_HOUR = 40;
 export const NIGHT_FROM = 0, NIGHT_TO = 5; // Night owl hours, on the player's clock
-// Photos of the exact airframe caught, from Planespotters.net through the Worker (their API sends no CORS header).
-// The images are hotlinked from their CDN, which their terms allow with a credit and a link back to the photo page.
-export const SPOT_API = LOOKUP_API ? LOOKUP_API + '/photos' : '';
+// Photos of the exact airframe caught, from the Planespotters.net photo API, asked straight from the browser (it is
+// CORS enabled). Their terms: free for everyone to see, photographer credited next to the image, the thumbnail links
+// to the photo page, images loaded straight from their CDN and never stored, answers kept 24 hours at most, and the
+// API not re-exposed through our own (so it no longer goes through the Worker).
+export const SPOT_API = 'https://api.planespotters.net/pub/photos';
 // A one off bonus the first time you catch a type that is not in the table yet.
 export const NEW_TYPE_BONUS = 25;
 // A small bonus the first time you catch a new variant of a type you already own, such as a Firehawk after a Black Hawk.
