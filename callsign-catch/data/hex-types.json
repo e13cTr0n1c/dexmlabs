@@ -3,7 +3,11 @@
  "sources": {
   "4984ee": "Arthur's catch of BTLE21, Czech Air Force Aero L-39NG; type L39 as shown by Flightradar24",
   "HAWK": "Red Arrows Hawk T1 hex codes from hexdb.io, as listed with their sources in display-teams.json",
-  "43c975": "Arthur's catch of HNCHMN14, an RAF Protector RG1 (MQ-9B) as shown by Flightradar24; adsb.lol lists it with no type, UK military block, drone emitter category B6"
+  "43c975": "Arthur's catch of HNCHMN14, an RAF Protector RG1 (MQ-9B) as shown by Flightradar24; adsb.lol lists it with no type, UK military block, drone emitter category B6",
+  "4984f0": "Arthur's catch of ORCA42: Czech Air Force Embraer KC-390 serial 0520, per the Planespotters.net photo database for this hex (photo 1994685)",
+  "a2d9b3": "Arthur's catch of LXJ283: N283FX, Embraer EMB-545 (Praetor 500), FAA registry and Planespotters.net photo 1997260",
+  "aa6a28": "Arthur's catch of N770MP: Beech F33A Bonanza, FAA registry",
+  "a3a4ed": "Arthur's catch of ENY3570: N334CR, Embraer ERJ 170-200 LR (E175 long wing), FAA registry and Planespotters.net photo 1893647"
  },
  "types": {
   "4984ee": "L39",
@@ -21,6 +25,10 @@
   "43c455": "HAWK",
   "43c456": "HAWK",
   "43c457": "HAWK",
-  "43c975": "Q9B"
+  "43c975": "Q9B",
+  "4984f0": "E390",
+  "a2d9b3": "E545",
+  "aa6a28": "BE33",
+  "a3a4ed": "E75L"
  }
 }
