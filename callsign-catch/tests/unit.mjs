@@ -212,7 +212,7 @@ const artJson = JSON.parse(fs.readFileSync(new URL('art.json', dir))), photosJso
 A.setArtManifest(artJson.codes); A.setPhotos(photosJson.photos);
 t('art chain: the stages come in order and every type owned shows an image or a silhouette', () => {
   const spot = {photo: {src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A', at: Date.now()}};
-  assert.deepEqual(A.ART_CHAIN, ['spot', 'photo', 'commons', 'render', 'silhouette']);
+  assert.deepEqual(A.ART_CHAIN, ['gift', 'spot', 'photo', 'commons', 'render', 'silhouette']);
   assert.deepEqual(A.artStages(idx.get('A320'), spot), ['spot', 'photo', 'commons', 'render', 'silhouette']);
   assert.deepEqual(A.artStages(idx.get('X59'), null), ['commons', 'render', 'silhouette'], 'X-59 has a render now');
   assert.ok(fs.existsSync(new URL('../img/cards/X59.webp', import.meta.url)));
@@ -467,4 +467,26 @@ t('Mythic: 400 points, one of a kind types and airframes, one off liveries, a Le
   const css = fs.readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.ok(css.includes('.cc-card.tier-mythic:not(.empty)') && css.includes('.sq-badge') && /prefers-reduced-motion:reduce\)\{[^}]*tier-mythic/.test(css), 'mythic finish, squawk pulse and still versions');
 });
+// Gift codes: test with a throwaway code; the real one is only checked when GIFT_CODE is set, never written here.
+{
+  const pl = {greeting: 'Test greeting', cards: [{cs: '', reg: 'G-BOAC', type: 'CONC', note: 'test note', giftPhoto: {src: 'https://upload.wikimedia.org/x.jpg', by: 'A', licence: 'CC BY-SA 3.0', link: 'https://commons.wikimedia.org/wiki/File:X.jpg'}}, {cs: 'RFR70001', reg: 'ZK425', hex: '43c7a2', type: 'EUFI', sq: '7700', mil: 1, var: 'Typhoon FGR.4'}]};
+  const g = await C.sealGift('test', 'TestCode', pl), src = JSON.stringify(g);
+  t('gift: only a salted hash and sealed data are stored', () => { assert.ok(!/testcode|Test greeting|test note|G-BOAC/i.test(src)); });
+  for (const code of ['TestCode', 'testcode', '  TESTCODE ']) {
+    const s = C.emptyState(), r = await C.redeemGift(s, code, [g], '2026-10-22T12:00:00Z');
+    t('gift: the right code works in any case ' + JSON.stringify(code), () => { assert.equal(r.status, 'ok'); assert.equal(r.greeting, 'Test greeting'); assert.equal(s.cards.CONC.tier, 'mythic'); assert.equal(s.cards.EUFI.tier, 'mythic'); assert.ok(s.log.every(e => e.gift && e.tier === 'mythic' && e.gain === 0)); assert.equal(s.log.find(e => e.type === 'EUFI').sq, '7700'); assert.equal(s.points, 0); });
+    if (code !== 'TestCode') continue;
+    const again = await C.redeemGift(s, 'TESTCODE', [g], '2026-10-22T13:00:00Z');
+    t('gift: a second redeem on the same save is refused', () => { assert.equal(again.status, 'already'); assert.equal(s.log.length, 2); });
+    t('gift: gift cards never go to the leaderboard', () => { for (const e of s.log) assert.equal(C.boardPayload(e, true), null); });
+    t('gift: a re-grade never pays shortfall credit on a gift', () => { const p = s.points; C.regrade(s, idx, table); assert.equal(s.points, p); assert.ok(s.log.every(e => !e.regradeCredited)); });
+    t('gift: survives an export and import', () => { const v = C.validateImport(JSON.parse(JSON.stringify(s))); assert.deepEqual(v.redeemed, ['test']); assert.ok(v.log.every(e => e.gift)); });
+  }
+  const bad = await C.redeemGift(C.emptyState(), 'wrong', [g], '2026-10-22T12:00:00Z');
+  t('gift: a wrong code is refused', () => assert.equal(bad.status, 'wrong'));
+  const real = JSON.parse(fs.readFileSync(new URL('gifts.json', dir)));
+  t('gift: the shipped gift file holds only hashes and sealed data', () => { for (const x of real) assert.deepEqual(Object.keys(x).sort(), ['data', 'hash', 'id', 'iv', 'kdfSalt', 'salt']); });
+  if (process.env.GIFT_CODE) { const s = C.emptyState(), r = await C.redeemGift(s, process.env.GIFT_CODE.toUpperCase(), real, '2026-10-22T12:00:00Z');
+    t('gift: the shipped gift opens with its code', () => { assert.equal(r.status, 'ok'); assert.equal(r.entries.length, 2); assert.ok(r.entries[0].giftPhoto && r.entries[0].note); assert.equal(r.entries[1].reg, 'ZK425'); }); }
+}
 console.log(`${n} unit tests passed`);
