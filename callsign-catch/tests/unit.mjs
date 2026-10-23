@@ -25,9 +25,9 @@ t('unknown types default to uncommon; military operators lift to at least rare, 
   assert.equal(C.tierFor({callsign: 'RED1'}, idx.get('A320')), 'legendary');
 });
 t('query parsing: callsign, registration and hex', () => {
-  assert.deepEqual(C.parseQuery(' baw117 '), {kind: 'callsign', value: 'BAW117'});
-  assert.deepEqual(C.parseQuery('g-xlea'), {kind: 'reg', value: 'G-XLEA'});
-  assert.deepEqual(C.parseQuery('4ca7b5'), {kind: 'hex', value: '4ca7b5'});
+  assert.deepEqual(C.parseQuery(' baw117 '), {kind: 'callsign', value: 'BAW117', kinds: ['callsign', 'reg']});
+  assert.deepEqual(C.parseQuery('g-xlea'), {kind: 'reg', value: 'G-XLEA', kinds: ['reg']});
+  assert.deepEqual(C.parseQuery('4ca7b5'), {kind: 'hex', value: '4ca7b5', kinds: ['hex']});
   assert.equal(C.parseQuery(''), null); assert.equal(C.parseQuery('<script>'), null);
 });
 t('live only: ground, stale and not found never catch', () => {
@@ -56,8 +56,9 @@ t('special cards switch on only with a date', () => {
   assert.equal(C.wantedFor(new Date(Date.UTC(2026, 9, 21, 9)), table, sp).code, 'SHIP_CATCH');
 });
 t('sets and Night owl progress', () => {
-  let s = null; for (const [cs, ty] of [['A1', 'A319'], ['A2', 'A320'], ['A3', 'A20N'], ['A4', 'A321'], ['A5', 'A21N']]) s = C.applyCatch(s, live({flight: cs, t: ty}), new Date(2026, 9, 21, 2), idx, table, null).state;
-  assert.ok(C.setProgress(s, C.SETS.find(x => x.id === 'airbus')).done);
+  let s = null; for (const [cs, ty] of [['A1', 'A319'], ['A2', 'A320'], ['A3', 'A20N'], ['A4', 'A321'], ['A5', 'A21N']]) s = C.applyCatch(s, live({flight: cs, t: ty, hex: '40000' + cs[1]}), new Date(2026, 9, 21, 2), idx, table, null).state;
+  const ab = C.SETS.find(x => x.id === 'airbus'), p5 = C.setProgress(s, ab);
+  assert.ok(!p5.done && p5.got === 5 && p5.goal === 15 && p5.missing.includes('A388') && !p5.missing.includes('A320'), 'five narrowbodies are not the whole Airbus family');
   assert.equal(C.setProgress(s, C.SETS.find(x => x.id === 'night')).got, 3);
   assert.ok(C.setProgress(s, C.SETS.find(x => x.id === 'night')).done);
 });
@@ -183,8 +184,11 @@ t('validateImport and backfill: Arthur\'s real export keeps every card and point
   const raw = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-hangar.json', import.meta.url)));
   const s = C.backfillVariants(C.migrateHexTypes(C.validateImport(JSON.parse(JSON.stringify(raw))), idx, table));
   assert.equal(s.points, raw.points); assert.equal(s.xp, raw.xp); assert.equal(s.log.length, raw.log.length);
-  assert.deepEqual(Object.keys(s.cards).sort(), Object.keys(raw.cards).sort());
-  for (const k of Object.keys(raw.cards)) assert.equal(s.cards[k].count, raw.cards[k].count, k);
+  // Unidentified catches whose hex is now known move to their real cards; every other card is untouched, and no catch is lost.
+  for (const k of Object.keys(raw.cards)) assert.ok(s.cards[k] || (s.retired || {})[k], k);
+  for (const k of Object.keys(raw.cards)) if (!/^UNK/.test(k)) assert.ok(s.cards[k].count >= raw.cards[k].count, k);
+  const total = o => Object.values(o.cards).reduce((n, c) => n + c.count, 0) + Object.values(o.retired || {}).reduce((n, c) => n + c.count, 0);
+  assert.equal(total(s), total(raw));
   assert.deepEqual(s.cards.H60.variants, ['S-70 Firehawk'], 'the Black Hawk catch carries no variant data, the Firehawk photo link does');
   assert.equal(s.log.find(e => e.hex === 'a5fb7d').var, 'S-70 Firehawk');
   const again = C.backfillVariants(C.validateImport(JSON.parse(JSON.stringify(s))));
@@ -200,15 +204,15 @@ t('a promoted type upgrades saved cards and tops up points', () => {
   C.upgradeTiers(s, idx, table); assert.equal(s.cards.X59.tier, 'legendary'); assert.equal(s.points, 150);
   C.upgradeTiers(s, idx, table); assert.equal(s.points, 150, 'only once');
 });
-t('NASA research aircraft are at least rare', () => { assert.equal(C.tierFor({callsign: 'NASA946', r: 'N946NA'}, {tier: 'common'}), 'rare'); assert.equal(C.tierFor({callsign: 'NASA859', r: 'N859NA'}, idx.get('X59')), 'legendary'); });
+t('NASA research aircraft are at least rare', () => { assert.equal(C.tierFor({callsign: 'NASA946', r: 'N946NA'}, {tier: 'common'}), 'rare'); assert.equal(C.tierFor({callsign: 'NASA859', r: 'N859NA'}, idx.get('X59')), 'mythic', 'the X-59 is one of a kind'); });
 
 // Card art fallback chain: Planespotters, self hosted photo, live Commons, render, silhouette. Never blank.
 const A = await import('../js/art.mjs'), FX = await import('../js/fx.mjs');
 const artJson = JSON.parse(fs.readFileSync(new URL('art.json', dir))), photosJson = JSON.parse(fs.readFileSync(new URL('photos.json', dir)));
 A.setArtManifest(artJson.codes); A.setPhotos(photosJson.photos);
 t('art chain: the stages come in order and every type owned shows an image or a silhouette', () => {
-  const spot = {photo: {src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A'}};
-  assert.deepEqual(A.ART_CHAIN, ['spot', 'photo', 'commons', 'render', 'silhouette']);
+  const spot = {photo: {src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A', at: Date.now()}};
+  assert.deepEqual(A.ART_CHAIN, ['gift', 'spot', 'photo', 'commons', 'render', 'silhouette']);
   assert.deepEqual(A.artStages(idx.get('A320'), spot), ['spot', 'photo', 'commons', 'render', 'silhouette']);
   assert.deepEqual(A.artStages(idx.get('X59'), null), ['commons', 'render', 'silhouette'], 'X-59 has a render now');
   assert.ok(fs.existsSync(new URL('../img/cards/X59.webp', import.meta.url)));
@@ -245,4 +249,244 @@ t('every catch is kept as its own record for the detail view', () => {
   let s = null; for (const [cs, r] of [['R26863', '00-26863'], ['CFR606', 'N485DF']]) s = C.applyCatch(s, live({flight: cs, r, t: 'H60', hex: cs === 'CFR606' ? 'a5fb7d' : 'ae21cf', variant: undefined}), new Date(2026, 9, 21, 12), idx, table, null).state;
   const mine = s.log.filter(e => e.type === 'H60'); assert.equal(mine.length, 2); assert.deepEqual(mine.map(e => e.reg), ['N485DF', '00-26863']); assert.ok(mine.every(e => e.hex && e.cs && e.t));
 });
+t('short and odd input: X, ZZ171, 08-8204, hex all parse; junk and over 8 characters do not', () => {
+  assert.deepEqual(C.parseQuery('x'), {kind: 'callsign', value: 'X', kinds: ['callsign']});
+  assert.deepEqual(C.parseQuery('zz171').kinds, ['callsign', 'reg']);
+  assert.deepEqual(C.parseQuery('08-8204'), {kind: 'reg', value: '08-8204', kinds: ['reg']});
+  assert.deepEqual(C.parseQuery('~AE07E1'), {kind: 'hex', value: 'ae07e1', kinds: ['hex']});
+  assert.deepEqual(C.parseQuery('BAE146').kinds, ['callsign', 'reg', 'hex']);
+  assert.deepEqual(C.parseQuery('123456').kinds, ['hex', 'reg']);
+  for (const bad of ['ABCDEFGHI', 'A_B', 'A--B', '-AB', 'AB-', 'RCH 131 X!', 'A-B-C']) assert.equal(C.parseQuery(bad), null, bad);
+  assert.equal(C.parseQuery('RCH 131').value, 'RCH131');
+});
+const fl = o => Object.assign({flight: 'X       ', r: '08-8204', hex: 'ae07e1', t: 'C17', alt_baro: 24000, gs: 410, seen: 2}, o);
+t('exact matching only: X never matches XYZ12, regs match without the dash, hex is case blind', () => {
+  const list = [fl(), fl({flight: 'XYZ12', hex: '400001', r: 'G-ABCD'}), fl({flight: 'RCH131', hex: 'ae1234', r: '87-0040', t: 'C5M'})];
+  assert.deepEqual(C.exactMatches(C.parseQuery('X'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('088204'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('08-8204'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('AE07E1'), list).map(a => a.hex), ['ae07e1']);
+  assert.deepEqual(C.exactMatches(C.parseQuery('XY'), list), []);
+  assert.deepEqual(C.exactMatches(C.parseQuery('RCH13'), list), []);
+  assert.equal(C.exactMatches(C.parseQuery('X'), [fl(), fl({seen: 1})]).length, 1, 'one airframe from two kinds of lookup counts once');
+});
+t('ambiguity: two live aircraft both calling X ask for the hex; a parked twin does not count', () => {
+  const two = C.resolveMatches(C.parseQuery('X'), [fl(), fl({hex: 'ae0999', r: '09-9999'})]);
+  assert.ok(two.ambiguous); assert.equal(two.matches.length, 2);
+  const one = C.resolveMatches(C.parseQuery('X'), [fl(), fl({hex: 'ae0999', alt_baro: 'ground'})]);
+  assert.ok(!one.ambiguous); assert.ok(C.pickLive(one.resp).ok); assert.equal(C.pickLive(one.resp).ac.hex, 'ae07e1');
+  assert.equal(C.resolveMatches(C.parseQuery('Q'), [fl()]).resp.ac.length, 0);
+});
+t('a C-17 calling just X is banked, keyed on its hex, and two different X flights both count', () => {
+  const day = new Date(2026, 9, 22, 15);
+  const a = C.pickLive({ac: [fl()]}).ac; assert.equal(C.catchKey(a), 'AE07E1');
+  let r = C.applyCatch(null, a, day, idx, table, null); assert.equal(r.status, 'new'); assert.equal(r.entry.cs, 'X'); assert.equal(r.entry.hex, 'ae07e1');
+  assert.ok(r.state.days[C.dayKey(day)].includes('AE07E1'));
+  r = C.applyCatch(r.state, C.pickLive({ac: [fl({hex: 'ae0999', r: '09-9999'})]}).ac, day, idx, table, null); assert.equal(r.status, 'dupe');
+  r = C.applyCatch(r.state, a, day, idx, table, null); assert.equal(r.status, 'today');
+  const blank = C.pickLive({ac: [fl({flight: '', r: 'ZZ171', hex: '43c6a2'})]}).ac; assert.equal(C.catchKey(blank), '43C6A2'); assert.equal(blank.callsign, 'ZZ171');
+  assert.equal(C.catchKey(C.pickLive({ac: [fl({flight: 'RCH131 '})]}).ac), 'RCH131');
+  for (const odd of ['', 'X', '12', '1234']) assert.ok(C.oddCallsign(odd), odd);
+  for (const ok of ['RCH131', 'BAW1', 'ZZ171']) assert.ok(!C.oddCallsign(ok), ok);
+});
+t('pending sightings: saved with no points, deduped, capped, expire after two hours, survive import', () => {
+  const t0 = new Date(2026, 9, 22, 15), q = C.parseQuery('RCH131');
+  let r = C.addPending(null, q, t0); assert.equal(r.status, 'added'); const s = r.state;
+  assert.equal(s.points, 0); assert.equal(s.xp, 0); assert.equal(Object.keys(s.cards).length, 0); assert.equal(s.log.length, 0);
+  assert.equal(C.addPending(s, C.parseQuery('rch131'), t0).status, 'already');
+  for (let i = 0; i < 9; i++) C.addPending(s, C.parseQuery('TST' + i), t0);
+  assert.equal(C.addPending(s, C.parseQuery('TST99'), t0).status, 'full'); assert.equal(s.pending.length, 10);
+  assert.deepEqual(C.pendingQuery(s.pending[0]), {kind: 'callsign', value: 'RCH131', kinds: ['callsign', 'reg']});
+  assert.equal(C.expirePending(s, new Date(+t0 + 119 * 60e3)).length, 0);
+  const gone = C.expirePending(s, new Date(+t0 + 121 * 60e3)); assert.equal(gone.length, 10); assert.equal(s.pending.length, 0);
+  const back = C.validateImport({v: 1, cards: {}, log: [], pending: [{value: 'RCH131', kinds: ['callsign'], t: new Date().toISOString(), until: new Date(Date.now() + 3600e3).toISOString()}, {value: '<x>', kinds: ['callsign'], t: new Date().toISOString(), until: new Date(Date.now() + 3600e3).toISOString()}, {value: 'LONG', kinds: ['callsign'], t: new Date().toISOString(), until: new Date(Date.now() + 9e9).toISOString()}]});
+  assert.deepEqual(back.pending.map(p => p.value), ['RCH131']);
+  C.removePending(back, 'rch131'); assert.equal(back.pending.length, 0);
+});
+{
+  const {lookup} = await import('../js/api.mjs');
+  const res = (ac, status = 200) => Promise.resolve({ok: status === 200, status, json: async () => ({ac})});
+  const seen = [];
+  const f = url => { seen.push(url); return /fallback/.test(url) ? res(/callsign\/RCH131/.test(url) ? [fl({flight: 'RCH131', t: 'C5M', hex: 'ae1234'})] : []) : res(/callsign\/RCH131/.test(url) ? [fl({flight: 'RCH1310'})] : []); };
+  const fb = [{base: 'https://fallback.test', name: 'adsb.fi', paths: {hex: 'hex', reg: 'registration', callsign: 'callsign'}}];
+  let r = await lookup(C.parseQuery('RCH131'), f, fb);
+  assert.equal(r.source, 'adsb.fi'); assert.equal(C.exactMatches(C.parseQuery('RCH131'), r.data.ac)[0].hex, 'ae1234');
+  assert.ok(seen.some(u => /fallback\.test\/v2\/registration\/RCH131/.test(u)), 'fallback uses its own path names');
+  r = await lookup(C.parseQuery('NOPE1'), f, fb); assert.equal(r.source, 'adsb.lol'); assert.equal(r.data.ac.length, 0);
+  r = await lookup(C.parseQuery('X'), url => res([]).then(x => (/fallback/.test(url) ? x : {ok: false, status: 429})), fb); assert.equal(r.error, 'busy');
+  r = await lookup(C.parseQuery('X'), () => Promise.reject(new TypeError('Failed to fetch')), fb); assert.equal(r.error, 'offline');
+  n++; console.log('PASS lookup: main feed first, fallback feed only when nothing exact matched, busy and offline reported');
+}
+t('albums need every main type: 15 Airbus, 14 Boeing, all real types, missing listed', () => {
+  for (const st of C.SETS.filter(x => x.codes)) for (const c of st.codes) assert.ok(idx.get(c), st.id + ' ' + c);
+  const ab = C.SETS.find(x => x.id === 'airbus'); let s = null;
+  ab.codes.forEach((code, i) => { s = C.applyCatch(s, live({flight: 'ABC' + i, t: code, hex: '4a00' + String(i).padStart(2, '0')}), new Date(2026, 9, 21, 12), idx, table, null).state; });
+  const p = C.setProgress(s, ab); assert.ok(p.done); assert.equal(p.got, 15); assert.deepEqual(p.missing, []);
+  const bp = C.setProgress(s, C.SETS.find(x => x.id === 'boeing')); assert.equal(bp.goal, 14); assert.equal(bp.missing.length, 14);
+});
+t('special liveries: listed airframes are at least rare, a 1/1 is mythic, saved cards upgrade once', () => {
+  const liv = JSON.parse(fs.readFileSync(new URL('liveries.json', dir))); C.setLiveries(liv);
+  for (const l of liv.liveries) { assert.ok(/^https:\/\//.test(l.source) && l.name && (l.reg || l.hex), JSON.stringify(l)); assert.ok(!/[\u2013\u2014]/.test(l.name)); }
+  const day = new Date(2026, 9, 22, 12);
+  let r = C.applyCatch(null, live({flight: 'BAW8PJ', r: 'G-EUPJ', t: 'A319', hex: '400aaa'}), day, idx, table, null);
+  assert.equal(r.tier, 'mythic'); assert.match(r.entry.mythic, /one off livery/); assert.equal(r.entry.liv, 'BEA retro livery'); assert.equal(r.entry.uniq, 1);
+  r = C.applyCatch(null, live({flight: 'SAM28000', r: '82-8000', t: 'C172', hex: 'adfdf8', dbFlags: 0}), day, idx, table, null);
+  assert.ok(['rare', 'legendary'].includes(r.tier)); assert.ok(!r.entry.uniq);
+  assert.equal(C.tierFor({r: 'G-EUUU', hex: '400bbb'}, C.typeInfo('A319', idx, table)), 'common');
+  // An old save: G-EUPJ caught as a plain common A319. It moves to legendary with the points difference, and only once.
+  C.setLiveries({liveries: []});
+  let st = C.applyCatch(null, live({flight: 'BAW8PJ', r: 'G-EUPJ', t: 'A319', hex: '400aaa'}), day, idx, table, null).state;
+  assert.equal(st.cards.A319.tier, 'common'); const before = st.points;
+  C.setLiveries(liv); C.regrade(st, idx, table);
+  assert.equal(st.cards.A319.tier, 'mythic'); assert.equal(st.log[0].tier, 'mythic'); assert.equal(st.points, before + POINTS.mythic - POINTS.common); assert.equal(st.log[0].liv, 'BEA retro livery'); assert.equal(st.log[0].gain, POINTS.common, 'original gain kept'); assert.equal(st.log[0].regradeCredited, POINTS.mythic - POINTS.common);
+  C.regrade(st, idx, table); assert.equal(st.points, before + POINTS.mythic - POINTS.common);
+  C.setLiveries({liveries: []});
+});
+t('deck filters: legendary, long haul, fighter, bomber, cargo, logistics, heli, bizjet, vintage, livery, display, maker', () => {
+  const day = new Date(2026, 9, 22, 12); let s = null, i = 0;
+  const add = (o) => { s = C.applyCatch(s, live(Object.assign({flight: 'TST' + (i++), hex: '4b00' + String(i).padStart(2, '0'), r: 'G-T' + i}, o)), day, idx, table, null).state; };
+  add({t: 'A388'}); add({t: 'EUFI', dbFlags: 1}); add({t: 'B52', dbFlags: 1}); add({t: 'B744', flight: 'BCS1'}); add({t: 'C17', dbFlags: 1, flight: 'RCH131'});
+  add({t: 'A139'}); add({t: 'GLF6'}); add({t: 'SPIT'}); add({t: 'A320'});
+  const info = c => C.typeInfo(c, idx, table), f = id => C.deckCodes(s, id, info).sort();
+  assert.deepEqual(f('bomber'), ['B52']); assert.ok(f('fighter').includes('EUFI') && !f('fighter').includes('SPIT'));
+  assert.ok(f('longhaul').includes('A388') && f('longhaul').includes('B744') && !f('longhaul').includes('A320'));
+  assert.ok(f('cargo').includes('B744') && !f('cargo').includes('A388'), 'a 747 flown by a cargo callsign counts as cargo');
+  assert.deepEqual(f('logistics'), ['C17']); assert.deepEqual(f('heli'), ['A139']); assert.deepEqual(f('vintage'), ['SPIT']);
+  assert.ok(f('bizjet').includes('GLF6') || !info('GLF6').cat || info('GLF6').cat !== 'bizjet');
+  assert.ok(f('legendary').every(c => s.cards[c].tier === 'legendary') && f('legendary').includes('B52'));
+  assert.ok(f('rare').length >= f('legendary').length); assert.deepEqual(f('livery'), []); assert.deepEqual(f('display'), []);
+  assert.ok(C.makersOwned(s, info).includes('Airbus')); assert.ok(f('maker:Airbus').includes('A320') && !f('maker:Airbus').includes('B52'));
+  assert.ok(C.DECK.every(d => !/[\u2013\u2014]/.test(d.name)));
+});
+{
+  const A = await import('../js/art.mjs');
+  const fresh = {src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A', at: Date.now()};
+  assert.ok(A.safeSpot(fresh)); assert.equal(A.safeSpot({...fresh, at: Date.now() - 25 * 3600e3}), null, 'older than 24 hours is not shown');
+  assert.equal(A.safeSpot({...fresh, at: undefined}), null, 'old saves with no date are looked up again');
+  const html = A.cardArt(idx.get('A320'), 'common', true, true, {photo: fresh, reg: 'G-EUUA'});
+  assert.match(html, /<a class="spot-link" href="https:\/\/www\.planespotters\.net\/photo\/1\/x" target="_blank" rel="noopener"><img/); assert.ok(!/nofollow/.test(html), 'a plain link on the thumbnail');
+  assert.match(A.cardArt(idx.get('A319'), 'legendary', true, true, {reg: 'G-EUPJ', liv: 'BEA retro livery'}), /data-reg="G-EUPJ"/);
+  assert.ok(!/data-reg/.test(A.cardArt(idx.get('A319'), 'common', true, true, {reg: 'G-EUUA'})), 'only special liveries search Commons by registration');
+  assert.ok(A.titleHasReg('British Airways A319 G-EUPJ BEA livery LHR 2019', 'G-EUPJ')); assert.ok(!A.titleHasReg('G-EUPJX at Heathrow', 'G-EUPJ')); assert.ok(A.titleHasReg('ZZ336 Vespina RAF Voyager', 'ZZ336'));
+  const SEARCH = {query: {search: [{title: 'File:G-EUPJX somewhere.jpg'}, {title: 'File:British Airways G-EUPJ BEA retro.jpg'}]}};
+  const INFO = {query: {pages: {7: {title: 'File:British Airways G-EUPJ BEA retro.jpg', imageinfo: [{thumburl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/x.jpg/640px-x.jpg', extmetadata: {Artist: {value: '<a>Jane Spotter</a>'}, LicenseShortName: {value: 'CC BY-SA 4.0'}, LicenseUrl: {value: 'https://creativecommons.org/licenses/by-sa/4.0'}}}]}}}};
+  const asks = []; const fake = async u => { asks.push(u); return {ok: true, json: async () => (/list=search/.test(u) ? SEARCH : INFO)}; };
+  const ph = await A.commonsByReg('G-EUPJ', fake);
+  assert.equal(ph.author, 'Jane Spotter'); assert.equal(ph.licence, 'CC BY-SA 4.0'); assert.match(ph.source, /^https:\/\/commons\.wikimedia\.org\/wiki\/File:British_Airways_G-EUPJ/); assert.ok(/G-EUPJX/.test(decodeURIComponent(asks[0])) === false && !/G-EUPJX/.test(decodeURIComponent(asks[1])), 'the near miss file is never asked for');
+  const NF_S = {query: {search: [{title: 'File:G-EUPJ.jpg'}]}}, NF_I = {query: {pages: {1: {title: 'File:G-EUPJ.jpg', imageinfo: [{thumburl: 'https://upload.wikimedia.org/x.jpg', extmetadata: {LicenseShortName: {value: 'Fair use'}}}]}}}};
+  const nonfree = async u => ({ok: true, json: async () => (/list=search/.test(u) ? NF_S : NF_I)});
+  assert.equal(await A.commonsByReg('G-EUPJ', nonfree), null); assert.equal(await A.commonsByReg('G-EUPJ', () => Promise.reject(new TypeError('offline'))), null);
+  n++; console.log('PASS photos: Planespotters answers expire after 24 hours and the thumbnail links back; special liveries find the exact airframe on Commons with a free licence');
+}
+t('HNCHMN14, hex 43c975 with no type, is an RAF Protector, a legendary drone; old unidentified catches are put right', () => {
+  C.setCallsignTypes(JSON.parse(fs.readFileSync(new URL('callsign-types.json', dir))));
+  const raw = {hex: '43c975', flight: 'HNCHMN14', dbFlags: 1, alt_baro: 20000, gs: 123, category: 'B6', seen: 0};
+  const ac = C.pickLive({ac: [raw]}).ac; assert.equal(ac.type, ''); assert.equal(C.resolveType(ac), 'Q9B');
+  assert.equal(C.resolveType({hex: '43c999', flight: 'HNCHMN7'}), 'Q9B', 'the callsign prefix alone is enough');
+  assert.equal(C.resolveType({hex: '43c999', flight: 'HNCHMNX'}), ''); assert.equal(C.resolveType({hex: '400001', flight: 'XHNCHMN1'}), '');
+  ac.type = C.resolveType(ac); const r = C.applyCatch(null, ac, new Date(2026, 9, 22, 14), idx, table, null);
+  assert.equal(r.entry.type, 'Q9B'); assert.equal(r.tier, 'legendary'); assert.equal(r.info.cat, 'drone'); assert.ok(!r.info.unknown);
+  // Arthur's save: the same catch banked as an unidentified drone before the fix.
+  const old = C.applyCatch(null, C.pickLive({ac: [{...raw, hex: '43c976'}]}).ac, new Date(2026, 9, 22, 14), idx, table, null).state;
+  assert.ok(old.cards.UNKUV); C.migrateHexTypes(old, idx, table); assert.ok(old.cards.Q9B && !old.cards.UNKUV && old.log[0].type === 'Q9B');
+  C.upgradeTiers(old, idx, table); assert.equal(old.cards.Q9B.tier, 'legendary');
+  // Military drones are at least rare even when the type table says less.
+  assert.equal(C.tierFor({dbFlags: 1}, {tier: 'common', cat: 'drone'}), 'rare'); assert.equal(C.tierFor({dbFlags: 1}, C.typeInfo('Q4', idx, table)), 'legendary');
+  assert.ok(C.SETS.find(x => x.id === 'unmanned').codes.includes('Q9B'));
+  assert.deepEqual(C.deckCodes(old, 'drone', c => C.typeInfo(c, idx, table)), ['Q9B']);
+});
+t('leaderboard: only a real callsign is sent; hex keyed catches like X are held back', () => {
+  assert.equal(C.boardCallsign({cs: 'RCH131', hex: 'ae1234'}), 'RCH131'); assert.equal(C.boardCallsign({cs: 'X', hex: 'ae07e1'}), '');
+  assert.equal(C.boardCallsign({cs: 'AE07E1', hex: 'ae07e1'}), ''); assert.equal(C.boardCallsign({cs: '12', hex: 'ae07e1'}), '');
+});
+t('rich records: position, squawk, source, rarity reason, type source and the raw feed object are kept', () => {
+  const raw = {hex: '43c975', type: 'adsb_icao', flight: 'HNCHMN14', dbFlags: 1, alt_baro: 20000, alt_geom: 19475, gs: 122.6, track: 331.76, squawk: '6101', category: 'B6', lat: 55.844623, lon: -1.315184, seen: 0, mlat: [], nested: {x: 1}};
+  const ac = C.pickLive({ac: [raw]}).ac; ac.type = C.resolveType(ac); ac.typeFrom = 'hex table'; ac.source = 'adsb.lol';
+  const e = C.applyCatch(null, ac, new Date(2026, 9, 22, 14), idx, table, null).entry;
+  assert.equal(e.lat, 55.844623); assert.equal(e.lon, -1.315184); assert.equal(e.altGeom, 19475); assert.equal(e.track, 331.76); assert.equal(e.squawk, '6101'); assert.equal(e.src, 'adsb.lol'); assert.equal(e.typeFrom, 'hex table'); assert.equal(e.flight, 'HNCHMN14'); assert.equal(e.category, 'B6');
+  assert.match(e.why, /type Q9B is legendary/); assert.match(e.why, /military drone/);
+  assert.equal(e.raw.alt_geom, 19475); assert.equal(e.raw.type, 'adsb_icao'); assert.deepEqual(e.raw.mlat, []); assert.equal(e.raw.nested, undefined, 'only plain values are copied');
+  assert.match(C.applyCatch(null, live({flight: 'BAW8PJ', r: 'G-EUPJ', t: 'A319', hex: '400aaa'}), new Date(2026, 9, 22, 14), idx, table, null).entry.why, /type A319 is common/);
+});
+t('old saves keep every field: unknown fields survive, odd cards and pending go to quarantine, emptied cards to retired', () => {
+  const old = {v: 1, cards: {A320: {code: 'A320', tier: 'common', count: 1, first: {t: 'x'}, last: {t: 'x'}, myNote: 'keep me'}, 'bad key!': {count: 1, tier: 'rare'}, A321: {count: 0}},
+    log: [{t: '2026-01-01T00:00:00Z', cs: 'BAW1', type: 'A320', tier: 'common', alt: 1, extra: {deep: [1, 2]}}], days: {}, xp: 0, points: 10, night: 0, wantedHits: {}, achievements: {firstCatch: true}, pending: [{value: '<bad>'}], future: 42};
+  const s = C.validateImport(JSON.parse(JSON.stringify(old)));
+  assert.equal(s.future, 42); assert.deepEqual(s.achievements, {firstCatch: true}); assert.equal(s.cards.A320.myNote, 'keep me'); assert.deepEqual(s.log[0].extra, {deep: [1, 2]});
+  assert.deepEqual(s.quarantine.map(q => q.kind + ':' + (q.key || '')).sort(), ['card:A321', 'card:bad key!', 'pending:']);
+  assert.equal(C.validateImport(JSON.parse(JSON.stringify(s))).quarantine.length, 3, 'quarantine survives another round trip');
+});
+t('board payload works with the old Worker and the new one', () => {
+  assert.deepEqual(C.boardPayload({cs: 'RCH131', hex: 'ae1234', reg: '87-0040'}, false), {callsign: 'RCH131', hex: 'ae1234', reg: '87-0040'});
+  assert.equal(C.boardPayload({cs: 'X', flight: 'X', hex: 'ae07e1'}, false), null);
+  assert.deepEqual(C.boardPayload({cs: 'X', flight: 'X', hex: 'ae07e1', reg: '08-8204'}, true), {callsign: 'X', hex: 'ae07e1', reg: '08-8204'});
+  assert.deepEqual(C.boardPayload({cs: 'AE07E1', flight: '', hex: 'ae07e1'}, true), {callsign: '', hex: 'ae07e1', reg: ''});
+});
+t('shortfall credit: pays the gap once, keeps the original gain, uses points already topped up first', () => {
+  const day = new Date(2026, 9, 21, 12);
+  // A card upgrade already paid 125 for this X-59, but the log entry still says uncommon, 25.
+  let s = C.applyCatch(null, live({flight: 'NASA859', r: 'N859NA', t: 'X59', hex: 'abc9f4'}), day, idx, table, null).state;
+  const e = s.log[0]; e.tier = 'uncommon'; e.gain = 25; s.points = 25 + 125; s.cards.X59.first = {...e, tier: 'legendary'};
+  // An unidentified catch paid 5 as a duplicate; once identified it opened its own card, so it is owed 25 minus 5.
+  s = C.applyCatch(s, live({flight: 'LXJ283', r: 'N283FX', t: '', hex: 'a2d9b3'}), day, idx, table, null).state;
+  s = C.applyCatch(s, live({flight: 'ENY3570', r: 'N334CR', t: '', hex: 'a3a4ed'}), day, idx, table, null).state;
+  const before = s.points; C.migrateHexTypes(s, idx, table);
+  const r = C.creditShortfalls(s, idx, table);
+  const x = s.log.find(q => q.cs === 'NASA859'); assert.equal(x.gain, 25); assert.equal(x.regradeCovered, 125); assert.ok(!x.regradeCredited, 'the X-59 was already paid by the card upgrade');
+  const moved = s.log.find(q => q.cs === 'ENY3570'); assert.equal(moved.type, 'E75L'); assert.equal(moved.gain, 5); assert.equal(moved.regradeCredited, 20);
+  assert.equal(s.points, before + r.credited); assert.equal(r.credited, 20 + (s.log.find(q => q.cs === 'LXJ283').regradeCredited || 0));
+  const p = s.points; assert.equal(C.creditShortfalls(s, idx, table).credited, 0); assert.equal(C.creditShortfalls(JSON.parse(JSON.stringify(s)), idx, table).credited, 0, 'idempotent, also after a save and load');
+  assert.equal(s.points, p);
+});
+if (fs.existsSync('/workspace/backups/arthur-export-2026-10-22.json')) t("Arthur's export (backup copy): 200 regrade plus 550 Mythic credited exactly once, four catches identified", () => {
+  const s = C.validateImport(JSON.parse(fs.readFileSync('/workspace/backups/arthur-export-2026-10-22.json', 'utf8')));
+  C.setCallsignTypes(JSON.parse(fs.readFileSync(new URL('callsign-types.json', dir)))); C.setLiveries(JSON.parse(fs.readFileSync(new URL('liveries.json', dir)))); C.setOneOffs(JSON.parse(fs.readFileSync(new URL('one-offs.json', dir))));
+  const p0 = s.points, gains = s.log.map(e => e.gain); C.regrade(s, idx, table);
+  assert.equal(s.points - p0, 750); assert.deepEqual(s.log.map(e => e.gain), gains, 'original gains kept');
+  const cred = Object.fromEntries(s.log.filter(e => e.regradeCredited).map(e => [e.cs, [e.regradeCredited, e.regradeWhy]]));
+  assert.deepEqual(cred, {BTLE21: [55, 'regrade'], ENY3570: [20, 'regrade'], N770MP: [20, 'regrade'], LXJ283: [20, 'regrade'], HNCHMN14: [65, 'regrade'], ORCA42: [20, 'regrade'], NASA859: [250, 'mythic'], N2A: [250, 'mythic'], VENOM012: [50, 'mythic']});
+  assert.equal(s.log.find(e => e.cs === 'NASA859').regradeCovered, 125, 'the earlier card top up is counted, not paid again');
+  for (const c of ['NASA859', 'N2A', 'VENOM012']) { const e = s.log.find(x => x.cs === c); assert.equal(e.tier, 'mythic'); assert.ok(e.mythic && e.was[0].tier); }
+  assert.match(s.log.find(e => e.cs === 'VENOM012').mythic, /squawking 7700/);
+  assert.deepEqual(['ORCA42', 'LXJ283', 'N770MP', 'ENY3570', 'HNCHMN14'].map(c => s.log.find(e => e.cs === c).type), ['E390', 'E545', 'BE33', 'E75L', 'Q9B']);
+  assert.deepEqual(['BHL48K', 'LIFELN3', 'DONGO52'].map(c => s.log.find(e => e.cs === c).type), ['UNKHE', 'UNKHE', 'UNKFW']);
+  C.regrade(s, idx, table); assert.equal(s.points - p0, 750, 'a second load pays nothing more');
+  const again = C.validateImport(JSON.parse(JSON.stringify(s))); C.regrade(again, idx, table); assert.equal(again.points, s.points, 'nor does an export and import');
+});
+t('Mythic: 400 points, one of a kind types and airframes, one off liveries, a Legendary on an emergency squawk', () => {
+  C.setOneOffs(JSON.parse(fs.readFileSync(new URL('one-offs.json', dir))));
+  assert.equal(POINTS.mythic, 400); assert.equal(C.TIERS.at(-1), 'mythic');
+  const day = new Date(2026, 9, 22, 12);
+  let r = C.applyCatch(null, live({flight: 'N2A', r: 'N2A', t: 'SHIP', hex: 'a1b2c3'}), day, idx, table, null); assert.equal(r.tier, 'mythic'); assert.equal(r.gain, 400); assert.match(r.entry.mythic, /Wingfoot Two/); assert.match(r.entry.why, /Mythic/);
+  r = C.applyCatch(null, live({flight: 'VENOM012', t: 'EUFI', hex: '43c111', dbFlags: 1, squawk: '7700'}), day, idx, table, null); assert.equal(r.tier, 'mythic'); assert.match(r.entry.mythic, /7700/);
+  r = C.applyCatch(null, live({flight: 'BAW2', t: 'A320', hex: '400002', squawk: '7700'}), day, idx, table, null); assert.notEqual(r.tier, 'mythic', 'only a Legendary turns Mythic on a squawk ' + r.entry.why);
+  r = C.applyCatch(null, live({flight: 'N2B', r: 'N2B', t: 'SHIP', hex: 'a1b2c4'}), day, idx, table, null); assert.equal(r.tier, 'legendary');
+  assert.ok(C.DECK.some(d => d.id === 'mythic')); const ms = C.SETS.find(x => x.id === 'mythic'); assert.ok(ms);
+  let st = C.applyCatch(null, live({flight: 'N2A', r: 'N2A', t: 'SHIP', hex: 'a1b2c3'}), day, idx, table, null).state;
+  assert.ok(C.setProgress(st, ms).done); assert.deepEqual(C.deckCodes(st, 'mythic', c => C.typeInfo(c, idx, table)), ['SHIP']);
+  const css = fs.readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.ok(css.includes('.cc-card.tier-mythic:not(.empty)') && css.includes('.sq-badge') && /prefers-reduced-motion:reduce\)\{[^}]*tier-mythic/.test(css), 'mythic finish, squawk pulse and still versions');
+});
+// Gift codes: test with a throwaway code; the real one is only checked when GIFT_CODE is set, never written here.
+{
+  const pl = {greeting: 'Test greeting', cards: [{cs: '', reg: 'G-BOAC', type: 'CONC', note: 'test note', giftPhoto: {src: 'https://upload.wikimedia.org/x.jpg', by: 'A', licence: 'CC BY-SA 3.0', link: 'https://commons.wikimedia.org/wiki/File:X.jpg'}}, {cs: 'RFR70001', reg: 'ZK425', hex: '43c7a2', type: 'EUFI', sq: '7700', mil: 1, var: 'Typhoon FGR.4'}]};
+  const g = await C.sealGift('test', 'TestCode', pl), src = JSON.stringify(g);
+  t('gift: only a salted hash and sealed data are stored', () => { assert.ok(!/testcode|Test greeting|test note|G-BOAC/i.test(src)); });
+  for (const code of ['TestCode', 'testcode', '  TESTCODE ']) {
+    const s = C.emptyState(), r = await C.redeemGift(s, code, [g], '2026-10-22T12:00:00Z');
+    t('gift: the right code works in any case ' + JSON.stringify(code), () => { assert.equal(r.status, 'ok'); assert.equal(r.greeting, 'Test greeting'); assert.equal(s.cards.CONC.tier, 'mythic'); assert.equal(s.cards.EUFI.tier, 'mythic'); assert.ok(s.log.every(e => e.gift && e.tier === 'mythic' && e.gain === 0)); assert.equal(s.log.find(e => e.type === 'EUFI').sq, '7700'); assert.equal(s.points, 0); });
+    if (code !== 'TestCode') continue;
+    const again = await C.redeemGift(s, 'TESTCODE', [g], '2026-10-22T13:00:00Z');
+    t('gift: a second redeem on the same save is refused', () => { assert.equal(again.status, 'already'); assert.equal(s.log.length, 2); });
+    t('gift: gift cards never go to the leaderboard', () => { for (const e of s.log) assert.equal(C.boardPayload(e, true), null); });
+    t('gift: a re-grade never pays shortfall credit on a gift', () => { const p = s.points; C.regrade(s, idx, table); assert.equal(s.points, p); assert.ok(s.log.every(e => !e.regradeCredited)); });
+    t('gift: survives an export and import', () => { const v = C.validateImport(JSON.parse(JSON.stringify(s))); assert.deepEqual(v.redeemed, ['test']); assert.ok(v.log.every(e => e.gift)); });
+  }
+  const bad = await C.redeemGift(C.emptyState(), 'wrong', [g], '2026-10-22T12:00:00Z');
+  t('gift: a wrong code is refused', () => assert.equal(bad.status, 'wrong'));
+  const real = JSON.parse(fs.readFileSync(new URL('gifts.json', dir)));
+  t('gift: the shipped gift file holds only hashes and sealed data', () => { for (const x of real) assert.deepEqual(Object.keys(x).sort(), ['data', 'hash', 'id', 'iv', 'kdfSalt', 'salt']); });
+  if (process.env.GIFT_CODE) { const s = C.emptyState(), r = await C.redeemGift(s, process.env.GIFT_CODE.toUpperCase(), real, '2026-10-22T12:00:00Z');
+    t('gift: the shipped gift opens with its code', () => { assert.equal(r.status, 'ok'); assert.equal(r.entries.length, 2); assert.ok(r.entries[0].giftPhoto && r.entries[0].note); assert.equal(r.entries[1].reg, 'ZK425'); }); }
+}
 console.log(`${n} unit tests passed`);

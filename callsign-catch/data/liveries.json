@@ -1,0 +1,10 @@
+{
+ "note": "Special and one off liveries, matched by registration or hex. unique true means the only airframe in that scheme (a 1/1), which makes it Legendary; any other special scheme is at least Rare. Only schemes with a source are listed; nothing is guessed. The live feeds carry no livery field, so this list is the only way to know.",
+ "liveries": [
+  {"reg": "G-EUPJ", "type": "A319", "name": "BEA retro livery", "operator": "British Airways", "unique": true, "source": "https://en.wikipedia.org/wiki/British_Airways#Liveries,_logos,_and_tail_fins"},
+  {"reg": "ZZ336", "type": "A332", "name": "Vespina, Union Flag VIP scheme", "operator": "Royal Air Force", "unique": true, "source": "https://www.raf.mod.uk/news/articles/vip-raf-voyager-ready-for-global-role/"},
+  {"reg": "G-VLJB", "type": "", "name": "Viva Forever tribute to Joan Branson", "operator": "Virgin Atlantic", "unique": true, "source": "https://flywith.virginatlantic.com/gb/en/partner-hub/news.html"},
+  {"reg": "82-8000", "hex": "adfdf8", "type": "B742", "name": "Air Force One presidential scheme", "operator": "US Air Force", "unique": false, "source": "https://en.wikipedia.org/wiki/Boeing_VC-25"},
+  {"reg": "92-9000", "hex": "adfdf9", "type": "B742", "name": "Air Force One presidential scheme", "operator": "US Air Force", "unique": false, "source": "https://en.wikipedia.org/wiki/Boeing_VC-25"}
+ ]
+}

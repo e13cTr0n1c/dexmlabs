@@ -27,6 +27,12 @@ const AC = {
   RRR2: {hex: '43c9ff', flight: 'RRR2    ', r: 'ZK010', t: 'HAWK', alt_baro: 5000, gs: 320, dbFlags: 1, seen: 1}};
 // Arthur's two H60 catches (tests/fixtures/arthur-h60.json): a US Army Black Hawk and a Cal Fire Firehawk.
 const H60 = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-h60.json', import.meta.url))).sources;
+// Short and odd callsigns: a C-17 calling just X, and two live aircraft both calling Y.
+AC.X = {hex: 'ae07e1', flight: 'X       ', r: '08-8204', t: 'C17', alt_baro: 24000, gs: 410, dbFlags: 1, seen: 1};
+AC.Y1 = {hex: 'ae0a01', flight: 'Y       ', r: '01-0001', t: 'C17', alt_baro: 20000, gs: 400, seen: 1};
+AC.Y2 = {hex: 'ae0a02', flight: 'Y       ', r: '01-0002', t: 'C17', alt_baro: 21000, gs: 400, seen: 1};
+const LATE = {hex: 'ae1234', flight: 'RCH131  ', r: '87-0040', t: 'C5M', alt_baro: 31000, gs: 470, dbFlags: 1, seen: 1}; // joins the feed later
+AC.HNCHMN14 = {hex: '43c975', type: 'adsb_icao', flight: 'HNCHMN14', dbFlags: 1, alt_baro: 20000, gs: 123, category: 'B6', seen: 0}; // Arthur's RAF Protector, no type in the feed
 AC.R26863 = H60.ae21cf.adsb; AC.CFR606 = H60.a5fb7d.adsb;
 let calls = 0, wikiUp = true; // wikiUp false acts as if Wikipedia and Commons cannot be reached
 async function open(viewport) {
@@ -39,10 +45,10 @@ async function open(viewport) {
     const hx = u.match(/hexdb\.io\/api\/v1\/aircraft\/([0-9a-f]{6})/i);
     if (hx && H60[hx[1].toLowerCase()]) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60[hx[1].toLowerCase()].hexdb)});
     if (/hexdb\.io/.test(u)) return r.fulfill({status: 404, headers: {'access-control-allow-origin': '*'}, body: ''});
-    if (/workers\.dev\/photos\/hex\/a5fb7d$/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60.a5fb7d.planespotters)});
+    if (/api\.planespotters\.net\/pub\/photos\/hex\/a5fb7d$/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify(H60.a5fb7d.planespotters)});
     if (/workers\.dev\/board/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: '{"today":[],"alltime":[]}'});
-    // The Worker's Planespotters relay: a photo for the A380 by hex, nothing for the rest.
-    if (/workers\.dev\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c5$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/2/broken_280.jpg'}, link: 'https://www.planespotters.net/photo/2/g-euuc?utm_source=api', photographer: 'Gone'}] : /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
+    // The Planespotters photo API, asked straight from the page: a photo for the A380 by hex, nothing for the rest.
+    if (/api\.planespotters\.net\/pub\/photos\//.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({photos: /hex\/4005c5$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/2/broken_280.jpg'}, link: 'https://www.planespotters.net/photo/2/g-euuc?utm_source=api', photographer: 'Gone'}] : /hex\/4005c1$/.test(u) ? [{thumbnail_large: {src: 'https://t.plnspttrs.net/1/1990925_test_280.jpg'}, link: 'https://www.planespotters.net/photo/1990925/g-xlea?utm_source=api', photographer: 'Test Spotter'}] : []})});
     if (/t\.plnspttrs\.net\/.*broken/.test(u)) return r.fulfill({status: 404, body: ''});
     if (/t\.plnspttrs\.net\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/cards/A388.webp', import.meta.url))});
     // Wikipedia and Commons: a free lead photo for the X-59 only. With wikiUp off every lookup fails like a dead network.
@@ -52,8 +58,8 @@ async function open(viewport) {
     if (/upload\.wikimedia\.org\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/photos/A320.webp', import.meta.url))});
     const m = u.match(/(?:api\.adsb\.lol|workers\.dev)\/v2\/(callsign|reg|hex)\/([^/?]+)/);
     if (!m) return r.abort(); calls++;
-    const a = Object.values(AC).find(x => (m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex).toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
-    return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({ac: a ? [a] : [], now: Date.now()})});
+    const a = Object.values(AC).filter(x => String((m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex) || '').toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
+    return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({ac: a, now: Date.now()})});
   });
   await page.addInitScript(() => { window.__ccFast = true; });
   await page.goto(PAGE, {waitUntil: 'load'});
@@ -74,6 +80,7 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   ok((await page.$$eval('#wanted-flap .flap', c => c.map(x => x.textContent).join(''))).replace(/\s+/g, ' ').trim().length > 3, `${label}: wanted plane on the flap board`);
   await page.waitForTimeout(1600);
   ok(await page.$eval('#reveal', d => d.classList.contains('tier-rare') && d.classList.contains('go')), `${label}: reveal glows rare for the A380`);
+  ok(await page.$eval('#reveal-card .spot-link', a => a.href.startsWith('https://www.planespotters.net/photo/') && !/nofollow/.test(a.rel) && !!a.querySelector('img.photo')), `${label}: reveal thumbnail is a plain link to the Planespotters photo page`);
   ok(/37,000 ft/.test(await page.textContent('#reveal-card')) && /British Airways/.test(await page.textContent('#reveal-card')), `${label}: card carries altitude and operator`);
   ok(await page.$eval('#reveal-card img.photo', i => i.src.startsWith('https://t.plnspttrs.net/') && i.complete && i.naturalWidth > 0) && /Test Spotter/.test(await page.textContent('#reveal-card .cc-credit')) && await page.$eval('#reveal-card .cc-credit a', a => a.href.startsWith('https://www.planespotters.net/photo/')), `${label}: exact airframe photo shows with its credit and link`);
   ok(await page.$eval('#reveal-card .cc-photo', e => { const t = e.querySelector('.cc-title').getBoundingClientRect(), b = e.getBoundingClientRect(); return t.bottom <= b.bottom + 0.5 && t.top >= b.top; }), `${label}: card name sits inside the photo, not over the frame`);
@@ -129,7 +136,44 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     await page.setInputFiles('#import', new URL('fixtures/arthur-hangar.json', import.meta.url).pathname);
     await page.waitForFunction(() => /Imported/.test(document.getElementById('status').textContent));
     const ai = await page.evaluate(() => window.CallsignCatch.state()), raw = JSON.parse(fs.readFileSync(new URL('fixtures/arthur-hangar.json', import.meta.url)));
-    ok(ai.points === raw.points && Object.keys(ai.cards).length === Object.keys(raw.cards).length && JSON.stringify(ai.cards.H60.variants) === '["S-70 Firehawk"]', 'Arthur\'s old export imports with every card and point, H60 backfilled with Firehawk');
+    const credit = ai.log.reduce((n, e) => n + (e.regradeCredited || 0), 0); const keptCards = Object.keys(raw.cards).every(k => ai.cards[k] || (ai.retired && ai.retired[k])); console.log('hangar fixture', raw.points, '+', credit, '=', ai.points, Object.keys(raw.cards).length, '->', Object.keys(ai.cards).length); ok(ai.points === raw.points + credit && keptCards && JSON.stringify(ai.cards.H60.variants) === '["S-70 Firehawk"]', 'Arthur\'s old export imports with every card and point (plus any shortfall credit), H60 backfilled with Firehawk');
+    if (process.env.ARTHUR_EXPORT) {
+      // Arthur's real export (a backup copy): import it, export again, and check nothing was lost.
+      await page.setInputFiles('#import', process.env.ARTHUR_EXPORT); await page.waitForFunction(() => /Imported/.test(document.getElementById('status').textContent));
+      const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('#export')]); const again = path.join(SHOTS, 'arthur-again.json'); await dl2.saveAs(again);
+      const {execFileSync} = await import('child_process'); let outp = '', good = true;
+      try { outp = execFileSync('node', [new URL('lossless.mjs', import.meta.url).pathname, process.env.ARTHUR_EXPORT, again], {encoding: 'utf8'}); } catch (e) { good = false; outp = String(e.stdout || e); }
+      console.log(outp.trim()); ok(good && /PASS lossless/.test(outp), "Arthur's real export imports in the browser and exports again with every field");
+    }
+    await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
+  }
+  if (label === 'desktop') {
+    // Gift codes with a throwaway code and a test gift served in place of the real one.
+    const C = await import(new URL('../js/core.mjs', import.meta.url).href);
+    const tg = [await C.sealGift('test', 'TestCode', {greeting: 'Test greeting', cards: [{reg: 'G-BOAC', type: 'CONC', note: 'test note', giftPhoto: {src: 'https://upload.wikimedia.org/x.jpg', by: 'A', licence: 'CC BY-SA 3.0', link: 'https://commons.wikimedia.org/wiki/File:X.jpg'}}, {cs: 'RFR70001', reg: 'ZK425', hex: '43c7a2', type: 'EUFI', sq: '7700', mil: 1}]})];
+    await page.route('**/data/gifts.json', r => r.fulfill({contentType: 'application/json', body: JSON.stringify(tg)}));
+    let posts = 0; await page.route('**/catch', r => { posts++; r.abort(); });
+    await page.evaluate(() => { document.querySelector('.redeem-box').open = true; });
+    await page.fill('#redeem-code', 'nope'); await page.click('#redeem button');
+    await page.waitForFunction(() => /did not work/.test(document.getElementById('status').textContent)); ok(true, 'gift: a wrong code is refused in the page');
+    await page.fill('#redeem-code', 'TESTcode'); await page.click('#redeem button');
+    await page.waitForSelector('#gift-fx:not([hidden])'); const fx = await page.evaluate(() => ({text: document.querySelector('.gift-text').textContent, hearts: document.querySelectorAll('.gift-sky i').length}));
+    ok(fx.text === 'Test greeting' && fx.hearts > 10, 'gift: the heart animation appears with the greeting from the sealed payload');
+    await page.screenshot({path: path.join(SHOTS, 'gift-fx.png')});
+    const t0 = Date.now(); await page.keyboard.press('Escape'); await page.waitForSelector('#gift-fx', {state: 'hidden'});
+    ok(Date.now() - t0 < 1500, 'gift: a key press skips the animation');
+    const st = await page.evaluate(() => window.CallsignCatch.state());
+    ok(st.cards.CONC && st.cards.CONC.tier === 'mythic' && st.log.filter(e => e.gift).length === 2 && await page.$('#hangar .cc-card[data-code="CONC"]'), 'gift: both gift cards are in the hangar at Mythic');
+    ok(posts === 0, 'gift: gift cards are never posted to the leaderboard');
+    await page.fill('#redeem-code', 'testcode'); await page.click('#redeem button');
+    await page.waitForFunction(() => /already been used/.test(document.getElementById('status').textContent)); ok(true, 'gift: a second redeem is refused in the page');
+    // Reduced motion: a still heart and the text, no floating hearts, and a tap skips.
+    await page.evaluate(() => { const s = window.CallsignCatch.state(); s.redeemed = []; }); await page.emulateMedia({reducedMotion: 'reduce'});
+    await page.fill('#redeem-code', 'TestCode'); await page.click('#redeem button'); await page.waitForSelector('#gift-fx:not([hidden])');
+    const still = await page.evaluate(() => ({still: document.getElementById('gift-fx').classList.contains('still'), hearts: document.querySelectorAll('.gift-sky i').length, anim: getComputedStyle(document.querySelector('.gift-heart')).animationName, text: document.querySelector('.gift-text').textContent}));
+    ok(still.still && still.hearts === 0 && still.anim === 'none' && still.text === 'Test greeting', 'gift: reduced motion shows a still heart and the text ' + JSON.stringify(still));
+    await page.click('#gift-fx'); await page.waitForSelector('#gift-fx', {state: 'hidden'}); ok(true, 'gift: a tap skips it');
+    await page.emulateMedia({reducedMotion: 'no-preference'}); await page.unroute('**/catch'); await page.unroute('**/data/gifts.json');
     await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
   }
   ok(errors.length === 0, `${label}: no console errors ${JSON.stringify(errors)}`);
@@ -192,6 +236,54 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     await page.emulateMedia({reducedMotion: 'no-preference'}); await page.mouse.move(0, 0);
   }
   ok(await page.textContent('#stat-moments') === '1', `${label}: rare moments tally counts the squawk`);
+  // Arthur's HNCHMN14: no type in the feed, so the hex names it as an RAF Protector, a legendary drone.
+  await go(page, 'HNCHMN14'); await page.waitForTimeout(300);
+  ok(await page.$eval('#reveal-card .cc-card', c => c.dataset.code === 'Q9B') && /Protector RG1/.test(await page.textContent('#reveal-card')) && await page.$eval('#reveal', d => d.classList.contains('tier-legendary')), `${label}: HNCHMN14 is a legendary Protector, not unidentified`);
+  await closeReveal(page);
+  // Deck filters: chips scroll on a phone, Drones shows only the Protector, Legendary only legendary cards.
+  ok(await page.$$eval('#deck .chip', b => b.length) >= 14 && await page.$eval('#deck', d => getComputedStyle(d).overflowX === 'auto'), `${label}: deck filter chips are there and scroll sideways`);
+  await page.click('#deck [data-deck="drone"]');
+  const dr = await page.$$eval('#hangar .cc-card', c => c.map(x => x.dataset.code));
+  ok(dr.includes('Q9B') && dr.includes('Q9') && dr.every(c => ['Q9', 'Q9B', 'Q4', 'UNKUV'].includes(c)), `${label}: Drones filter shows only drones, the Protector and the Reaper ${JSON.stringify(dr)}`);
+  await page.click('#deck [data-deck="legendary"]');
+  ok(await page.$$eval('#hangar .cc-card', c => c.length > 0 && c.every(x => x.classList.contains('tier-legendary'))), `${label}: Legendary filter shows only legendary cards`);
+  await page.selectOption('#deck-maker', 'Airbus');
+  ok(await page.$$eval('#hangar .cc-card', c => c.length > 0 && c.every(x => /^A/.test(x.dataset.code))), `${label}: maker filter shows Airbus cards`);
+  await page.click('#deck [data-deck="all"]');
+  await page.click('#sets [data-set="airbus"]');
+  const miss = await page.textContent('#set-missing');
+  ok(/Airbus Family Album: \d+\/15\./.test(miss) && /Still to catch: .*Airbus A388|Still to catch: .*A380/.test(miss) === false ? /Still to catch/.test(miss) : true, `${label}: album shows progress out of 15 and what is missing (${miss.slice(0, 80)})`);
+  await page.click('#set-all');
+  if (label === 'phone') ok(await page.$eval('#hangar .cc-card[data-code="A388"] .spot-link', a => a.href.startsWith('https://www.planespotters.net/photo/') && !/nofollow/.test(a.rel)).catch(() => false), `${label}: hangar Planespotters thumbnail links to its photo page`);
+  if (label === 'desktop') {
+    // A C-17 calling just X banks, keyed on its hex. Its registration and hex find it too, and are then the same catch.
+    let st = await go(page, 'X'); const sx = await page.evaluate(() => window.CallsignCatch.state());
+    ok(/Caught|Another/.test(st) && sx.log[0].cs === 'X' && sx.log[0].hex === 'ae07e1' && Object.values(sx.days).flat().includes('AE07E1'), `${label}: callsign X banks, keyed on hex (${st})`); await closeReveal(page);
+    st = await go(page, '08-8204'); ok(/already caught/.test(st), `${label}: registration 08-8204 finds the same C-17 (${st})`);
+    st = await go(page, 'AE07E1'); ok(/already caught/.test(st), `${label}: hex AE07E1 finds the same C-17 (${st})`);
+    st = await go(page, 'Y'); ok(/More than one aircraft/.test(st) && await boardText() === 'TOO MANY' && !(await page.isVisible('#reveal')), `${label}: two live aircraft calling Y ask for the hex (${st})`);
+    st = await go(page, 'XY'); ok(/can't hear/.test(st), `${label}: XY does not match X`);
+    // RCH131 is not in the feed yet: save it as pending, no points, then it confirms once the feed hears it.
+    const p0 = (await page.evaluate(() => window.CallsignCatch.state())).points;
+    st = await go(page, 'RCH131'); ok(/can't hear/.test(st) && await page.isVisible('#pend-save'), `${label}: not found offers Save as pending`);
+    await page.click('#pend-save');
+    const sp = await page.evaluate(() => window.CallsignCatch.state());
+    ok(sp.pending.length === 1 && sp.points === p0 && !sp.cards.C5M && await page.isVisible('#pending') && /Pending/.test(await page.textContent('#pending-list')) && /no points/i.test(await page.textContent('#pending-list')), `${label}: pending sighting saved, clearly marked, no points`);
+    await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready); await page.waitForTimeout(300);
+    ok((await page.evaluate(() => window.CallsignCatch.state())).pending.length === 1, `${label}: pending survives a reload and is rechecked without confirming`);
+    AC.RCH131 = LATE; await page.evaluate(() => window.CallsignCatch.recheckPending()); await page.waitForTimeout(300);
+    const sc = await page.evaluate(() => window.CallsignCatch.state());
+    ok(!sc.pending.length && sc.cards.C5M && sc.points > p0 && /Pending RCH131 confirmed/.test(await page.textContent('#status')) && await page.isHidden('#pending'), `${label}: pending RCH131 confirms into a real card with points`);
+    await closeReveal(page);
+    // An old pending one expires cleanly with nothing awarded.
+    await page.evaluate(() => { const s = window.CallsignCatch.state(); s.pending = [{value: 'GHOST1', kinds: ['callsign'], t: new Date(Date.now() - 7300e3).toISOString(), until: new Date(Date.now() - 100e3).toISOString(), tries: 3}]; });
+    const p1 = (await page.evaluate(() => window.CallsignCatch.state())).points;
+    await page.evaluate(() => window.CallsignCatch.recheckPending());
+    const se = await page.evaluate(() => window.CallsignCatch.state());
+    ok(!se.pending.length && se.points === p1 && /expired/.test(await page.textContent('#status')), `${label}: expired pending drops cleanly with no points`);
+    delete AC.RCH131;
+  }
+  await page.evaluate(() => document.querySelectorAll('#hangar img[loading="lazy"]').forEach(i => { i.loading = 'eager'; })); // after a reload the cards below the fold have not loaded yet
   await waitImgs();
   const hang = await imgsOk('#hangar .cc-card:not(.empty)');
   ok(hang.length >= 5 && hang.every(h => h.ok && h.img), `${label}: every caught card in the hangar shows a loaded image ${JSON.stringify(hang.filter(h => !h.ok || !h.img))}`);

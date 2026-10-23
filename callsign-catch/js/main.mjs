@@ -1,4 +1,4 @@
-import {POINTS, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
+import {POINTS, PENDING_EVERY_MS, BOARD_ACCEPTS_HEX, LEADERBOARD_API, SUBMIT_GAP_MS, SUBMITS_PER_HOUR, SPOT_API, NEW_TYPE_BONUS, NEW_VARIANT_BONUS} from './config.mjs';
 import * as C from './core.mjs';
 import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
@@ -18,16 +18,29 @@ $('#catch-form').addEventListener('submit', e => {
   submit($('#cs').value);
 });
 const getJSON = n => fetch(`./data/${n}.json`).then(r => { if (!r.ok) throw new Error(n + ' ' + r.status); return r.json(); });
-let table, specials, art, photos, teams, hexTypes, ranges;
-try { [table, specials, art, photos, teams, hexTypes, ranges] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges'].map(getJSON)); }
+let table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes, oneOffs;
+try { [table, specials, art, photos, teams, hexTypes, ranges, liveries, csTypes, oneOffs] = await Promise.all(['types', 'specials', 'art', 'photos', 'display-teams', 'hex-types', 'icao-ranges', 'liveries', 'callsign-types', 'one-offs'].map(getJSON)); }
 catch (e) { loadFailed = true; say("I couldn't load the aircraft list. Refresh the page to try again.", 'bad'); throw e; }
-C.setTeams(teams); C.setHexTypes(hexTypes); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
+C.setTeams(teams); C.setHexTypes(hexTypes); C.setLiveries(liveries); C.setCallsignTypes(csTypes); C.setOneOffs(oneOffs); C.setRanges(ranges); setArtManifest(art.codes); setPhotos(photos.photos);
 const idx = C.indexTypes(table);
 for (const sp of specials.cards) idx.set(sp.code, {code: sp.code, name: sp.name, maker: 'DEXM Labs', tier: 'legendary', cat: 'special', fact: sp.fact || 'A special card, out for one day only.', reward: sp.reward || {}});
-const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); return s ? C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
+// Planespotters: an answer older than 24 hours is never shown (safeSpot checks its date) and is asked for again.
+// The photo page link and the photographer stay on the record as provenance; the expired image address is marked stale.
+const dropStaleSpots = s => { const mark = p => { if (p && typeof p === 'object' && p.src && !safeSpot(p)) p.stale = 1; };
+  for (const e of s.log || []) mark(e && e.photo); for (const c of Object.values(s.cards || {})) for (const k of ['first', 'last']) mark(c[k] && c[k].photo); return s; };
+const load = () => { try { const s = C.validateImport(JSON.parse(localStorage.getItem(C.STORE_KEY))); if (s) dropStaleSpots(s); return s ? C.regrade(s, idx, table) : C.emptyState(); } catch { return C.emptyState(); } };
+const infoOf = code => C.typeInfo(code, idx, table);
+let deck = 'all';
 let state = load(), filter = 'all', lastSubmit = 0, recent = [];
 // Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
-const save = () => { try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); localStorage.setItem(C.STORE_KEY, JSON.stringify(state)); } catch {} };
+// Keep the previous raw save as a backup before every write, so a bad write can never cost a hangar.
+// If the browser runs out of room, the backup goes first, then the raw feed copies on the oldest catches (newest 300 kept).
+const save = () => {
+  const write = () => localStorage.setItem(C.STORE_KEY, JSON.stringify(state));
+  try { const prev = localStorage.getItem(C.STORE_KEY); if (prev) localStorage.setItem(C.STORE_KEY + ':backup', prev); write(); return; } catch {}
+  try { localStorage.removeItem(C.STORE_KEY + ':backup'); write(); return; } catch {}
+  try { state.log.slice(300).forEach(e => { if (e && e.raw) { delete e.raw; e.rawTrimmed = 1; } }); write(); } catch {}
+};
 const now = () => new Date(window.__ccNow || Date.now());
 const wanted = () => C.wantedFor(now(), table, specials);
 const Tier = t => t[0].toUpperCase() + t.slice(1);
@@ -40,7 +53,7 @@ function variantChips(code) {
 }
 function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
   const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}${entry.reg ? `<div><dt>Registration</dt><dd>${esc(entry.reg)}</dd></div>` : ''}${info.unknown && entry.hex ? `<div><dt>Hex</dt><dd>${esc(entry.hex.toUpperCase())}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
-  const sq = entry && C.SQUAWKS[entry.sq] ? `<p class="cc-squawk"><b>Legendary squawk</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
+  const sq = entry && C.SQUAWKS[entry.sq] ? `<span class="sq-badge" aria-hidden="true">${esc(entry.sq)}</span><p class="cc-squawk"><b>${tier === 'mythic' ? 'Mythic squawk' : 'Legendary squawk'}</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
   const card = owned && state.cards[info.code], multi = !!(card && card.count > 1 && !extra.includes('XP'));
   const more = multi ? `<span class="cc-more">See all ${card.count} catches</span>` : '';
   return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}${multi ? ' multi' : ''}" data-code="${esc(info.code)}"${multi ? ` tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(info.name)}, see all ${card.count} catches"` : ''}><div class="cc-in">
@@ -63,21 +76,39 @@ function renderHangar() {
   const set = C.SETS.find(s => s.id === filter);
   let codes;
   if (set && set.codes) codes = set.codes;
-  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : !!e.team).map(e => e.type);
+  else if (set) codes = state.log.filter(e => set.rule === 'night' ? e.night : set.rule === 'mythic' ? e.tier === 'mythic' : !!e.team).map(e => e.type);
   else codes = [...new Set([...Object.keys(state.cards), ...C.SETS.flatMap(s => s.codes || [])])];
+  if (deck !== 'all') { const keep = new Set(C.deckCodes(state, deck, infoOf)); codes = codes.filter(c => keep.has(c)); }
   codes = [...new Set(codes)].sort((a, b) => (!!state.cards[b] - !!state.cards[a]) || C.TIERS.indexOf(C.typeInfo(b, idx, table).tier) - C.TIERS.indexOf(C.typeInfo(a, idx, table).tier) || a.localeCompare(b));
   $('#hangar').innerHTML = codes.map(code => { const c = state.cards[code], info = C.typeInfo(code, idx, table);
-    return cardHTML(info, c ? c.tier : info.tier, c && c.last, !!c, c && c.count > 1 ? ` <span class="cc-count">×${c.count}</span>` : ''); }).join('') || '<p class="muted">Nothing here yet.</p>';
+    return cardHTML(info, c ? c.tier : info.tier, c && c.last, !!c, c && c.count > 1 ? ` <span class="cc-count">×${c.count}</span>` : ''); }).join('') || `<p class="muted">${deck !== 'all' ? 'No cards match that filter yet.' : 'Nothing here yet.'}</p>`;
+  const sp = set && set.codes ? C.setProgress(state, set) : null;
+  $('#set-missing').hidden = !sp;
+  if (sp) $('#set-missing').innerHTML = sp.done ? `<b>${esc(set.name)}: complete, ${sp.got}/${sp.goal}.</b>` : `<b>${esc(set.name)}: ${sp.got}/${sp.goal}.</b> Still to catch: ${sp.missing.map(c => esc(infoOf(c).name)).join(', ')}.`;
+  $('#deck').innerHTML = [{id: 'all', name: 'All cards'}, ...C.DECK].map(d => `<button type="button" class="chip${deck === d.id ? ' on' : ''}" data-deck="${d.id}" aria-pressed="${deck === d.id}">${esc(d.name)}</button>`).join('');
+  const mk = C.makersOwned(state, infoOf), ms = $('#deck-maker');
+  ms.innerHTML = `<option value="">By maker</option>` + mk.map(m => `<option value="${esc(m)}"${deck === 'maker:' + m ? ' selected' : ''}>${esc(m)}</option>`).join('');
   $('#sets').innerHTML = C.SETS.map(s => { const p = C.setProgress(state, s);
     const pc = Math.round(100 * p.got / p.goal);
     return `<button type="button" class="set${filter === s.id ? ' on' : ''}${p.done ? ' done' : ''}" data-set="${s.id}" aria-pressed="${filter === s.id}" style="--p:${pc}"><span class="badge" aria-hidden="true"><b>${p.done ? '\u2713' : pc + '%'}</b></span><span>${esc(s.name)}</span><span class="bar"><i style="width:${Math.round(100 * p.got / p.goal)}%"></i></span><small>${p.got}/${p.goal}${s.desc ? ' · ' + esc(s.desc) : ''}</small></button>`; }).join('');
   $('#set-all').setAttribute('aria-pressed', filter === 'all'); $('#set-all').classList.toggle('on', filter === 'all');
-  $('#logbook').innerHTML = state.log.slice(0, 12).map(e => `<li><span class="lt tier-${e.tier}">${esc(e.type)}</span> ${esc(e.cs)} <span class="muted">${esc(fmtTime(e.t))} · ${esc(e.alt.toLocaleString('en-GB'))} ft · +${e.gain || 0}</span></li>`).join('') || '<li class="muted">Your catches will be logged here.</li>';
+  $('#logbook').innerHTML = state.log.slice(0, 12).map(e => `<li><span class="lt tier-${e.tier}">${esc(e.type)}</span> ${esc(e.cs)} <span class="muted">${esc(fmtTime(e.t))} · ${esc(e.alt != null ? e.alt.toLocaleString('en-GB') : '')} ft · +${e.gain || 0}</span></li>`).join('') || '<li class="muted">Your catches will be logged here.</li>';
 }
 // Commons photos are looked up after the cards are drawn, so a slow or failed lookup never holds a card up.
 const wikiStore = (() => { try { return localStorage; } catch { return null; } })();
 const upgrade = el => upgradeArt(el, fetch, wikiStore).catch(() => {});
-function render() { renderStats(); renderWanted(); renderHangar(); upgrade($('#hangar')); upgrade($('#wanted')); }
+function render() { renderStats(); renderWanted(); renderHangar(); upgrade($('#hangar')); upgrade($('#wanted')); refreshSpots(); }
+// Cards whose Planespotters answer has expired look it up again, a few at a time, once per visit.
+let refreshing = false;
+async function refreshSpots() {
+  if (refreshing) return; refreshing = true;
+  try {
+    const todo = Object.values(state.cards).map(c => c.last).filter(e => e && !safeSpot(e.photo) && (e.hex || e.reg) && !asked.has(e.hex || e.reg)).slice(0, 6);
+    let got = 0;
+    for (const e of todo) { asked.add(e.hex || e.reg); const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (ph) { const merged = p => C.refreshPhoto(p, ph); e.photo = merged(e.photo); for (const x of state.log) if (x.t === e.t && x.type === e.type) x.photo = merged(x.photo); got++; } }
+    if (got) { save(); renderHangar(); upgrade($('#hangar')); }
+  } finally { refreshing = false; }
+}
 // A picture that fails to load (offline, Planespotters down) steps down the chain instead of leaving a gap.
 document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.closest('.art-slot')) nextArt(t, code => C.typeInfo(code, idx, table), upgrade); }, true);
 
@@ -102,7 +133,7 @@ function openDetail(code) {
   list.forEach(async (e, i) => {
     const k = e.hex || e.reg; if (e.photo || !k || asked.has(k)) return; asked.add(k);
     const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (!ph) return;
-    e.photo = ph; save();
+    e.photo = C.refreshPhoto(e.photo, ph); save();
     const li = $(`#detail-list [data-i="${i}"]`); if (ph && li && dlg.dataset.code === code) li.outerHTML = catchItem(info, e, i);
   });
 }
@@ -119,11 +150,68 @@ const MSG = {notfound: q => `I can't hear ${q} right now. Check the spelling, or
   stale: q => `${q} has gone quiet for over a minute. Try again when it shows up live.`,
   today: q => `You've already caught ${q} today. Find another one, or try it again tomorrow.`,
   busy: () => 'The tracker is busy. Give it a minute and try again.',
-  offline: () => "I couldn't reach the live tracker just now. Try again in a moment."};
+  offline: () => "I couldn't reach the live tracker just now. Try again in a moment.",
+  ambiguous: q => `More than one aircraft is answering to ${q} right now. Type the hex code or registration of the one you saw.`};
+
+// Ask the feeds, keep only exact matches, and say which live aircraft it is, or why not.
+async function check(q) {
+  const r = await lookup(q);
+  if (r.error) return {reason: r.error};
+  const m = C.resolveMatches(q, r.data.ac);
+  if (m.ambiguous) return {reason: 'ambiguous', matches: m.matches};
+  const live = C.pickLive(m.resp);
+  if (live.ok) live.source = r.source;
+  return live.ok ? {live, source: r.source} : {reason: live.reason};
+}
+// Fill in the type, variant and photo, then bank it. Shared by a normal catch and a confirmed pending one.
+async function bank(live) {
+  const hexdbType = await fillType(live.ac);
+  if (live.ac.type) live.ac.typeFrom = live.ac.typeFrom || 'feed or hexdb';
+  else { live.ac.type = C.resolveType(live.ac); if (live.ac.type) live.ac.typeFrom = C.hexType(live.ac.hex) ? 'hex table' : 'callsign prefix'; }
+  const photo = await spotPhoto(live.ac);
+  live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
+  live.ac.source = live.source || '';
+  const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
+  if (res.status !== 'today') { if (photo) res.entry.photo = photo; state = res.state; save(); }
+  return res;
+}
+function celebrate(res, lead = '') {
+  render();
+  say(lead + (res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`), 'ok');
+  board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.tier === 'mythic' ? 'legendary' : res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq && res.tier !== 'mythic' ? 'legendary' : res.tier);
+  reveal(res); setTimeout(() => chime(res.entry.sq || res.tier === 'mythic' ? 'legendary' : res.tier), 650); postCatch(res.entry);
+}
+
+// Pending sightings: no points until a feed hears the aircraft flying. Rechecked on open and every minute.
+let lastMiss = null;
+function offerPending(q) { lastMiss = q; const b = $('#pend-save'); b.hidden = false; b.textContent = `Save ${q.value.toUpperCase()} as pending`; }
+function hidePendingOffer() { lastMiss = null; $('#pend-save').hidden = true; }
+function renderPending() {
+  const list = state.pending || [], box = $('#pending');
+  box.hidden = !list.length;
+  $('#pending-list').innerHTML = list.map(p => `<li class="pend"><span class="lt pend-tag">Pending</span> <b>${esc(p.value)}</b> <span class="muted">Unconfirmed, no points yet. Checking every minute until ${esc(fmtTime(p.until))}.</span> <button type="button" class="pend-x" data-v="${esc(p.value)}" aria-label="Remove pending ${esc(p.value)}">Remove</button></li>`).join('');
+}
+let checking = false;
+async function recheckPending() {
+  if (checking || !state.pending) return; checking = true;
+  try {
+    const gone = C.expirePending(state, now());
+    if (gone.length) { save(); say(`${gone.map(p => p.value).join(', ')} never showed up in the feed, so ${gone.length === 1 ? 'that pending sighting has' : 'those pending sightings have'} expired. No points lost.`, 'wait'); }
+    for (const p of [...state.pending]) {
+      let res = null;
+      try { const c = await check(C.pendingQuery(p)); p.tries = (p.tries | 0) + 1; if (c.live) res = await bank(c.live); } catch {}
+      if (!res) continue;
+      C.removePending(state, p.value); save();
+      if (res.status === 'today') { render(); say(`${p.value} showed up, but you've already caught it today.`, 'wait'); continue; }
+      celebrate(res, `Pending ${p.value} confirmed. `);
+    }
+    save(); renderPending();
+  } finally { checking = false; }
+}
 
 async function submit(raw) {
   const q = C.parseQuery(raw);
-  if (!q) return say('Type a callsign like BAW117, a registration like G-XLEA or a hex code like 4ca7b5.', 'bad');
+  if (!q) return say('Type a callsign like BAW117 or X, a registration like G-XLEA or ZZ171, or a hex code like 4ca7b5. Letters and numbers only, up to 8.', 'bad');
   const t = Date.now(); recent = recent.filter(x => t - x < 3600e3);
   if (t - lastSubmit < SUBMIT_GAP_MS) return say(`Easy, spotter. One lookup every ${SUBMIT_GAP_MS / 1000} seconds.`, 'bad');
   if (recent.length >= SUBMITS_PER_HOUR) return say("That's a lot of lookups this hour. Have a cuppa and come back soon.", 'bad');
@@ -131,26 +219,22 @@ async function submit(raw) {
   if ((state.days[C.dayKey(now())] || []).includes(label)) return say(MSG.today(label), 'bad');
   lastSubmit = t; recent.push(t);
   const btn = $('#go'); btn.disabled = true; btn.textContent = 'Checking...'; btn.setAttribute('aria-busy', 'true');
-  const WORD = {busy: 'BUSY', offline: 'NO SIGNAL', notfound: 'NOT FOUND', ground: 'NOT AIRBORNE', stale: 'GONE QUIET'};
+  const WORD = {ambiguous: 'TOO MANY', busy: 'BUSY', offline: 'NO SIGNAL', notfound: 'NOT FOUND', ground: 'NOT AIRBORNE', stale: 'GONE QUIET'};
   const miss = w => { board(w); thud(); pulse('miss'); };
   board(label);
   say(`Listening for ${label}...`, 'wait');
+  hidePendingOffer();
   try {
-    const r = await lookup(q);
-    if (r.error) { miss(WORD[r.error] || 'NO SIGNAL'); return say((MSG[r.error] || MSG.offline)(label), 'bad'); }
-    const live = C.pickLive(r.data);
-    if (!live.ok) { miss(WORD[live.reason] || 'NOT FOUND'); return say((MSG[live.reason] || MSG.notfound)(label), 'bad'); }
-    const hexdbType = await fillType(live.ac);
-    if (!live.ac.type) live.ac.type = C.hexType(live.ac.hex);
-    const photo = await spotPhoto(live.ac);
-    live.ac.variant = C.pickVariant({hexdb: hexdbType, photoLink: photo && photo.link, desc: live.ac.desc});
-    const res = C.applyCatch(state, live.ac, now(), idx, table, wanted());
-    if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(live.ac.callsign), 'bad'); }
-    if (photo) res.entry.photo = photo;
-    state = res.state; save(); render();
-    say(res.newType ? `New type discovered! ${res.info.name}, with a +${NEW_TYPE_BONUS} bonus.` : res.newVariant ? `New variant: ${C.variantShort(res.variant)}. +${res.gain} XP, including a +${NEW_VARIANT_BONUS} bonus.` : res.status === 'new' ? `Caught! A new card: ${res.info.name}.` : `Another ${res.info.name}. +${res.gain} XP.`, 'ok');
-    board(res.newType ? 'NEW TYPE' : res.newVariant ? 'NEW VARIANT' : 'CAUGHT'); buzz(res.entry.sq ? 'legendary' : res.tier); pulse('hit', res.entry.sq ? 'legendary' : res.tier);
-    reveal(res); setTimeout(() => chime(res.entry.sq ? 'legendary' : res.tier), 650); postCatch(live.ac.callsign);
+    const c = await check(q);
+    if (!c.live) {
+      miss(WORD[c.reason] || 'NOT FOUND'); say((MSG[c.reason] || MSG.notfound)(label), 'bad');
+      if (c.reason === 'notfound' || c.reason === 'stale') offerPending(q);
+      return;
+    }
+    const res = await bank(c.live);
+    if (res.status === 'today') { miss('SEEN TODAY'); return say(MSG.today(c.live.ac.callsign), 'bad'); }
+    C.removePending(state, q.value); save(); renderPending();
+    celebrate(res);
   } catch (e) {
     console.error(e); miss('TRY AGAIN'); say('Something went wrong with that one. Try again in a moment.', 'bad');
   } finally { setTimeout(() => { btn.disabled = false; btn.textContent = 'Catch it'; btn.removeAttribute('aria-busy'); }, 400); }
@@ -184,7 +268,7 @@ async function spotPhoto(ac) {
       const r = await fetch(`${SPOT_API}/${path}`, {signal: ctl.signal}); clearTimeout(timer);
       if (!r.ok) continue;
       const p = ((await r.json()).photos || [])[0];
-      const ph = p && safeSpot({src: (p.thumbnail_large || p.thumbnail || {}).src, by: String(p.photographer || '').slice(0, 60), link: p.link});
+      const ph = p && safeSpot({src: (p.thumbnail_large || p.thumbnail || {}).src, by: String(p.photographer || '').slice(0, 60), link: p.link, at: Date.now()});
       if (ph) return ph;
     } catch {}
   }
@@ -217,13 +301,15 @@ function exportFile() {
   a.href = URL.createObjectURL(blob); a.download = `callsign-catch-${C.dayKey(now())}.json`; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 async function importFile(file) {
-  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.upgradeTiers(C.backfillVariants(C.migrateHexTypes(s, idx, table)), idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
+  try { const s = C.validateImport(JSON.parse(await file.text())); if (!s) throw 0; C.regrade(s, idx, table); state = s; save(); render(); say(`Imported ${Object.keys(s.cards).length} cards.`, 'ok'); }
   catch { say("That file doesn't look like a Callsign Catch collection.", 'bad'); }
 }
 
 const sb = $('#sound'), showSound = () => { const on = soundOn(); sb.textContent = on ? 'Sound on' : 'Sound off'; sb.setAttribute('aria-pressed', String(on)); };
 sb.addEventListener('click', () => { setSound(!soundOn()); showSound(); if (soundOn()) chime('common'); }); showSound();
 $('#set-all').addEventListener('click', () => { filter = 'all'; renderHangar(); });
+$('#deck').addEventListener('click', e => { const b = e.target.closest('[data-deck]'); if (b) { deck = deck === b.dataset.deck ? 'all' : b.dataset.deck; renderHangar(); upgrade($('#hangar')); } });
+$('#deck-maker').addEventListener('change', e => { deck = e.target.value ? 'maker:' + e.target.value : 'all'; renderHangar(); upgrade($('#hangar')); });
 $('#sets').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { filter = filter === b.dataset.set ? 'all' : b.dataset.set; renderHangar(); } });
 $('#close').addEventListener('click', () => { const d = $('#reveal'); d.classList.remove('go'); d.close ? d.close() : d.removeAttribute('open'); });
 $('#hangar').addEventListener('click', e => { if (e.target.closest('a')) return; const c = e.target.closest('.cc-card.multi'); if (c) openDetail(c.dataset.code); });
@@ -233,18 +319,43 @@ $('#detail').addEventListener('click', e => { if (e.target === $('#detail')) clo
 $('#share').addEventListener('click', () => share($('#reveal').dataset.share));
 $('#export').addEventListener('click', exportFile);
 $('#import').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
+// Redeem a gift code. Only a salted hash and a sealed payload are in the source; the greeting and cards appear after.
+let gifts = null; const getGifts = async () => gifts || (gifts = await fetch('./data/gifts.json').then(r => r.json()).catch(() => []));
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function giftShow(greeting) { return new Promise(done => {
+  const o = $('#gift-fx'), still = reduceMotion(); o.querySelector('.gift-text').textContent = greeting; o.classList.toggle('still', still);
+  const sky = o.querySelector('.gift-sky'); sky.innerHTML = still ? '' : Array.from({length: 22}, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 8) * 0.25}s;--s:${0.6 + (i % 5) * 0.2}">&#10084;</i>`).join('');
+  o.hidden = false; let t;
+  const end = () => { clearTimeout(t); o.hidden = true; sky.innerHTML = ''; removeEventListener('keydown', end); o.removeEventListener('click', end); done(); };
+  t = setTimeout(end, still ? 2500 : 3600); addEventListener('keydown', end); o.addEventListener('click', end); }); }
+async function redeem() {
+  const box = $('#redeem-code'), code = box.value; if (!code.trim()) return;
+  const r = await C.redeemGift(state, code, await getGifts(), now());
+  if (r.status === 'wrong') { say('That code did not work.'); return; }
+  if (r.status === 'already') { say('That code has already been used on this save.'); return; }
+  box.value = ''; save(); await giftShow(r.greeting); render();
+  say(r.entries.length + ' gift cards added to your hangar.'); const c = $('#hangar .cc-card[data-code="' + r.entries[0].type + '"]'); if (c) c.scrollIntoView({block: 'center'});
+}
+$('#redeem').addEventListener('submit', e => { e.preventDefault(); redeem(); });
 $('#board').hidden = !LEADERBOARD_API;
 // Leaderboard: only when LEADERBOARD_API is set. The Worker checks every catch against the live feed itself.
 const player = (() => { try { let p = localStorage.getItem('callsign:player'); if (!p) { p = [...crypto.getRandomValues(new Uint8Array(10))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('callsign:player', p); } return p; } catch { return ''; } })();
 const drawBoard = b => { $('#board-body').innerHTML = ['today', 'alltime'].map(k => `<div><h3>${k === 'today' ? 'Today' : 'All time'}</h3><ol>${(b[k] || []).map(e => `<li>${esc(e.nick)} <b>${esc(e.points)}</b></li>`).join('') || '<li class="muted">No catches yet.</li>'}</ol></div>`).join(''); };
-async function postCatch(cs) { const nick = (localStorage.getItem('callsign:nick') || '').trim(); if (!LEADERBOARD_API || !nick) return;
-  try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({callsign: cs, nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
+// The board Worker checks a catch live. A normal callsign always goes, with its hex and registration (an older Worker
+// ignores them). A hex keyed catch such as X goes only once BOARD_ACCEPTS_HEX says the Worker can check it by hex.
+async function postCatch(entry) { const nick = (localStorage.getItem('callsign:nick') || '').trim(); if (!LEADERBOARD_API || !nick) return;
+  const pl = C.boardPayload(entry, BOARD_ACCEPTS_HEX); if (!pl) return;
+  try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({...pl, nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
 if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') || ''; $('#nick').addEventListener('change', e => localStorage.setItem('callsign:nick', e.target.value.slice(0, 16))); fetch(LEADERBOARD_API + '/board').then(r => r.json()).then(drawBoard).catch(() => {}); }
 const drop = C.dropFor(now(), specials);
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }
 render(); holo($('#hangar'));
+$('#pend-save').addEventListener('click', () => { if (!lastMiss) return; const r = C.addPending(state, lastMiss, now()); state = r.state; save(); renderPending(); hidePendingOffer();
+  say(r.status === 'added' ? `Saved ${lastMiss.value.toUpperCase()} as pending. I'll keep checking for two hours and turn it into a card if a feed hears it flying. No points until then.` : r.status === 'full' ? 'You already have ten pending sightings. Remove one first.' : 'That one is already pending.', r.status === 'added' ? 'wait' : 'bad'); });
+$('#pending-list').addEventListener('click', e => { const b = e.target.closest('.pend-x'); if (b) { C.removePending(state, b.dataset.v); save(); renderPending(); } });
+renderPending(); recheckPending(); setInterval(recheckPending, PENDING_EVERY_MS);
 const deep = new URLSearchParams(location.search).get('cs');
 if (deep && C.parseQuery(deep)) { $('#cs').value = deep.toUpperCase().slice(0, 10); say(`Spotted overhead: ${deep.toUpperCase().slice(0, 10)}. Press Catch it to check it's flying.`, 'wait'); }
 // resetGap is for the browser test only: it clears the gap between lookups (or with -1 sets it to now).
 ready = true; board('READY', {instant: true});
-window.CallsignCatch = {state: () => state, submit, openDetail, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};
+window.CallsignCatch = {state: () => state, submit, recheckPending, openDetail, ready: true, resetGap: n => { lastSubmit = n === -1 ? Date.now() - SUBMIT_GAP_MS - 1 : 0; recent = []; }};

@@ -36,15 +36,20 @@ export function artKey(info) {
   const f = FALLBACK[info.cat] || 'FB_UNKNOWN'; return manifest.has(f) ? f : null;
 }
 const escA = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-// Only Planespotters thumbnails and photo pages are trusted from a saved catch.
-export const safeSpot = p => p && /^https:\/\/[a-z0-9.-]+\.plnspttrs\.net\/[\w./-]+$/.test(p.src || '') && /^https:\/\/www\.planespotters\.net\/[\w./?=&%-]*$/.test(p.link || '') ? p : null;
+// Only Planespotters thumbnails and photo pages are trusted from a saved catch. Their terms let an API answer be kept
+// for 24 hours at most, so an older one is not shown and is looked up again instead.
+export const SPOT_TTL = 24 * 3600e3;
+export const safeSpot = (p, now = Date.now()) => p && /^https:\/\/[a-z0-9.-]+\.(plnspttrs|planespotters)\.net\/[\w./-]+$/.test(p.src || '') && /^https:\/\/www\.planespotters\.net\/[\w./?=&%-]*$/.test(p.link || '') && +p.at > 0 && now - p.at < SPOT_TTL && now - p.at > -60e3 ? p : null;
 // What to show, best first: the exact airframe photo from Planespotters, the self hosted type photo, a Commons photo
 // looked up live from the type's Wikipedia page, the type or family render, then a silhouette for its category.
 // The card first shows the best picture it has without the network; upgradeArt() and the error handler move it along.
-export const ART_CHAIN = ['spot', 'photo', 'commons', 'render', 'silhouette'];
+// A gift card carries its own Commons photo with its licence and credit.
+export const giftPhoto = e => { const p = e && e.gift && e.giftPhoto; return p && /^https:\/\/upload\.wikimedia\.org\/[\w./%-]+$/.test(p.src || '') && /^https:\/\/commons\.wikimedia\.org\/wiki\/[\w.:%()-]+$/.test(p.link || '') ? p : null; };
+export const ART_CHAIN = ['gift', 'spot', 'photo', 'commons', 'render', 'silhouette'];
 export function renderKey(info, entry) { return entry && entry.mil && manifest.has(info.code + '_TKR') ? info.code + '_TKR' : artKey(info); }
 export function artStages(info, entry) {
   const st = [];
+  if (giftPhoto(entry)) st.push('gift');
   if (safeSpot(entry && entry.photo)) st.push('spot');
   if (photos[info.code]) st.push('photo');
   if (wikiTitle(info)) st.push('commons');
@@ -53,7 +58,9 @@ export function artStages(info, entry) {
 }
 function stageHTML(stage, info, tier, entry, lazy) {
   const spot = safeSpot(entry && entry.photo);
-  if (stage === 'spot') return `<img class="photo" data-stage="spot" src="${escA(spot.src)}" alt="${escA((entry.reg || entry.cs) + ', the ' + info.name + ' you caught')}" width="420" height="280"${lazy} decoding="async" referrerpolicy="no-referrer">`;
+  // Planespotters asks for the thumbnail itself to link to the photo page, as a plain link.
+  if (stage === 'gift') { const g = giftPhoto(entry); return `<a class="spot-link" href="${escA(g.link)}" target="_blank" rel="noopener"><img class="photo" data-stage="gift" src="${escA(g.src)}" alt="${escA(info.name)}" width="640" height="400"${lazy} decoding="async"></a>`; }
+  if (stage === 'spot') return `<a class="spot-link" href="${escA(spot.link)}" target="_blank" rel="noopener"><img class="photo" data-stage="spot" src="${escA(spot.src)}" alt="${escA((entry.reg || entry.cs) + ', the ' + info.name + ' you caught')}" width="420" height="280"${lazy} decoding="async"></a>`;
   if (stage === 'photo') return `<img class="photo" data-stage="photo" src="./img/photos/${escA(info.code)}.webp" alt="${escA(info.name)}" width="640" height="400"${lazy} decoding="async">`;
   if (stage === 'render') return `<img class="art" data-stage="render" src="./img/cards/${escA(renderKey(info, entry))}.webp" alt="" width="360" height="240"${lazy} decoding="async">`;
   return silhouette(info.cat, tier, true);
@@ -64,7 +71,9 @@ export function cardArt(info, tier, owned, eager, entry) {
   const st = artStages(info, entry), first = st.find(x => x !== 'commons');
   // The stages left after the one shown go on the slot, so a failed image knows where to go next.
   const rest = st.slice(st.indexOf(first) + 1), wiki = st.indexOf('commons') > -1 && st.indexOf('commons') < st.indexOf(first);
-  return `<span class="art-slot" data-code="${escA(info.code)}" data-tier="${escA(tier)}" data-next="${rest.join(' ')}"${wiki ? ` data-wiki="${escA(wikiTitle(info))}"` : ''}${entry && entry.mil ? ' data-mil="1"' : ''}>${stageHTML(first, info, tier, entry, lazy)}</span>`;
+  // A special livery with no fresh Planespotters photo looks for that exact airframe on Commons by its registration.
+  const reg = first !== 'spot' && entry && entry.liv && entry.reg && /^[A-Z0-9-]{3,10}$/i.test(entry.reg) ? entry.reg : '';
+  return `<span class="art-slot" data-code="${escA(info.code)}" data-tier="${escA(tier)}" data-next="${rest.join(' ')}"${wiki ? ` data-wiki="${escA(wikiTitle(info))}"` : ''}${reg ? ` data-reg="${escA(reg)}"` : ''}${entry && entry.mil ? ' data-mil="1"' : ''}>${stageHTML(first, info, tier, entry, lazy)}</span>`;
 }
 // The next picture after one fails to load (Planespotters down, offline, a missing file). Never leaves a blank.
 export function nextArt(img, infoFor, onWiki) {
@@ -112,16 +121,46 @@ export async function commonsPhoto(title, f = fetch, store = null) {
   return p;
 }
 const creditHTML = p => `<p class="cc-credit">Photo <a href="${escA(p.source)}" target="_blank" rel="noopener">${escA(p.author)}</a>, ${p.licenceUrl ? `<a href="${escA(p.licenceUrl)}" target="_blank" rel="noopener">${escA(p.licence)}</a>` : escA(p.licence)}</p>`;
-// Swap in a Commons photo wherever a card is waiting for one. The render stays if there is none or it fails.
+// A Commons photo of one exact airframe, found by searching file names for its registration. The registration has to
+// appear in the file name as a whole word (G-EUPJ, not G-EUPJX), and the licence has to be free. Remembered for a week.
+const regNorm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+export function titleHasReg(title, reg) {
+  const r = regNorm(reg); if (r.length < 3) return false;
+  return String(title || '').toUpperCase().split(/[^A-Z0-9-]+/).some(w => regNorm(w) === r);
+}
+export async function commonsByReg(reg, f = fetch, store = null) {
+  const key = 'callsign:reg:' + regNorm(reg);
+  try { const c = store && JSON.parse(store.getItem(key)); if (c && Date.now() - c.at < 7 * 864e5) return c.p; } catch {}
+  const get = async u => { const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000); try { const r = await f(u, {signal: ctl.signal}); if (!r.ok) throw new Error('http ' + r.status); return await r.json(); } finally { clearTimeout(t); } };
+  let p = null;
+  try {
+    const a = await get(`${COMMONS_API}?action=query&format=json&origin=*&list=search&srnamespace=6&srlimit=8&srsearch=${encodeURIComponent('intitle:"' + String(reg).toUpperCase() + '"')}`);
+    const titles = ((a.query && a.query.search) || []).map(x => x.title).filter(t => /\.(jpe?g|png|webp)$/i.test(t) && titleHasReg(t.replace(/^File:/, '').replace(/\.\w+$/, ''), reg)).slice(0, 4);
+    if (titles.length) {
+      const b = await get(`${COMMONS_API}?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&titles=${encodeURIComponent(titles.join('|'))}`);
+      const pages = Object.values((b.query && b.query.pages) || {}).sort((x, y) => titles.indexOf(x.title) - titles.indexOf(y.title));
+      for (const pg of pages) { const ii = !pg.missing && pg.imageinfo && pg.imageinfo[0], md = (ii && ii.extmetadata) || {}, lic = stripTags(md.LicenseShortName && md.LicenseShortName.value);
+        if (ii && /^https:\/\/upload\.wikimedia\.org\/[\w./%()-]+$/.test(ii.thumburl || '') && lic && !/fair use|non.?free/i.test(lic)) {
+          p = {src: ii.thumburl, source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(pg.title).replace(/%20/g, '_').replace(/%3A/i, ':'), author: stripTags(md.Artist && md.Artist.value) || 'Wikimedia Commons', licence: lic, licenceUrl: /^https?:\/\//.test((md.LicenseUrl && md.LicenseUrl.value) || '') ? md.LicenseUrl.value : ''}; break; } }
+    }
+  } catch { return null; }
+  try { store && store.setItem(key, JSON.stringify({at: Date.now(), p})); } catch {}
+  return p;
+}
+// Swap in a Commons photo wherever a card is waiting for one: the exact airframe first, then the type.
+// Whatever is showing stays if there is none or it fails.
 export async function upgradeArt(root, f = fetch, store = null) {
-  const slots = [...((root && root.querySelectorAll('.art-slot[data-wiki]')) || [])];
+  const slots = [...((root && root.querySelectorAll('.art-slot[data-wiki], .art-slot[data-reg]')) || [])];
   await Promise.all(slots.map(async slot => {
-    const title = slot.dataset.wiki; delete slot.dataset.wiki;
-    const p = await commonsPhoto(title, f, store); if (!p || !slot.isConnected) return;
+    const title = slot.dataset.wiki, reg = slot.dataset.reg; delete slot.dataset.wiki; delete slot.dataset.reg;
+    let p = reg ? await commonsByReg(reg, f, store) : null, exact = !!p;
+    if (!p && title) p = await commonsPhoto(title, f, store);
+    if (!p || !slot.isConnected) return;
+    if (exact) { const inner = slot.closest('.cc-in'), cr = inner && inner.querySelector('.cc-credit'); if (cr) cr.remove(); }
     const cur = slot.innerHTML;
     // Whatever was showing (the render or silhouette) becomes the next fallback again if this image fails.
     if (/data-stage="render"/.test(cur)) slot.dataset.next = ('render ' + slot.dataset.next).trim();
-    slot.innerHTML = `<img class="photo" data-stage="commons" src="${escA(p.src)}" alt="" width="640" height="400" decoding="async" referrerpolicy="no-referrer">`;
+    slot.innerHTML = `<img class="photo" data-stage="${exact ? 'airframe' : 'commons'}" src="${escA(p.src)}" alt="" width="640" height="400" decoding="async" referrerpolicy="no-referrer">`;
     const inner = slot.closest('.cc-in');
     if (inner && !inner.querySelector('.cc-credit')) inner.querySelector('.cc-photo').insertAdjacentHTML('afterend', creditHTML(p));
   }));
@@ -129,8 +168,11 @@ export async function upgradeArt(root, f = fetch, store = null) {
 // The credit each photo licence asks for, as a small line on the card.
 export function photoCredit(info, entry, owned) {
   if (!owned) return '';
+  const note = entry && entry.gift && entry.note ? `<p class="cc-gift">${escA(entry.note)}</p>` : '', g = giftPhoto(entry);
+  if (g) return `<p class="cc-credit">Photo <a href="${escA(g.link)}" target="_blank" rel="noopener">${escA(g.by)}</a>, ${escA(g.licence)}, via Wikimedia Commons</p>${note}`;
   const spot = safeSpot(entry && entry.photo);
-  if (spot) return `<p class="cc-credit">Photo <a href="${escA(spot.link)}" target="_blank" rel="noopener">${escA(spot.by || 'Planespotters.net')}</a> via Planespotters.net</p>`;
+  if (note && !spot) return note + (photos[info.code] ? creditHTML(photos[info.code]) : '');
+  if (spot) return note + `<p class="cc-credit">Photo <a href="${escA(spot.link)}" target="_blank" rel="noopener">${escA(spot.by || 'Planespotters.net')}</a> via Planespotters.net</p>`;
   const p = photos[info.code];
   if (!p) return '';
   return creditHTML(p);
