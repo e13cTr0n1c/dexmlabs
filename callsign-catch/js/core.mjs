@@ -224,7 +224,7 @@ export function boardPayload(e, acceptsHex) {
   return null;
 }
 // A new Planespotters answer for a catch. The earlier photo record stays on it as prev, so nothing is lost.
-export function refreshPhoto(old, ph) { const o = old && typeof old === 'object' ? {...old} : null; if (o) delete o.stale; return o && (o.src || o.link) ? {...ph, prev: o} : {...ph}; }
+export function refreshPhoto(old, ph) { const o = old && typeof old === 'object' ? {...old} : null; if (o) delete o.stale; if (o && o.src === ph.src && o.link === ph.link) return o.prev ? {...ph, prev: o.prev} : {...ph}; return o && (o.src || o.link) ? {...ph, prev: o} : {...ph}; }
 
 // Pending sightings: seen on another tracker but not in our feed yet. Saved with no points, rechecked for a while,
 // then confirmed into a real catch through applyCatch, or dropped when the window closes.
@@ -514,6 +514,12 @@ const b64 = u => { let x = ''; for (const c of new Uint8Array(u)) x += String.fr
 const te = new TextEncoder();
 export const giftNorm = c => String(c || '').trim().toLowerCase();
 export async function giftHash(code, salt) { return b64(await crypto.subtle.digest('SHA-256', te.encode(salt + ':' + giftNorm(code)))); }
+// True when what was typed is one of the shipped gift codes, checked only against the salted hashes.
+export async function isGiftCode(code, gifts) {
+  if (!giftNorm(code)) return false;
+  for (const x of gifts || []) if (x && x.salt && x.hash === await giftHash(code, x.salt)) return true;
+  return false;
+}
 async function giftKey(code, kdfSalt) {
   const base = await crypto.subtle.importKey('raw', te.encode(giftNorm(code)), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey({name: 'PBKDF2', salt: unb64(kdfSalt), iterations: 200000, hash: 'SHA-256'}, base, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);

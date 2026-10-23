@@ -4,7 +4,7 @@ import {lookup} from './api.mjs';
 import {flapTo} from './flap.mjs';
 import {countTo, sparks, buzz, holo, calm} from './fx.mjs';
 import {clack, chime, thud, soundOn, setSound} from './sound.mjs';
-import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot, nextArt, upgradeArt} from './art.mjs';
+import {cardArt, setArtManifest, setPhotos, photoCredit, safeSpot, nextArt, upgradeArt, SPOT_TTL} from './art.mjs';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -54,9 +54,9 @@ function variantChips(code) {
 function cardHTML(info, tier, entry, owned, extra = '', eager = false) {
   const log = entry ? `<dl class="log"><div><dt>Caught</dt><dd>${esc(fmtTime(entry.t))}</dd></div><div><dt>Callsign</dt><dd>${esc(entry.cs)}</dd></div>${entry.op ? `<div><dt>Operator</dt><dd>${esc(entry.op)}</dd></div>` : ''}${entry.reg ? `<div><dt>Registration</dt><dd>${esc(entry.reg)}</dd></div>` : ''}${info.unknown && entry.hex ? `<div><dt>Hex</dt><dd>${esc(entry.hex.toUpperCase())}</dd></div>` : ''}<div><dt>Altitude</dt><dd>${entry.alt != null ? esc(entry.alt.toLocaleString('en-GB')) + ' ft' : 'n/a'}</dd></div><div><dt>Speed</dt><dd>${entry.gs != null ? esc(entry.gs) + ' kt' : 'n/a'}</dd></div></dl>` : '';
   const sq = entry && C.SQUAWKS[entry.sq] ? `<span class="sq-badge" aria-hidden="true">${esc(entry.sq)}</span><p class="cc-squawk"><b>${tier === 'mythic' ? 'Mythic squawk' : 'Legendary squawk'}</b><span>${esc(C.SQUAWKS[entry.sq])}</span></p>` : '';
-  const card = owned && state.cards[info.code], multi = !!(card && card.count > 1 && !extra.includes('XP'));
+  const card = owned && state.cards[info.code], open = !!(card && !extra.includes('XP')), multi = open && card.count > 1;
   const more = multi ? `<span class="cc-more">See all ${card.count} catches</span>` : '';
-  return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}${multi ? ' multi' : ''}" data-code="${esc(info.code)}"${multi ? ` tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(info.name)}, see all ${card.count} catches"` : ''}><div class="cc-in">
+  return `<article class="cc-card tier-${tier}${owned ? '' : ' empty'}${sq ? ' sq' : ''}${open ? ' opens' : ''}${multi ? ' multi' : ''}" data-code="${esc(info.code)}"${open ? ` tabindex="0" role="button" aria-haspopup="dialog" aria-label="${esc(info.name)}, ${multi ? `see all ${card.count} catches` : 'see the details'}"` : ''}><div class="cc-in">
 <div class="cc-photo">${cardArt(info, tier, owned, eager, entry)}<div class="cc-top"><span class="cc-code">${esc(info.code)}</span><span class="cc-tier">${owned ? Tier(tier) : 'Locked'}</span></div>
 <div class="cc-title">${owned && info.unknown && entry && entry.origin ? `<span class="cc-origin">${esc(entry.origin)}</span>` : ''}${owned && entry && entry.team ? `<span class="cc-team">${esc(entry.team)}</span>` : ''}<h3 class="cc-name">${owned ? esc(info.name) : 'Not caught yet'}</h3><p class="cc-pts">${owned ? `${POINTS[tier]} pts` : esc(Tier(info.tier))}${extra}</p>${more}</div></div>
 ${photoCredit(info, entry, owned)}${sq}${owned ? `<div class="cc-body">${variantChips(info.code)}${log}<p class="cc-fact">${esc(info.fact)}${info.source ? ` <a class="src" href="${esc(info.source)}" target="_blank" rel="noopener">source</a>` : ''}</p></div>` : ''}</div></article>`;
@@ -98,43 +98,74 @@ function renderHangar() {
 const wikiStore = (() => { try { return localStorage; } catch { return null; } })();
 const upgrade = el => upgradeArt(el, fetch, wikiStore).catch(() => {});
 function render() { renderStats(); renderWanted(); renderHangar(); upgrade($('#hangar')); upgrade($('#wanted')); refreshSpots(); }
-// Cards whose Planespotters answer has expired look it up again, a few at a time, once per visit.
+// Every caught airframe whose Planespotters answer is missing or older than 24 hours is looked up again, one at a
+// time with a short gap, each one at most once per visit (and answers, empty ones too, are kept for 24 hours, so a reload asks nothing).
+// Saves from before batch 3 carry photos with no date, so they all count as expired and all come back here.
 let refreshing = false;
+const spotKey = e => e && (e.hex || e.reg) ? String(e.hex || e.reg).toLowerCase() : '';
+function applySpot(e, ph) {
+  const merged = p => C.refreshPhoto(p, ph), k = spotKey(e);
+  for (const x of [...state.log, ...Object.values(state.cards).flatMap(c => [c.first, c.last])]) if (x && spotKey(x) === k && !safeSpot(x.photo)) x.photo = merged(x.photo);
+}
 async function refreshSpots() {
   if (refreshing) return; refreshing = true;
   try {
-    const todo = Object.values(state.cards).map(c => c.last).filter(e => e && !safeSpot(e.photo) && (e.hex || e.reg) && !asked.has(e.hex || e.reg)).slice(0, 6);
-    let got = 0;
-    for (const e of todo) { asked.add(e.hex || e.reg); const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (ph) { const merged = p => C.refreshPhoto(p, ph); e.photo = merged(e.photo); for (const x of state.log) if (x.t === e.t && x.type === e.type) x.photo = merged(x.photo); got++; } }
-    if (got) { save(); renderHangar(); upgrade($('#hangar')); }
+    const seen = new Set(), todo = [];
+    for (const e of [...Object.values(state.cards).map(c => c.last), ...state.log]) { const k = spotKey(e); if (!k || seen.has(k) || asked.has(k) || e.gift || safeSpot(e.photo)) continue; seen.add(k); todo.push(e); }
+    let got = 0, last = Date.now();
+    const draw = () => { if (!got) return; save(); renderHangar(); upgrade($('#hangar')); got = 0; last = Date.now(); };
+    // One at a time with a short gap, so Planespotters is never hammered. If it says busy, wait and carry on later.
+    for (let e; (e = todo.shift());) {
+      if (Date.now() < spotBusyUntil) { draw(); refreshing = false; setTimeout(refreshSpots, spotBusyUntil - Date.now() + 500); return; }
+      const ph = await spotPhoto({hex: e.hex, reg: e.reg});
+      if (Date.now() < spotBusyUntil) { todo.unshift(e); continue; }
+      asked.add(spotKey(e)); if (ph) { applySpot(e, ph); got++; }
+      if (Date.now() - last > 1500) draw();
+      await new Promise(r => setTimeout(r, window.__ccFast ? 0 : SPOT_GAP_MS));
+    }
+    draw();
   } finally { refreshing = false; }
 }
 // A picture that fails to load (offline, Planespotters down) steps down the chain instead of leaving a gap.
 document.addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'IMG' && t.closest('.art-slot')) nextArt(t, code => C.typeInfo(code, idx, table), upgrade); }, true);
 
-// Every catch of one type, each with its own photo, callsign, registration, variant and date.
+// Every catch of one type, each with its own photo and every detail stored on it.
 function catchesOf(code) { return state.log.filter(e => e && e.type === code); }
+const row = (k, v) => v === '' || v == null || v === false ? '' : `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`;
+const num = (v, unit) => typeof v === 'number' ? v.toLocaleString('en-GB') + unit : '';
+function catchRows(e) {
+  const sq = e.squawk || e.sq;
+  return row('Callsign', e.cs) + row('Registration', e.reg) + row('Hex', e.hex && e.hex.toUpperCase()) + row('Operator', e.op) + row('Tier', e.tier && Tier(e.tier))
+    + row('Points', e.gift ? 'Gift' : e.gain != null ? '+' + e.gain : '') + row('Caught', e.t && fmtTime(e.t)) + row('Gifted', e.giftedAt && fmtTime(e.giftedAt))
+    + row('Squawk', sq ? sq + (C.SQUAWKS[sq] ? ', ' + C.SQUAWKS[sq] : '') : '') + row('Livery', e.liv) + row('Variant', e.var) + row('Display team', e.team) + row('Origin', e.origin)
+    + row('Altitude', num(e.alt, ' ft')) + row('GPS altitude', num(e.altGeom, ' ft')) + row('Speed', num(e.gs, ' kt')) + row('Track', num(e.track, '\u00b0'))
+    + row('Position', typeof e.lat === 'number' && typeof e.lon === 'number' ? e.lat.toFixed(3) + ', ' + e.lon.toFixed(3) : '')
+    + row('Night owl', e.night ? 'Yes' : '') + row('Military', e.mil ? 'Yes' : '') + row('Why this tier', e.why) + row('Mythic', e.mythic)
+    + row('Flight', e.flight && e.flight.trim()) + row('Description', e.desc) + row('Category', e.category) + row('Feed', e.feedType) + row('Type from', e.typeFrom) + row('Source', e.src)
+    + (e.note ? row('Note', e.note) : '');
+}
 function catchItem(info, e, i) {
-  const row = (k, v) => v ? `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>` : '';
-  return `<li class="catch-item tier-${esc(e.tier || info.tier)}" data-i="${i}"><div class="cc-in"><div class="cc-photo">${cardArt(info, e.tier || info.tier, true, false, e)}</div>${photoCredit(info, e, true)}<dl class="log">${row('Callsign', e.cs)}${row('Registration', e.reg)}${row('Variant', e.var)}${row('Caught', fmtTime(e.t))}${e.op ? row('Operator', e.op) : ''}${e.hex ? row('Hex', e.hex.toUpperCase()) : ''}</dl></div></li>`;
+  return `<li class="catch-item tier-${esc(e.tier || info.tier)}" data-i="${i}"><div class="cc-in"><div class="cc-photo">${cardArt(info, e.tier || info.tier, true, false, e)}</div>${photoCredit(info, e, true)}<dl class="log">${catchRows(e)}</dl></div></li>`;
 }
 const asked = new Set(); // airframes already looked up this visit
 function openDetail(code) {
   const card = state.cards[code]; if (!card) return;
   const info = C.typeInfo(code, idx, table), list = catchesOf(code), dlg = $('#detail');
-  $('#detail-h').textContent = `${info.name}: ${card.count} catches`;
+  if (!list.length && card.last) list.push(card.last);
+  $('#detail-h').textContent = card.count > 1 ? `${info.name}: ${card.count} catches` : info.name;
   const missing = card.count - list.length;
+  $('#detail-sum').innerHTML = `<dl class="log">${row('Type', info.code + (info.name ? ', ' + info.name : ''))}${row('Maker', info.maker)}${row('Tier', Tier(card.tier))}${row('Points', POINTS[card.tier] + ' pts')}${row('Catches', card.count)}${row('First caught', card.first && card.first.t && fmtTime(card.first.t))}${row('Last caught', card.last && card.last.t && fmtTime(card.last.t))}${row('Variants', (card.variants || []).join(', '))}</dl>${info.fact ? `<p class="cc-fact">${esc(info.fact)}</p>` : ''}`;
   $('#detail-list').innerHTML = list.map((e, i) => catchItem(info, e, i)).join('');
   $('#detail-note').textContent = missing > 0 ? `${missing} earlier ${missing === 1 ? 'catch was' : 'catches were'} made before I kept the details of each one, so ${missing === 1 ? 'it is' : 'they are'} counted on the card but not listed here.` : '';
   dlg.dataset.code = code;
   if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   upgrade($('#detail-list'));
-  // Older catches saved no photo: look the airframe up now by its hex or registration and keep what turns up.
+  // Each airframe is looked up by its own hex or registration when it has no photo under 24 hours old.
   list.forEach(async (e, i) => {
-    const k = e.hex || e.reg; if (e.photo || !k || asked.has(k)) return; asked.add(k);
+    if (e.gift || safeSpot(e.photo) || !spotKey(e)) return;
     const ph = await spotPhoto({hex: e.hex, reg: e.reg}); if (!ph) return;
-    e.photo = C.refreshPhoto(e.photo, ph); save();
-    const li = $(`#detail-list [data-i="${i}"]`); if (ph && li && dlg.dataset.code === code) li.outerHTML = catchItem(info, e, i);
+    applySpot(e, ph); save();
+    const li = $(`#detail-list [data-i="${i}"]`); if (li && dlg.dataset.code === code) { li.outerHTML = catchItem(info, e, i); upgrade($('#detail-list')); }
   });
 }
 const closeDetail = () => { const d = $('#detail'); d.close ? d.close() : d.removeAttribute('open'); };
@@ -210,6 +241,8 @@ async function recheckPending() {
 }
 
 async function submit(raw) {
+  // A gift code typed here is redeemed as a gift, never looked up or offered as a pending sighting.
+  if (await C.isGiftCode(raw, await getGifts())) { hidePendingOffer(); $('#cs').value = ''; return redeem(raw); }
   const q = C.parseQuery(raw);
   if (!q) return say('Type a callsign like BAW117 or X, a registration like G-XLEA or ZZ171, or a hex code like 4ca7b5. Letters and numbers only, up to 8.', 'bad');
   const t = Date.now(); recent = recent.filter(x => t - x < 3600e3);
@@ -260,18 +293,33 @@ async function fillType(ac) {
 }
 
 // A photo of the exact airframe from Planespotters.net, if one exists. Never holds a catch up for long.
+// Answers are kept per airframe for 24 hours at most (Planespotters' limit), including an answer of no photo.
+const SPOT_CACHE = 'callsign:spot:', SPOT_GAP_MS = 700;
+let spotBusyUntil = 0; // set when Planespotters answers 429, so nothing more is asked until it has had a rest
+const spotCache = {
+  get(k) { try { const c = JSON.parse(localStorage.getItem(SPOT_CACHE + k)); if (c && Date.now() - c.at < SPOT_TTL && Date.now() >= c.at - 60e3) return c; } catch {} return null; },
+  set(k, p) { try { localStorage.setItem(SPOT_CACHE + k, JSON.stringify({at: Date.now(), p})); } catch {} },
+  prune() { try { for (const k of Object.keys(localStorage)) if (k.startsWith(SPOT_CACHE) && !this.get(k.slice(SPOT_CACHE.length))) localStorage.removeItem(k); } catch {} }};
+spotCache.prune();
 async function spotPhoto(ac) {
   if (!SPOT_API) return null;
+  const ck = String(ac.hex || ac.reg || '').toLowerCase(), hit = ck && spotCache.get(ck);
+  if (hit) return safeSpot(hit.p);
+  if (Date.now() < spotBusyUntil) return null;
+  let answered = false;
   for (const path of [ac.hex && 'hex/' + encodeURIComponent(ac.hex), ac.reg && 'reg/' + encodeURIComponent(ac.reg)].filter(Boolean)) {
     try {
       const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 3500);
       const r = await fetch(`${SPOT_API}/${path}`, {signal: ctl.signal}); clearTimeout(timer);
+      if (r.status === 429) { spotBusyUntil = Date.now() + 1000 * Math.min(300, Math.max(30, +r.headers.get('retry-after') || 60)); return null; }
       if (!r.ok) continue;
+      answered = true;
       const p = ((await r.json()).photos || [])[0];
       const ph = p && safeSpot({src: (p.thumbnail_large || p.thumbnail || {}).src, by: String(p.photographer || '').slice(0, 60), link: p.link, at: Date.now()});
-      if (ph) return ph;
+      if (ph) { if (ck) spotCache.set(ck, ph); return ph; }
     } catch {}
   }
+  if (answered && ck) spotCache.set(ck, null); // a failed or busy request is not remembered, so it is asked again later
   return null;
 }
 
@@ -312,15 +360,16 @@ $('#deck').addEventListener('click', e => { const b = e.target.closest('[data-de
 $('#deck-maker').addEventListener('change', e => { deck = e.target.value ? 'maker:' + e.target.value : 'all'; renderHangar(); upgrade($('#hangar')); });
 $('#sets').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { filter = filter === b.dataset.set ? 'all' : b.dataset.set; renderHangar(); } });
 $('#close').addEventListener('click', () => { const d = $('#reveal'); d.classList.remove('go'); d.close ? d.close() : d.removeAttribute('open'); });
-$('#hangar').addEventListener('click', e => { if (e.target.closest('a')) return; const c = e.target.closest('.cc-card.multi'); if (c) openDetail(c.dataset.code); });
-$('#hangar').addEventListener('keydown', e => { const c = e.target.closest && e.target.closest('.cc-card.multi'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(c.dataset.code); } });
+$('#hangar').addEventListener('click', e => { if (e.target.closest('a')) return; const c = e.target.closest('.cc-card.opens'); if (c) openDetail(c.dataset.code); });
+$('#hangar').addEventListener('keydown', e => { const c = e.target.closest && e.target.closest('.cc-card.opens'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openDetail(c.dataset.code); } });
 $('#detail-close').addEventListener('click', closeDetail);
 $('#detail').addEventListener('click', e => { if (e.target === $('#detail')) closeDetail(); });
 $('#share').addEventListener('click', () => share($('#reveal').dataset.share));
 $('#export').addEventListener('click', exportFile);
 $('#import').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
 // Redeem a gift code. Only a salted hash and a sealed payload are in the source; the greeting and cards appear after.
-let gifts = null; const getGifts = async () => gifts || (gifts = await fetch('./data/gifts.json').then(r => r.json()).catch(() => []));
+// Read fresh each time (the browser's own cache keeps it cheap), since the callsign box checks every entry against it.
+const getGifts = () => fetch('./data/gifts.json').then(r => r.json()).catch(() => []);
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 function giftShow(greeting) { return new Promise(done => {
   const o = $('#gift-fx'), still = reduceMotion(); o.querySelector('.gift-text').textContent = greeting; o.classList.toggle('still', still);
@@ -328,8 +377,8 @@ function giftShow(greeting) { return new Promise(done => {
   o.hidden = false; let t;
   const end = () => { clearTimeout(t); o.hidden = true; sky.innerHTML = ''; removeEventListener('keydown', end); o.removeEventListener('click', end); done(); };
   t = setTimeout(end, still ? 2500 : 3600); addEventListener('keydown', end); o.addEventListener('click', end); }); }
-async function redeem() {
-  const box = $('#redeem-code'), code = box.value; if (!code.trim()) return;
+async function redeem(typed) {
+  const box = $('#redeem-code'), code = typed == null ? box.value : typed; if (!code.trim()) return;
   const r = await C.redeemGift(state, code, await getGifts(), now());
   if (r.status === 'wrong') { say('That code did not work.'); return; }
   if (r.status === 'already') { say('That code has already been used on this save.'); return; }
@@ -337,6 +386,9 @@ async function redeem() {
   say(r.entries.length + ' gift cards added to your hangar.'); const c = $('#hangar .cc-card[data-code="' + r.entries[0].type + '"]'); if (c) c.scrollIntoView({block: 'center'});
 }
 $('#redeem').addEventListener('submit', e => { e.preventDefault(); redeem(); });
+// A gift code saved as pending by an older version is taken off the list, and is never offered as one.
+(async () => { const g = await getGifts(), bad = []; for (const p of state.pending || []) if (await C.isGiftCode(p.value, g)) bad.push(p.value);
+  if (bad.length) { for (const v of bad) C.removePending(state, v); save(); renderPending(); } })();
 $('#board').hidden = !LEADERBOARD_API;
 // Leaderboard: only when LEADERBOARD_API is set. The Worker checks every catch against the live feed itself.
 const player = (() => { try { let p = localStorage.getItem('callsign:player'); if (!p) { p = [...crypto.getRandomValues(new Uint8Array(10))].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('callsign:player', p); } return p; } catch { return ''; } })();
@@ -350,8 +402,9 @@ if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') 
 const drop = C.dropFor(now(), specials);
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }
 render(); holo($('#hangar'));
-$('#pend-save').addEventListener('click', () => { if (!lastMiss) return; const r = C.addPending(state, lastMiss, now()); state = r.state; save(); renderPending(); hidePendingOffer();
-  say(r.status === 'added' ? `Saved ${lastMiss.value.toUpperCase()} as pending. I'll keep checking for two hours and turn it into a card if a feed hears it flying. No points until then.` : r.status === 'full' ? 'You already have ten pending sightings. Remove one first.' : 'That one is already pending.', r.status === 'added' ? 'wait' : 'bad'); });
+// Gift codes never get here: submit() redeems them before any lookup, so no offer to save one is ever made.
+$('#pend-save').addEventListener('click', () => { const q = lastMiss; if (!q) return; const r = C.addPending(state, q, now()); state = r.state; save(); renderPending(); hidePendingOffer();
+  say(r.status === 'added' ? `Saved ${q.value.toUpperCase()} as pending. I'll keep checking for two hours and turn it into a card if a feed hears it flying. No points until then.` : r.status === 'full' ? 'You already have ten pending sightings. Remove one first.' : 'That one is already pending.', r.status === 'added' ? 'wait' : 'bad'); });
 $('#pending-list').addEventListener('click', e => { const b = e.target.closest('.pend-x'); if (b) { C.removePending(state, b.dataset.v); save(); renderPending(); } });
 renderPending(); recheckPending(); setInterval(recheckPending, PENDING_EVERY_MS);
 const deep = new URLSearchParams(location.search).get('cs');

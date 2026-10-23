@@ -35,6 +35,12 @@ export function artKey(info) {
   const fam = FAMILY[info.code]; if (fam && manifest.has(fam)) return fam;
   const f = FALLBACK[info.cat] || 'FB_UNKNOWN'; return manifest.has(f) ? f : null;
 }
+// Wikimedia now answers with thumbnails on thumb.wikimedia.org with a tracking query, where it used to give
+// upload.wikimedia.org. Both are its own servers; the query is dropped and anything else is refused.
+export const wikiSrc = u => { const m = /^(https:\/\/(?:upload|thumb)\.wikimedia\.org\/[\w./%()-]+)(?:\?[\w.=&%-]*)?$/.exec(String(u || '')); return m ? m[1] : ''; };
+// A lookup that found no free photo is only remembered for a day, so a passing hiccup cannot blank a card for a week.
+const WEEK = 7 * 864e5, DAY = 864e5;
+const fresh = c => c && (c.p ? Date.now() - c.at < WEEK : Date.now() - c.at < DAY);
 const escA = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 // Only Planespotters thumbnails and photo pages are trusted from a saved catch. Their terms let an API answer be kept
 // for 24 hours at most, so an older one is not shown and is looked up again instead.
@@ -44,7 +50,7 @@ export const safeSpot = (p, now = Date.now()) => p && /^https:\/\/[a-z0-9.-]+\.(
 // looked up live from the type's Wikipedia page, the type or family render, then a silhouette for its category.
 // The card first shows the best picture it has without the network; upgradeArt() and the error handler move it along.
 // A gift card carries its own Commons photo with its licence and credit.
-export const giftPhoto = e => { const p = e && e.gift && e.giftPhoto; return p && /^https:\/\/upload\.wikimedia\.org\/[\w./%-]+$/.test(p.src || '') && /^https:\/\/commons\.wikimedia\.org\/wiki\/[\w.:%()-]+$/.test(p.link || '') ? p : null; };
+export const giftPhoto = e => { const p = e && e.gift && e.giftPhoto; return p && wikiSrc(p.src) === p.src && /^https:\/\/commons\.wikimedia\.org\/wiki\/[\w.:%()-]+$/.test(p.link || '') ? p : null; };
 export const ART_CHAIN = ['gift', 'spot', 'photo', 'commons', 'render', 'silhouette'];
 export function renderKey(info, entry) { return entry && entry.mil && manifest.has(info.code + '_TKR') ? info.code + '_TKR' : artKey(info); }
 export function artStages(info, entry) {
@@ -102,8 +108,8 @@ const stripTags = s => String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, '
 // The lead image of the type's Wikipedia article, only if the file lives on Commons (so it is freely licensed),
 // with its author and licence for the credit. Free, keyless and run from the browser. Remembered per type for a week.
 export async function commonsPhoto(title, f = fetch, store = null) {
-  const key = 'callsign:wiki:' + title;
-  try { const c = store && JSON.parse(store.getItem(key)); if (c && Date.now() - c.at < 7 * 864e5) return c.p; } catch {}
+  const key = 'callsign:wiki2:' + title;
+  try { const c = store && JSON.parse(store.getItem(key)); if (fresh(c)) return c.p; } catch {}
   const get = async u => { const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000); try { const r = await f(u, {signal: ctl.signal}); if (!r.ok) throw new Error('http ' + r.status); return await r.json(); } finally { clearTimeout(t); } };
   let p = null;
   try {
@@ -113,8 +119,8 @@ export async function commonsPhoto(title, f = fetch, store = null) {
       const b = await get(`${COMMONS_API}?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&titles=${encodeURIComponent('File:' + file)}`);
       const pg = Object.values((b.query && b.query.pages) || {})[0], ii = pg && !pg.missing && pg.imageinfo && pg.imageinfo[0], md = (ii && ii.extmetadata) || {};
       const lic = stripTags(md.LicenseShortName && md.LicenseShortName.value);
-      if (ii && /^https:\/\/upload\.wikimedia\.org\/[\w./%()-]+$/.test(ii.thumburl || '') && lic && !/fair use|non.?free/i.test(lic))
-        p = {src: ii.thumburl, source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent('File:' + file).replace(/%20/g, '_'), author: stripTags(md.Artist && md.Artist.value) || 'Wikimedia Commons', licence: lic, licenceUrl: /^https?:\/\//.test((md.LicenseUrl && md.LicenseUrl.value) || '') ? md.LicenseUrl.value : ''};
+      if (ii && wikiSrc(ii.thumburl) && lic && !/fair use|non.?free/i.test(lic))
+        p = {src: wikiSrc(ii.thumburl), source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent('File:' + file).replace(/%20/g, '_'), author: stripTags(md.Artist && md.Artist.value) || 'Wikimedia Commons', licence: lic, licenceUrl: /^https?:\/\//.test((md.LicenseUrl && md.LicenseUrl.value) || '') ? md.LicenseUrl.value : ''};
     }
   } catch { return null; } // a network failure is not remembered, so it can try again next visit
   try { store && store.setItem(key, JSON.stringify({at: Date.now(), p})); } catch {}
@@ -129,8 +135,8 @@ export function titleHasReg(title, reg) {
   return String(title || '').toUpperCase().split(/[^A-Z0-9-]+/).some(w => regNorm(w) === r);
 }
 export async function commonsByReg(reg, f = fetch, store = null) {
-  const key = 'callsign:reg:' + regNorm(reg);
-  try { const c = store && JSON.parse(store.getItem(key)); if (c && Date.now() - c.at < 7 * 864e5) return c.p; } catch {}
+  const key = 'callsign:reg2:' + regNorm(reg);
+  try { const c = store && JSON.parse(store.getItem(key)); if (fresh(c)) return c.p; } catch {}
   const get = async u => { const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 5000); try { const r = await f(u, {signal: ctl.signal}); if (!r.ok) throw new Error('http ' + r.status); return await r.json(); } finally { clearTimeout(t); } };
   let p = null;
   try {
@@ -140,8 +146,8 @@ export async function commonsByReg(reg, f = fetch, store = null) {
       const b = await get(`${COMMONS_API}?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640&titles=${encodeURIComponent(titles.join('|'))}`);
       const pages = Object.values((b.query && b.query.pages) || {}).sort((x, y) => titles.indexOf(x.title) - titles.indexOf(y.title));
       for (const pg of pages) { const ii = !pg.missing && pg.imageinfo && pg.imageinfo[0], md = (ii && ii.extmetadata) || {}, lic = stripTags(md.LicenseShortName && md.LicenseShortName.value);
-        if (ii && /^https:\/\/upload\.wikimedia\.org\/[\w./%()-]+$/.test(ii.thumburl || '') && lic && !/fair use|non.?free/i.test(lic)) {
-          p = {src: ii.thumburl, source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(pg.title).replace(/%20/g, '_').replace(/%3A/i, ':'), author: stripTags(md.Artist && md.Artist.value) || 'Wikimedia Commons', licence: lic, licenceUrl: /^https?:\/\//.test((md.LicenseUrl && md.LicenseUrl.value) || '') ? md.LicenseUrl.value : ''}; break; } }
+        if (ii && wikiSrc(ii.thumburl) && lic && !/fair use|non.?free/i.test(lic)) {
+          p = {src: wikiSrc(ii.thumburl), source: 'https://commons.wikimedia.org/wiki/' + encodeURIComponent(pg.title).replace(/%20/g, '_').replace(/%3A/i, ':'), author: stripTags(md.Artist && md.Artist.value) || 'Wikimedia Commons', licence: lic, licenceUrl: /^https?:\/\//.test((md.LicenseUrl && md.LicenseUrl.value) || '') ? md.LicenseUrl.value : ''}; break; } }
     }
   } catch { return null; }
   try { store && store.setItem(key, JSON.stringify({at: Date.now(), p})); } catch {}
