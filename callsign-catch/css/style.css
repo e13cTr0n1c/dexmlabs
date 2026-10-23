@@ -269,3 +269,4 @@ button:active:not(:disabled),.file-btn:active{transform:translateY(4px);box-shad
 @keyframes gift-float{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1}80%{transform:translateY(-80vh) scale(1);opacity:1}100%{transform:translateY(-95vh) scale(2.2);opacity:0}}
 #gift-fx.still .gift-heart,#gift-fx.still .gift-text{animation:none}
 @media (prefers-reduced-motion:reduce){.gift-heart,.gift-text,.gift-sky i{animation:none!important}}
+.cc-card.opens{cursor:pointer}.cc-card.opens:focus-visible{outline:3px solid #d6ff00;outline-offset:3px}.detail-sum{margin:0 0 14px;padding:10px 12px;border-radius:14px;background:#070a08;border:1px solid #ffffff1a}.detail-sum .cc-fact{margin:8px 0 0;font-size:.92em}
