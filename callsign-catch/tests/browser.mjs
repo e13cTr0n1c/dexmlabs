@@ -52,10 +52,10 @@ async function open(viewport) {
     if (/t\.plnspttrs\.net\/.*broken/.test(u)) return r.fulfill({status: 404, body: ''});
     if (/t\.plnspttrs\.net\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/cards/A388.webp', import.meta.url))});
     // Wikipedia and Commons: a free lead photo for the X-59 only. With wikiUp off every lookup fails like a dead network.
-    if (/en\.wikipedia\.org|commons\.wikimedia\.org|upload\.wikimedia\.org/.test(u) && !wikiUp) return r.abort('internetdisconnected');
+    if (/en\.wikipedia\.org|commons\.wikimedia\.org|(upload|thumb)\.wikimedia\.org/.test(u) && !wikiUp) return r.abort('internetdisconnected');
     if (/en\.wikipedia\.org\/w\/api\.php/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({query: {pages: /X-59/.test(decodeURIComponent(u)) ? {1: {pageimage: 'X-59_test.jpg'}} : {'-1': {missing: ''}}}})});
-    if (/commons\.wikimedia\.org\/w\/api\.php/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({query: {pages: {5: {imageinfo: [{thumburl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/x/xx/X-59_test.jpg/640px-X-59_test.jpg', extmetadata: {Artist: {value: 'NASA'}, LicenseShortName: {value: 'Public domain'}}}]}}}})});
-    if (/upload\.wikimedia\.org\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/photos/A320.webp', import.meta.url))});
+    if (/commons\.wikimedia\.org\/w\/api\.php/.test(u)) return r.fulfill({status: 200, contentType: 'application/json', headers: {'access-control-allow-origin': '*'}, body: JSON.stringify({query: {pages: {5: {imageinfo: [{thumburl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/x/xx/X-59_test.jpg/640px-X-59_test.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo', extmetadata: {Artist: {value: 'NASA'}, LicenseShortName: {value: 'Public domain'}}}]}}}})});
+    if (/(upload|thumb)\.wikimedia\.org\//.test(u)) return r.fulfill({status: 200, contentType: 'image/webp', body: fs.readFileSync(new URL('../img/photos/A320.webp', import.meta.url))});
     const m = u.match(/(?:api\.adsb\.lol|workers\.dev)\/v2\/(callsign|reg|hex)\/([^/?]+)/);
     if (!m) return r.abort(); calls++;
     const a = Object.values(AC).filter(x => String((m[1] === 'callsign' ? x.flight.trim() : m[1] === 'reg' ? x.r : x.hex) || '').toUpperCase() === decodeURIComponent(m[2]).toUpperCase());
@@ -173,6 +173,12 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     const still = await page.evaluate(() => ({still: document.getElementById('gift-fx').classList.contains('still'), hearts: document.querySelectorAll('.gift-sky i').length, anim: getComputedStyle(document.querySelector('.gift-heart')).animationName, text: document.querySelector('.gift-text').textContent}));
     ok(still.still && still.hearts === 0 && still.anim === 'none' && still.text === 'Test greeting', 'gift: reduced motion shows a still heart and the text ' + JSON.stringify(still));
     await page.click('#gift-fx'); await page.waitForSelector('#gift-fx', {state: 'hidden'}); ok(true, 'gift: a tap skips it');
+    // The code typed into the callsign box is redeemed as a gift, not looked up or kept as pending.
+    await page.emulateMedia({reducedMotion: 'reduce'}); await page.evaluate(() => { const s = window.CallsignCatch.state(); s.redeemed = []; s.pending = [{value: 'TESTCODE', kind: 'callsign', at: Date.now(), until: Date.now() + 3600e3}]; });
+    const calls0 = calls; await page.evaluate(() => window.CallsignCatch.resetGap()); await page.fill('#cs', 'TestCode'); await page.click('#go');
+    await page.waitForSelector('#gift-fx:not([hidden])'); await page.click('#gift-fx'); await page.waitForSelector('#gift-fx', {state: 'hidden'});
+    const gs = await page.evaluate(() => window.CallsignCatch.state());
+    ok(calls === calls0 && (gs.redeemed || []).includes('test') && await page.isHidden('#pend-save') && !/TESTCODE/i.test(await page.textContent('#pending-list')), 'gift: a gift code in the callsign box is redeemed as a gift and never offered as pending');
     await page.emulateMedia({reducedMotion: 'no-preference'}); await page.unroute('**/catch'); await page.unroute('**/data/gifts.json');
     await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
   }
@@ -208,13 +214,18 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
   ok(det.length === 2 && det.every(d => d.ok) && /CFR606/.test(det[0].t) && /N485DF/.test(det[0].t) && /Firehawk/.test(det[0].t) && /R26863/.test(det[1].t) && /00-26863/.test(det[1].t) && /Black Hawk/.test(det[1].t) && det.every(d => /Caught/.test(d.t)), `${label}: H60 detail lists both catches with photo, callsign, reg, variant and date ${JSON.stringify(det.map(d => d.ok))}`);
   ok(/2 catches/.test(await page.textContent('#detail-h')) && !/[\u2013\u2014]/.test(await page.textContent('#detail')), `${label}: detail heading counts the catches, no dashes`);
   await page.click('#detail-close'); ok(!(await page.$('#detail[open]')), `${label}: detail closes`);
-  ok(!(await page.$('#hangar .cc-card.multi[data-code="L39"]')) && !!(await page.$('#hangar .cc-card[data-code="L39"]:not(.empty)')) && !!(await page.$('#hangar .cc-card.multi[data-code="H60"]')), `${label}: only cards with more than one catch open a detail view`);
+  ok(!(await page.$('#hangar .cc-card.multi[data-code="L39"]')) && !!(await page.$('#hangar .cc-card.opens[data-code="L39"]')) && !(await page.$('#hangar .cc-card.empty.opens')), `${label}: every caught card opens a detail view, locked ones do not`);
+  // A single catch opens too, with every stored field.
+  await page.click('#hangar .cc-card[data-code="L39"]'); await page.waitForSelector('#detail[open]');
+  const one = await page.textContent('#detail');
+  ok(['Type', 'Tier', 'Points', 'First caught', 'Last caught', 'Callsign', 'Hex', '4984EE', 'BTLE21', 'Caught', 'Altitude', 'Speed'].every(w => one.includes(w)) && !/[\u2013\u2014]/.test(one), `${label}: a single card opens a detail view with every field`);
+  await page.click('#detail-close');
   // X-59: a Commons photo when Wikipedia answers, its own render when the network is down. Never blank.
   wikiUp = label === 'desktop';
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.startsWith('callsign:wiki:')) localStorage.removeItem(k); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^callsign:(wiki|reg)/.test(k)) localStorage.removeItem(k); });
   await go(page, 'NASA59'); await page.waitForTimeout(800); await waitImgs();
   const x59 = await page.$eval('#reveal-card .cc-photo img', i => ({stage: i.dataset.stage, ok: i.complete && i.naturalWidth > 0, src: i.src}));
-  ok(x59.ok && x59.stage === (wikiUp ? 'commons' : 'render') && (wikiUp ? /upload\.wikimedia\.org/.test(x59.src) : /img\/cards\/X59\.webp/.test(x59.src)), `${label}: X-59 shows ${wikiUp ? 'a Commons photo' : 'its render while offline'} ${JSON.stringify(x59)}`);
+  ok(x59.ok && x59.stage === (wikiUp ? 'commons' : 'render') && (wikiUp ? /^https:\/\/thumb\.wikimedia\.org\/[^?]+$/.test(x59.src) : /img\/cards\/X59\.webp/.test(x59.src)), `${label}: X-59 shows ${wikiUp ? 'a Commons photo' : 'its render while offline'} ${JSON.stringify(x59)}`);
   if (wikiUp) ok(/Public domain/.test(await page.textContent('#reveal-card .cc-credit')), `${label}: Commons photo carries its licence`);
   await closeReveal(page); wikiUp = true;
   // A Planespotters photo that fails to load steps down to the type photo, with the right credit.
@@ -283,6 +294,11 @@ for (const [label, vp] of [['desktop', {width: 1366, height: 900}], ['phone', {w
     ok(!se.pending.length && se.points === p1 && /expired/.test(await page.textContent('#status')), `${label}: expired pending drops cleanly with no points`);
     delete AC.RCH131;
   }
+  // A save from before batch 3: its Planespotters photos carry no date, so every one is looked up again on load.
+  await page.evaluate(() => { const k = 'callsign:collection', st = JSON.parse(localStorage.getItem(k)); for (const e of [...st.log, ...Object.values(st.cards).flatMap(c => [c.first, c.last])]) if (e && e.photo) delete e.photo.at; localStorage.setItem(k, JSON.stringify(st)); for (const x of Object.keys(localStorage)) if (x.startsWith('callsign:spot:')) localStorage.removeItem(x); });
+  await page.reload(); await page.waitForFunction(() => window.CallsignCatch && window.CallsignCatch.ready);
+  await page.waitForFunction(() => { const i = document.querySelector('#hangar .cc-card[data-code="A388"] img.photo'); return i && i.dataset.stage === 'spot'; }, null, {timeout: 10000}).catch(() => {});
+  if (label === 'phone') ok(await page.$eval('#hangar .cc-card[data-code="A388"]', c => { const i = c.querySelector('img.photo'); return !!i && i.dataset.stage === 'spot' && /Test Spotter/.test((c.querySelector('.cc-credit') || {}).textContent || ''); }), `${label}: an undated saved photo is looked up again and comes back with its credit`);
   await page.evaluate(() => document.querySelectorAll('#hangar img[loading="lazy"]').forEach(i => { i.loading = 'eager'; })); // after a reload the cards below the fold have not loaded yet
   await waitImgs();
   const hang = await imgsOk('#hangar .cc-card:not(.empty)');

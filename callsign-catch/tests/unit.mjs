@@ -467,6 +467,16 @@ t('Mythic: 400 points, one of a kind types and airframes, one off liveries, a Le
   const css = fs.readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.ok(css.includes('.cc-card.tier-mythic:not(.empty)') && css.includes('.sq-badge') && /prefers-reduced-motion:reduce\)\{[^}]*tier-mythic/.test(css), 'mythic finish, squawk pulse and still versions');
 });
+t('commons: the newer thumb host is accepted without its tracking query, other hosts are refused', () => {
+  assert.equal(A.wikiSrc('https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/A.jpg/960px-A.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo'), 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/A.jpg/960px-A.jpg');
+  assert.equal(A.wikiSrc('https://upload.wikimedia.org/wikipedia/commons/a/ab/B.jpg'), 'https://upload.wikimedia.org/wikipedia/commons/a/ab/B.jpg');
+  assert.equal(A.wikiSrc('https://evil.example/wikimedia.org/x.jpg'), ''); assert.equal(A.wikiSrc('https://thumb.wikimedia.org/x.jpg"onerror=1'), '');
+});
+t('planespotters: a saved photo with no date counts as expired, so it is looked up again', () => {
+  assert.equal(A.safeSpot({src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A'}), null);
+  assert.ok(A.safeSpot({src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A', at: Date.now() - 3600e3}));
+  assert.equal(A.safeSpot({src: 'https://t.plnspttrs.net/1/1_280.jpg', link: 'https://www.planespotters.net/photo/1/x', by: 'A', at: Date.now() - 25 * 3600e3}), null);
+});
 // Gift codes: test with a throwaway code; the real one is only checked when GIFT_CODE is set, never written here.
 {
   const pl = {greeting: 'Test greeting', cards: [{cs: '', reg: 'G-BOAC', type: 'CONC', note: 'test note', giftPhoto: {src: 'https://upload.wikimedia.org/x.jpg', by: 'A', licence: 'CC BY-SA 3.0', link: 'https://commons.wikimedia.org/wiki/File:X.jpg'}}, {cs: 'RFR70001', reg: 'ZK425', hex: '43c7a2', type: 'EUFI', sq: '7700', mil: 1, var: 'Typhoon FGR.4'}]};
@@ -482,6 +492,8 @@ t('Mythic: 400 points, one of a kind types and airframes, one off liveries, a Le
     t('gift: a re-grade never pays shortfall credit on a gift', () => { const p = s.points; C.regrade(s, idx, table); assert.equal(s.points, p); assert.ok(s.log.every(e => !e.regradeCredited)); });
     t('gift: survives an export and import', () => { const v = C.validateImport(JSON.parse(JSON.stringify(s))); assert.deepEqual(v.redeemed, ['test']); assert.ok(v.log.every(e => e.gift)); });
   }
+  const yes = await C.isGiftCode(' testCODE ', [g]), no = await C.isGiftCode('BAW117', [g]), none = await C.isGiftCode('', [g]);
+  t('gift: a gift code is recognised by its hash, a callsign is not', () => { assert.equal(yes, true); assert.equal(no, false); assert.equal(none, false); });
   const bad = await C.redeemGift(C.emptyState(), 'wrong', [g], '2026-10-22T12:00:00Z');
   t('gift: a wrong code is refused', () => assert.equal(bad.status, 'wrong'));
   const real = JSON.parse(fs.readFileSync(new URL('gifts.json', dir)));
