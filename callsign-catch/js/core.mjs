@@ -553,3 +553,16 @@ export async function redeemGift(state, code, gifts, when) {
   s.redeemed.push(g.id);
   return {status: 'ok', state: s, greeting: pl.greeting || '', entries};
 }
+
+// Remembrance week, 8 to 11 November 2026: one Second World War RAF type remembered each day, with a quiet banner.
+// It changes no points and no wanted plane. ?date=YYYY-MM-DD shows a given day, for previews only.
+export const REMEMBRANCE = {
+  '2026-11-08': {code: 'LANC', title: 'Remembrance Sunday', note: 'Today I remember the bomber crews. The Avro Lancaster flew with Bomber Command, which lost over 55,000 aircrew.'},
+  '2026-11-09': {code: 'HURI', title: 'Remembrance week', note: 'The Hawker Hurricane carried much of the fighting in the Battle of Britain in the summer of 1940.'},
+  '2026-11-10': {code: 'SPIT', title: 'Remembrance week', note: 'The Supermarine Spitfire, flown by the few in 1940 and remembered by everyone who hears a Merlin overhead.'},
+  '2026-11-11': {code: 'LANC', title: 'Armistice Day', note: 'At the eleventh hour I pause. The Battle of Britain Memorial Flight at RAF Coningsby, my local, keeps a Lancaster, Spitfires and Hurricanes flying in memory of all who served.'}};
+export function themeDay(date, search) {
+  const p = new URLSearchParams(search || '').get('date');
+  return p && /^\d{4}-\d{2}-\d{2}$/.test(p) && !isNaN(Date.parse(p)) ? p : dayKey(date);
+}
+export const remembranceFor = day => REMEMBRANCE[day] || null;

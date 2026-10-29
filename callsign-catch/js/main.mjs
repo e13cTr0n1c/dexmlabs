@@ -400,6 +400,13 @@ async function postCatch(entry) { const nick = (localStorage.getItem('callsign:n
   try { const r = await fetch(LEADERBOARD_API + '/catch', {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify({...pl, nickname: nick, player})}); const j = await r.json(); if (j.today) drawBoard(j); } catch {} }
 if (LEADERBOARD_API) { $('#nick').value = localStorage.getItem('callsign:nick') || ''; $('#nick').addEventListener('change', e => localStorage.setItem('callsign:nick', e.target.value.slice(0, 16))); fetch(LEADERBOARD_API + '/board').then(r => r.json()).then(drawBoard).catch(() => {}); }
 const drop = C.dropFor(now(), specials);
+const remembrance = C.remembranceFor(C.themeDay(now(), location.search));
+if (remembrance) {
+  const info = C.typeInfo(remembrance.code, idx, table), sec = document.createElement('section');
+  sec.className = 'remember'; sec.setAttribute('aria-label', remembrance.title);
+  sec.innerHTML = `<svg class="remember-flower" viewBox="0 0 40 40" width="28" height="28" aria-hidden="true"><g fill="#b3261e"><circle cx="20" cy="12" r="8"/><circle cx="28" cy="20" r="8"/><circle cx="20" cy="28" r="8"/><circle cx="12" cy="20" r="8"/></g><circle cx="20" cy="20" r="4" fill="#1a1a1a"/></svg><div class="remember-row"><div class="wanted-art">${cardArt(info, info.tier, true, true)}</div><div><p class="eyebrow">${esc(remembrance.title)}</p><h2>${esc(info.name)}</h2><p>${esc(remembrance.note)}</p><p class="muted">We will remember them.</p></div></div>`;
+  $('#wanted').before(sec); upgrade(sec);
+}
 if (drop) { $('#drop').hidden = false; $('#drop').textContent = `Free drop today: ${drop.name}`; }
 render(); holo($('#hangar'));
 // Gift codes never get here: submit() redeems them before any lookup, so no offer to save one is ever made.

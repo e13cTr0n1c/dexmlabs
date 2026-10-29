@@ -501,4 +501,12 @@ t('planespotters: a saved photo with no date counts as expired, so it is looked 
   if (process.env.GIFT_CODE) { const s = C.emptyState(), r = await C.redeemGift(s, process.env.GIFT_CODE.toUpperCase(), real, '2026-10-22T12:00:00Z');
     t('gift: the shipped gift opens with its code', () => { assert.equal(r.status, 'ok'); assert.equal(r.entries.length, 2); assert.ok(r.entries[0].giftPhoto && r.entries[0].note); assert.equal(r.entries[1].reg, 'ZK425'); }); }
 }
+t('remembrance: 8 to 11 Nov 2026 remember RAF types, the date param previews, other days stay plain', () => {
+  assert.deepEqual(['2026-11-08', '2026-11-09', '2026-11-10', '2026-11-11'].map(d => C.remembranceFor(d).code), ['LANC', 'HURI', 'SPIT', 'LANC']);
+  for (const d of Object.values(C.REMEMBRANCE)) { assert.ok(idx.get(d.code)); assert.ok(!/[\u2013\u2014-]/.test(d.note + d.title)); }
+  assert.ok(/Coningsby/.test(C.REMEMBRANCE['2026-11-11'].note));
+  assert.equal(C.remembranceFor(C.themeDay(new Date(2026, 9, 29, 12), '?date=2026-11-08')).title, 'Remembrance Sunday');
+  assert.equal(C.remembranceFor(C.themeDay(new Date(2026, 9, 29, 12), '')), null);
+  assert.equal(C.themeDay(new Date(2026, 9, 29, 12), '?date=nonsense'), '2026-10-29');
+});
 console.log(`${n} unit tests passed`);
