@@ -18,7 +18,7 @@ t("homepage: games first, then makes, then support", function () {
   assert.deepStrictEqual([].map.call(d.querySelectorAll("main > section"), function (s) { return s.id || s.className; }), ["puzzle-today", "hero", "games", "makes", "hire", "support"]);
   assert.deepStrictEqual([].map.call(d.querySelectorAll("#games .game-sec"), function (s) { return s.id + ":" + s.querySelector(".sec-h").textContent; }), ["games-physics:Physics & Flight", "games-daily:Daily Puzzles", "games-labs:Labs / Beta", "games-other:Other"], "game sections in order");
   var btns = [].map.call(d.querySelectorAll("#games .btn"), function (a) { return a.getAttribute("href"); });
-  assert.deepStrictEqual(btns, ["booster-landing-game/", "docking-run-game/", "helicopter-sling-load-game/", "apollo-lunar-landing-game/", "glider-thermals-game/", "skywave/", "lorenz/", "enigma-machine/", "tolerance/", "flight-path/", "repurposed/", "missions/mmx/", "callsign-catch/", "vector/", "orbit/", "flying-over-me/", "chernobyl-reactor-simulator/"]);
+  assert.deepStrictEqual(btns, ["booster-landing-game/", "apollo-lunar-landing-game/", "skywave/", "lorenz/", "repurposed/", "missions/mmx/", "callsign-catch/", "vector/", "orbit/", "flying-over-me/"]);
   assert.strictEqual(d.querySelector(".bignum").textContent, String(btns.length), "games live counter matches the cards");
   var ld = [].map.call(d.querySelectorAll('script[type="application/ld+json"]'), function (e) { return JSON.parse(e.textContent); }).filter(function (j) { return j["@type"] === "ItemList"; })[0];
   assert.deepStrictEqual(ld.itemListElement.map(function (e) { return e.url; }), btns.map(function (h) { return "https://dexmlabs.app/" + h; }), "ItemList matches the cards");
