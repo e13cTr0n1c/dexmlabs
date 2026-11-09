@@ -121,7 +121,23 @@ GAME_SECTIONS=[
   ('orbit','orbit','ORBITAL FLIGHT','Orbit','Fly an orbital tug. Shape your trajectory, match target orbits and deploy satellites before your propellant runs out.','Play Orbit','live'),
   ('flying-over-me','flying-over-me','LIVE SKY',"What's Flying Over Me?",'Tap once and see the planes above you right now on a green radar scope, with the satellites passing over and the next time you can spot the ISS.',"See what's overhead",'live'),
   ('chernobyl-reactor-simulator','chernobyl-reactor-simulator','REACTOR','RBMK','A simplified RBMK-1000 control desk. Hold power through a xenon pit or run the rundown test, and know when to press AZ-5.','Play RBMK','live')])]
-GAMES=[g for _,_,_,gs in GAME_SECTIONS for g in gs if g[6]!='sealed']
+# Home page cards only. Eight games, plus Skywave and What's Flying Over Me, which stay put.
+# Every other entry above remains a live page. A rebuild must not put its card back here.
+HOME_SLUGS={
+ 'apollo-lunar-landing-game', # Apollo
+ 'booster-landing-game',      # Booster Catch, the booster landing game (Ship Catch is a mode in it)
+ 'callsign-catch',            # Callsign Catch
+ 'lorenz',                    # Lorenz
+ 'orbit',                     # Orbit
+ 'vector',                    # Air Traffic Control (the card title is Vector)
+ 'missions/mmx',              # Mission Replay
+ 'repurposed',                # Repurposed, the public page, not the hidden play-test build
+ 'skywave',
+ 'flying-over-me',
+}
+def on_home(g):
+  return g[0] in HOME_SLUGS
+GAMES=[g for _,_,_,gs in GAME_SECTIONS for g in gs if on_home(g)]
 LIVE=len(GAMES)
 def game_card(g):
   slug,thumb,tag,title,blurb,btn,status=g
@@ -145,11 +161,13 @@ def games_html():
   # assets/games-collapse.js closes them on load and opens the one named in the URL hash.
   out=[]
   for sid,label,name,gs in GAME_SECTIONS:
-    n=sum(1 for g in gs if g[6]!='sealed')
+    shown=[g for g in gs if on_home(g)]
+    if not shown: continue
+    n=len(shown)
     out.append(f'''<div class="game-sec" id="games-{sid}" role="group" aria-labelledby="games-{sid}-h">
 <h3 class="sec-title"><button type="button" class="sec-toggle" id="games-{sid}-h" aria-expanded="true" aria-controls="games-{sid}-grid"><span class="sec-text"><span class="label acid">{label}</span><span class="sec-h">{name}</span></span><span class="label sec-count">{n} {'GAME' if n==1 else 'GAMES'}</span>{CHEV}</button></h3>
 <div class="grid" id="games-{sid}-grid">
-'''+''.join(game_card(g) for g in gs)+'</div>\n</div>\n')
+'''+''.join(game_card(g) for g in shown)+'</div>\n</div>\n')
   return ''.join(out)
 GAMES_HTML=games_html()
 import json as _json
