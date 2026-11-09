@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <!-- Sky -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#070d1f"/>
+      <stop offset="55%" stop-color="#12183a"/>
+      <stop offset="100%" stop-color="#1a2448"/>
+    </linearGradient>
+
+    <!-- Moon glow -->
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff6e0" stop-opacity="0.55"/>
+      <stop offset="35%" stop-color="#f0e0b8" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#c8d0e8" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#12183a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="moonBody" cx="38%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#fff8e8"/>
+      <stop offset="55%" stop-color="#f0e4c4"/>
+      <stop offset="100%" stop-color="#d8c8a0"/>
+    </radialGradient>
+
+    <!-- Field layers: pale blue-greys, lighter toward front -->
+    <linearGradient id="fieldFar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a4860"/>
+      <stop offset="100%" stop-color="#2e3a52"/>
+    </linearGradient>
+    <linearGradient id="fieldMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a6a82"/>
+      <stop offset="100%" stop-color="#4a5a72"/>
+    </linearGradient>
+    <linearGradient id="fieldNear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a9ab0"/>
+      <stop offset="100%" stop-color="#6e7e96"/>
+    </linearGradient>
+    <linearGradient id="fieldFront" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b0becf"/>
+      <stop offset="100%" stop-color="#8fa0b6"/>
+    </linearGradient>
+
+    <!-- Plane -->
+    <linearGradient id="fuseTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8ecf2"/>
+      <stop offset="55%" stop-color="#c8ced8"/>
+      <stop offset="100%" stop-color="#9aa3b0"/>
+    </linearGradient>
+    <linearGradient id="fuseUnder" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a93a0"/>
+      <stop offset="100%" stop-color="#5c6570"/>
+    </linearGradient>
+    <linearGradient id="wingGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dfe4ec"/>
+      <stop offset="100%" stop-color="#7a8492"/>
+    </linearGradient>
+    <radialGradient id="propBlur" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2a2e36" stop-opacity="0.15"/>
+      <stop offset="55%" stop-color="#1a1e26" stop-opacity="0.35"/>
+      <stop offset="85%" stop-color="#0e1014" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#0e1014" stop-opacity="0.05"/>
+    </radialGradient>
+    <radialGradient id="navRed" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff5040" stop-opacity="0.85"/>
+      <stop offset="35%" stop-color="#ff3018" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ff2000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cabinGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9ec8ff" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#4a80c0" stop-opacity="0.4"/>
+    </radialGradient>
+    <radialGradient id="winGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffc060"/>
+      <stop offset="45%" stop-color="#ff9020" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ff7000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Soft shadow under plane -->
+    <filter id="softBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.2"/>
+    </filter>
+    <filter id="navHalo" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="4.5"/>
+    </filter>
+    <filter id="snowBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="0.7"/>
+    </filter>
+    <filter id="glowSoft" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+
+  <!-- SKY -->
+  <rect width="1200" height="630" fill="url(#sky)"/>
+
+  <!-- STARS -->
+  <g id="stars" fill="#e8eef8">
+    <circle cx="60" cy="70" r="1.2" opacity="0.7"/>
+    <circle cx="140" cy="45" r="0.9" opacity="0.55"/>
+    <circle cx="220" cy="95" r="1.4" opacity="0.8"/>
+    <circle cx="310" cy="38" r="0.8" opacity="0.5"/>
+    <circle cx="400" cy="80" r="1.1" opacity="0.65"/>
+    <circle cx="480" cy="55" r="0.9" opacity="0.45"/>
+    <circle cx="560" cy="110" r="1.3" opacity="0.7"/>
+    <circle cx="650" cy="42" r="1.0" opacity="0.6"/>
+    <circle cx="730" cy="88" r="0.8" opacity="0.5"/>
+    <circle cx="820" cy="60" r="1.2" opacity="0.75"/>
+    <circle cx="900" cy="100" r="0.9" opacity="0.55"/>
+    <circle cx="980" cy="48" r="1.1" opacity="0.65"/>
+    <circle cx="1100" cy="75" r="0.8" opacity="0.5"/>
+    <circle cx="1150" cy="120" r="1.0" opacity="0.6"/>
+    <circle cx="90" cy="160" r="0.7" opacity="0.4"/>
+    <circle cx="180" cy="140" r="1.0" opacity="0.55"/>
+    <circle cx="270" cy="175" r="0.8" opacity="0.45"/>
+    <circle cx="360" cy="150" r="1.2" opacity="0.7"/>
+    <circle cx="450" cy="190" r="0.7" opacity="0.4"/>
+    <circle cx="540" cy="165" r="0.9" opacity="0.5"/>
+    <circle cx="700" cy="145" r="1.1" opacity="0.6"/>
+    <circle cx="780" cy="180" r="0.8" opacity="0.45"/>
+    <circle cx="1050" cy="160" r="0.9" opacity="0.5"/>
+    <circle cx="1120" cy="200" r="0.7" opacity="0.4"/>
+  </g>
+
+  <!-- MOON upper right -->
+  <g id="moon" transform="translate(1005,145)">
+    <circle r="78" fill="url(#moonGlow)"/>
+    <circle r="42" fill="url(#moonBody)"/>
+    <!-- faint maria -->
+    <ellipse cx="-8" cy="4" rx="14" ry="10" fill="#b8a888" opacity="0.35"/>
+    <ellipse cx="10" cy="-8" rx="9" ry="7" fill="#c4b090" opacity="0.28"/>
+    <ellipse cx="6" cy="14" rx="7" ry="5" fill="#a89878" opacity="0.25"/>
+  </g>
+
+  <!-- FIELD LAYERS (back → front), organic rolling silhouettes -->
+  <!-- Far ridge -->
+  <path id="fieldFar" fill="url(#fieldFar)"
+    d="M0,410
+       C80,395 160,402 240,392
+       C320,382 380,400 470,388
+       C560,376 640,395 740,385
+       C840,375 920,390 1020,382
+       C1100,376 1160,388 1200,384
+       L1200,630 L0,630 Z"/>
+  <!-- Hedgerows on far ridge -->
+  <path fill="none" stroke="#1e2838" stroke-width="2.2" stroke-linecap="round" opacity="0.55"
+    d="M40,408 C120,396 200,405 280,394 C360,384 440,400 520,390 C600,380 700,392 800,386 C900,380 1000,390 1120,384"/>
+
+  <!-- Mid ridge -->
+  <path id="fieldMid" fill="url(#fieldMid)"
+    d="M0,455
+       C100,440 180,450 280,438
+       C380,426 460,448 560,435
+       C660,422 760,445 860,432
+       C960,420 1080,438 1200,430
+       L1200,630 L0,630 Z"/>
+  <path fill="none" stroke="#243044" stroke-width="2.4" stroke-linecap="round" opacity="0.6"
+    d="M20,452 C110,440 200,450 300,438 C400,426 500,445 620,434 C740,423 860,442 980,432 C1080,424 1150,434 1190,430"/>
+  <path fill="none" stroke="#243044" stroke-width="1.6" stroke-linecap="round" opacity="0.4"
+    d="M60,470 C160,458 260,472 380,460 C500,448 620,468 760,456 C900,444 1040,462 1160,452"/>
+
+  <!-- Near ridge -->
+  <path id="fieldNear" fill="url(#fieldNear)"
+    d="M0,510
+       C90,492 190,505 300,490
+       C410,475 520,500 640,485
+       C760,470 880,495 1000,480
+       C1100,470 1160,485 1200,478
+       L1200,630 L0,630 Z"/>
+  <path fill="none" stroke="#2a384c" stroke-width="2.6" stroke-linecap="round" opacity="0.65"
+    d="M10,508 C100,494 200,508 320,492 C440,476 560,500 700,486 C840,472 980,495 1120,482"/>
+  <path fill="none" stroke="#2a384c" stroke-width="1.8" stroke-linecap="round" opacity="0.45"
+    d="M80,528 C200,512 340,530 480,514 C620,498 780,522 940,508 C1060,498 1140,512 1190,506"/>
+
+  <!-- Front snow bank -->
+  <path id="fieldFront" fill="url(#fieldFront)"
+    d="M0,565
+       C120,548 240,560 380,545
+       C520,530 680,555 820,540
+       C960,525 1100,548 1200,538
+       L1200,630 L0,630 Z"/>
+  <path fill="none" stroke="#3a4a60" stroke-width="2.2" stroke-linecap="round" opacity="0.5"
+    d="M30,562 C150,548 280,562 420,548 C560,534 720,556 880,542 C1020,530 1120,548 1180,540"/>
+
+  <!-- VILLAGE CLUSTER 1 (left-mid) -->
+  <g id="villageWest" transform="translate(160,448)">
+    <!-- cottages -->
+    <rect x="0" y="18" width="28" height="22" fill="#2a2430"/>
+    <polygon points="-2,18 14,2 30,18" fill="#3a2830"/>
+    <rect x="32" y="22" width="22" height="18" fill="#262030"/>
+    <polygon points="30,22 43,8 56,22" fill="#3a2830"/>
+    <rect x="58" y="20" width="26" height="20" fill="#2c2432"/>
+    <polygon points="56,20 71,5 86,20" fill="#3a2830"/>
+    <!-- snow on roofs -->
+    <polygon points="-1,18 14,3 29,18" fill="#c8d4e4" opacity="0.55"/>
+    <polygon points="31,22 43,9 55,22" fill="#c8d4e4" opacity="0.5"/>
+    <polygon points="57,20 71,6 85,20" fill="#c8d4e4" opacity="0.55"/>
+    <!-- windows -->
+    <circle cx="10" cy="30" r="3.2" fill="url(#winGlow)"/>
+    <circle cx="42" cy="32" r="2.8" fill="url(#winGlow)"/>
+    <circle cx="68" cy="30" r="3.0" fill="url(#winGlow)"/>
+    <circle cx="78" cy="34" r="2.2" fill="url(#winGlow)"/>
+  </g>
+
+  <!-- VILLAGE CLUSTER 2 + church (right) -->
+  <g id="villageEast" transform="translate(820,430)">
+    <rect x="40" y="28" width="24" height="20" fill="#2a2430"/>
+    <polygon points="38,28 52,12 66,28" fill="#3a2830"/>
+    <rect x="70" y="32" width="20" height="16" fill="#262030"/>
+    <polygon points="68,32 80,18 92,32" fill="#3a2830"/>
+    <rect x="98" y="26" width="26" height="22" fill="#2c2432"/>
+    <polygon points="96,26 111,10 126,26" fill="#3a2830"/>
+    <!-- snow roofs -->
+    <polygon points="39,28 52,13 65,28" fill="#c8d4e4" opacity="0.5"/>
+    <polygon points="69,32 80,19 91,32" fill="#c8d4e4" opacity="0.5"/>
+    <polygon points="97,26 111,11 125,26" fill="#c8d4e4" opacity="0.55"/>
+    <!-- windows -->
+    <circle cx="50" cy="40" r="3.0" fill="url(#winGlow)"/>
+    <circle cx="80" cy="42" r="2.6" fill="url(#winGlow)"/>
+    <circle cx="108" cy="38" r="3.2" fill="url(#winGlow)"/>
+    <circle cx="118" cy="42" r="2.4" fill="url(#winGlow)"/>
+    <!-- small church -->
+    <rect x="0" y="16" width="22" height="32" fill="#323640"/>
+    <rect x="5" y="-10" width="12" height="28" fill="#3a3e48"/>
+    <polygon points="2,-10 11,-28 20,-10" fill="#4a4e58"/>
+    <polygon points="3,-10 11,-26 19,-10" fill="#c8d4e4" opacity="0.45"/>
+    <rect x="7" cy="28" width="8" height="12" fill="#ffb040" opacity="0.85" y="22"/>
+    <circle cx="11" cy="28" r="3.5" fill="url(#winGlow)"/>
+  </g>
+
+  <!-- PLANE: level flight L→R, middle-upper. Side profile, slight below. -->
+  <!-- Origin at nose tip area; group placed so fuselage is roughly y=250 -->
+  <g id="plane" transform="translate(255,248) rotate(-3.5 220 40)">
+    <!-- soft under-shadow -->
+    <ellipse cx="230" cy="78" rx="160" ry="10" fill="#000" opacity="0.18" filter="url(#softBlur)"/>
+
+    <!-- Tailplane (horizontal stabilizer) -->
+    <ellipse cx="28" cy="48" rx="38" ry="5" fill="#a8b0bc"/>
+    <ellipse cx="28" cy="50" rx="36" ry="3.5" fill="#6a7380"/>
+
+    <!-- Tail boom / rear fuselage -->
+    <path d="M70,42 L18,46 L16,38 L70,32 Z" fill="url(#fuseTop)"/>
+    <path d="M70,42 L18,46 L20,54 L70,50 Z" fill="url(#fuseUnder)"/>
+
+    <!-- Vertical fin -->
+    <path d="M22,46 L8,8 L42,10 L48,46 Z" fill="url(#wingGrad)"/>
+    <path d="M22,46 L12,18 L40,20 L46,46 Z" fill="#b0b8c4" opacity="0.5"/>
+    <!-- tiny acid green roundel -->
+    <circle cx="28" cy="28" r="5.5" fill="#d6ff00"/>
+    <circle cx="28" cy="28" r="3.2" fill="#1a2030"/>
+
+    <!-- Main fuselage — level profile, nose slightly higher than tail boom -->
+    <path d="M70,34
+             C100,26 160,20 250,20
+             C310,20 355,24 385,30
+             C398,33 404,40 398,48
+             C365,56 300,60 230,60
+             C160,60 100,56 70,50
+             Z" fill="url(#fuseTop)"/>
+    <path d="M75,46
+             C120,52 180,56 250,56
+             C320,56 365,52 392,46
+             C398,48 398,50 392,52
+             C350,58 290,60 230,60
+             C160,60 100,56 75,50
+             Z" fill="url(#fuseUnder)"/>
+
+    <!-- Blunt nose -->
+    <ellipse cx="395" cy="38" rx="22" ry="15" fill="#b8c0cc"/>
+    <ellipse cx="404" cy="39" rx="12" ry="10" fill="#6a7380"/>
+    <ellipse cx="410" cy="37" rx="5" ry="5" fill="#3a4048"/>
+
+    <!-- Cabin windows -->
+    <rect x="330" y="26" width="42" height="12" rx="3" fill="url(#cabinGlow)"/>
+    <rect x="336" y="28" width="8" height="8" rx="1.5" fill="#c8e0ff" opacity="0.7"/>
+    <rect x="348" y="28" width="8" height="8" rx="1.5" fill="#c8e0ff" opacity="0.7"/>
+    <rect x="360" y="28" width="8" height="8" rx="1.5" fill="#c8e0ff" opacity="0.7"/>
+
+    <!-- HIGH WING — thin plank / slight ellipse, on TOP, seen slightly from below -->
+    <!-- Far wing (away) -->
+    <ellipse cx="205" cy="20" rx="72" ry="6.5" fill="#b8c0cc" transform="rotate(2 205 20)"/>
+    <!-- Near wing — long thin plank, slightly from below -->
+    <ellipse cx="205" cy="38" rx="85" ry="8" fill="url(#wingGrad)" transform="rotate(-1.5 205 38)"/>
+    <!-- wing centre across fuselage -->
+    <rect x="130" y="26" width="150" height="11" rx="3" fill="#d8dee8"/>
+    <rect x="130" y="32" width="150" height="5" rx="1" fill="#6a7482"/>
+
+    <!-- Engine nacelles UNDER the wing -->
+    <!-- Near nacelle -->
+    <g id="nacNear">
+      <ellipse cx="250" cy="44" rx="30" ry="9" fill="#3a4048"/>
+      <ellipse cx="272" cy="44" rx="11" ry="8" fill="#2a3038"/>
+      <ellipse cx="284" cy="44" rx="6.5" ry="5.5" fill="#1a1e24"/>
+      <!-- blurred prop disc facing FORWARD -->
+      <ellipse cx="293" cy="44" rx="4.5" ry="24" fill="url(#propBlur)"/>
+      <ellipse cx="293" cy="44" rx="2.8" ry="22" fill="none" stroke="#4a5058" stroke-width="1.3" opacity="0.65"/>
+    </g>
+    <g id="nacFar">
+      <ellipse cx="250" cy="16" rx="26" ry="7.5" fill="#4a5058"/>
+      <ellipse cx="268" cy="16" rx="9" ry="6.5" fill="#3a4048"/>
+      <ellipse cx="278" cy="16" rx="5.5" ry="4.5" fill="#2a3038"/>
+      <ellipse cx="286" cy="16" rx="3.8" ry="18" fill="url(#propBlur)"/>
+      <ellipse cx="286" cy="16" rx="2.2" ry="16" fill="none" stroke="#5a6068" stroke-width="1.1" opacity="0.55"/>
+    </g>
+
+    <!-- Struts (Twin Otter style) -->
+    <line x1="200" y1="34" x2="195" y2="52" stroke="#4a5058" stroke-width="2"/>
+    <line x1="230" y1="34" x2="235" y2="52" stroke="#4a5058" stroke-width="2"/>
+
+    <!-- Landing gear (subtle) -->
+    <line x1="260" y1="58" x2="258" y2="72" stroke="#2a3038" stroke-width="2.5"/>
+    <circle cx="258" cy="74" r="4" fill="#1a1e24"/>
+    <line x1="300" y1="56" x2="304" y2="70" stroke="#2a3038" stroke-width="2"/>
+    <circle cx="304" cy="72" r="3.5" fill="#1a1e24"/>
+    <line x1="380" y1="52" x2="384" y2="64" stroke="#2a3038" stroke-width="1.8"/>
+    <circle cx="384" cy="66" r="3" fill="#1a1e24"/>
+
+    <!-- Near wingtip stub (toward camera, below fuselage) + SMALL red nav -->
+    <ellipse cx="198" cy="56" rx="22" ry="5.5" fill="#9aa3b0" transform="rotate(-12 198 56)"/>
+    <ellipse cx="188" cy="58" rx="10" ry="4" fill="#7a8492" transform="rotate(-14 188 58)"/>
+    <!-- 7px core + ~20px soft halo -->
+    <circle cx="178" cy="60" r="10" fill="#ff3010" opacity="0.4" filter="url(#navHalo)"/>
+    <circle cx="178" cy="60" r="3.5" fill="#ff4030"/>
+  </g>
+
+  <!-- PARCEL + CHUTE — below and behind the plane -->
+  <g id="drop" transform="translate(390,375)">
+    <!-- cream dome parachute -->
+    <ellipse cx="0" cy="0" rx="48" ry="22" fill="#f2ead8"/>
+    <path d="M-48,0 Q-40,-28 0,-32 Q40,-28 48,0 Z" fill="#faf4e6"/>
+    <path d="M-48,0 Q-40,-28 0,-32 Q40,-28 48,0 Z" fill="none" stroke="#e0d4b8" stroke-width="1.5"/>
+    <!-- gore lines -->
+    <path d="M0,-32 Q-8,-10 -20,0" fill="none" stroke="#d8ccb0" stroke-width="1" opacity="0.7"/>
+    <path d="M0,-32 Q8,-10 20,0" fill="none" stroke="#d8ccb0" stroke-width="1" opacity="0.7"/>
+    <path d="M0,-32 Q-18,-8 -40,-2" fill="none" stroke="#d8ccb0" stroke-width="1" opacity="0.55"/>
+    <path d="M0,-32 Q18,-8 40,-2" fill="none" stroke="#d8ccb0" stroke-width="1" opacity="0.55"/>
+    <!-- cords down to parcel -->
+    <g stroke="#c8bca0" stroke-width="1.3" fill="none" opacity="0.85">
+      <line x1="-28" y1="2" x2="-14" y2="58"/>
+      <line x1="-12" y1="0" x2="-6" y2="58"/>
+      <line x1="12" y1="0" x2="6" y2="58"/>
+      <line x1="28" y1="2" x2="14" y2="58"/>
+      <line x1="-40" y1="0" x2="-18" y2="58"/>
+      <line x1="40" y1="0" x2="18" y2="58"/>
+      <line x1="0" y1="-2" x2="0" y2="58"/>
+      <line x1="-20" y1="1" x2="-10" y2="58"/>
+    </g>
+    <!-- brown box parcel -->
+    <g transform="translate(0,70)">
+      <!-- gentle warm rim (no bloom blob) -->
+      <rect x="-20" y="-16" width="40" height="32" rx="2" fill="#c48840" opacity="0.35"/>
+      <rect x="-18" y="-14" width="36" height="28" rx="1.5" fill="#8a5a28"/>
+      <rect x="-18" y="-14" width="36" height="10" fill="#a06a32" opacity="0.5"/>
+      <!-- acid green cross ribbon #d6ff00 -->
+      <rect x="-18" y="-4" width="36" height="7" fill="#d6ff00"/>
+      <rect x="-4" y="-14" width="8" height="28" fill="#d6ff00"/>
+      <!-- tiny highlight -->
+      <rect x="-16" y="-12" width="12" height="3" fill="#fff" opacity="0.15"/>
+    </g>
+  </g>
+
+  <!-- SNOWFLAKES -->
+  <g id="snow" fill="#ffffff">
+    <circle cx="95" cy="200" r="1.8" opacity="0.55"/>
+    <circle cx="170" cy="260" r="1.2" opacity="0.4"/>
+    <circle cx="250" cy="180" r="2.0" opacity="0.6"/>
+    <circle cx="330" cy="300" r="1.4" opacity="0.45"/>
+    <circle cx="410" cy="220" r="1.6" opacity="0.5"/>
+    <circle cx="490" cy="160" r="1.1" opacity="0.35"/>
+    <circle cx="570" cy="280" r="1.9" opacity="0.55"/>
+    <circle cx="650" cy="200" r="1.3" opacity="0.4"/>
+    <circle cx="730" cy="320" r="1.5" opacity="0.5"/>
+    <circle cx="810" cy="240" r="1.2" opacity="0.4"/>
+    <circle cx="890" cy="180" r="1.7" opacity="0.55"/>
+    <circle cx="970" cy="260" r="1.0" opacity="0.35"/>
+    <circle cx="1050" cy="220" r="1.4" opacity="0.45"/>
+    <circle cx="1130" cy="300" r="1.6" opacity="0.5"/>
+    <circle cx="120" cy="350" r="1.3" opacity="0.4"/>
+    <circle cx="200" cy="400" r="1.8" opacity="0.5"/>
+    <circle cx="300" cy="360" r="1.1" opacity="0.35"/>
+    <circle cx="420" cy="420" r="1.5" opacity="0.45"/>
+    <circle cx="550" cy="380" r="1.2" opacity="0.4"/>
+    <circle cx="680" cy="440" r="1.7" opacity="0.5"/>
+    <circle cx="800" cy="400" r="1.0" opacity="0.35"/>
+    <circle cx="920" cy="460" r="1.4" opacity="0.45"/>
+    <circle cx="1040" cy="420" r="1.6" opacity="0.5"/>
+    <circle cx="50" cy="480" r="1.2" opacity="0.35"/>
+    <circle cx="160" cy="520" r="1.5" opacity="0.4"/>
+    <circle cx="280" cy="500" r="1.1" opacity="0.35"/>
+    <circle cx="450" cy="540" r="1.8" opacity="0.45"/>
+    <circle cx="600" cy="510" r="1.3" opacity="0.4"/>
+    <circle cx="750" cy="550" r="1.0" opacity="0.3"/>
+    <circle cx="900" cy="520" r="1.4" opacity="0.4"/>
+    <circle cx="1100" cy="540" r="1.2" opacity="0.35"/>
+    <circle cx="75" cy="120" r="1.0" opacity="0.35"/>
+    <circle cx="520" cy="100" r="1.5" opacity="0.45"/>
+    <circle cx="860" cy="130" r="1.2" opacity="0.4"/>
+    <circle cx="350" cy="480" r="2.0" opacity="0.35"/>
+    <circle cx="1000" cy="350" r="1.3" opacity="0.4"/>
+    <circle cx="40" cy="300" r="1.1" opacity="0.3"/>
+    <circle cx="1180" cy="400" r="1.5" opacity="0.4"/>
+    <circle cx="640" cy="360" r="1.0" opacity="0.35"/>
+    <circle cx="440" cy="80" r="1.4" opacity="0.5"/>
+    <circle cx="760" cy="90" r="0.9" opacity="0.35"/>
+    <circle cx="190" cy="100" r="1.2" opacity="0.4"/>
+  </g>
+
+  <!-- Foreground soft snow (larger) -->
+  <g id="snowFg" fill="#ffffff">
+    <circle cx="1146.5" cy="268.7" r="1.67" opacity="0.87" filter="url(#snowBlur)"/>
+    <circle cx="96.1" cy="506.3" r="1.65" opacity="0.80" filter="url(#snowBlur)"/>
+    <circle cx="134.7" cy="184.8" r="2.39" opacity="0.89"/>
+    <circle cx="1110.4" cy="518.1" r="2.16" opacity="0.90" filter="url(#snowBlur)"/>
+    <circle cx="85.0" cy="206.1" r="1.76" opacity="0.78"/>
+    <circle cx="49.6" cy="312.8" r="1.86" opacity="0.74"/>
+    <circle cx="97.9" cy="455.0" r="2.55" opacity="0.80" filter="url(#snowBlur)"/>
+    <circle cx="1082.7" cy="481.5" r="1.95" opacity="0.75"/>
+    <circle cx="139.1" cy="301.3" r="2.83" opacity="0.85" filter="url(#snowBlur)"/>
+    <circle cx="52.4" cy="274.5" r="2.66" opacity="0.75" filter="url(#snowBlur)"/>
+    <circle cx="212.8" cy="189.4" r="2.38" opacity="0.86"/>
+    <circle cx="1032.9" cy="318.6" r="2.41" opacity="0.80"/>
+    <circle cx="933.3" cy="336.0" r="1.68" opacity="0.85"/>
+    <circle cx="967.0" cy="468.4" r="2.14" opacity="0.84" filter="url(#snowBlur)"/>
+    <circle cx="880.0" cy="322.7" r="2.29" opacity="0.76" filter="url(#snowBlur)"/>
+    <circle cx="312.3" cy="486.5" r="2.82" opacity="0.73" filter="url(#snowBlur)"/>
+    <circle cx="1108.8" cy="239.6" r="2.18" opacity="0.78"/>
+    <circle cx="58.7" cy="214.1" r="1.92" opacity="0.76" filter="url(#snowBlur)"/>
+    <circle cx="237.9" cy="467.9" r="1.80" opacity="0.82"/>
+    <circle cx="1148.9" cy="342.6" r="2.32" opacity="0.83"/>
+    <circle cx="116.8" cy="387.7" r="2.93" opacity="0.84"/>
+    <circle cx="899.5" cy="195.9" r="2.49" opacity="0.73" filter="url(#snowBlur)"/>
+  </g>
+
+  <!-- TITLE -->
+  <g id="title">
+    <text x="600" y="92" text-anchor="middle"
+          font-family="Arial Black, Arial, sans-serif" font-weight="900"
+          font-size="78" fill="#000000" opacity="0.45">NIGHT DROP</text>
+    <text x="600" y="88" text-anchor="middle"
+          font-family="Arial Black, Arial, sans-serif" font-weight="900"
+          font-size="78" fill="#fafcff">NIGHT DROP</text>
+    <rect x="310" y="108" width="580" height="7" rx="2" fill="#d6ff00"/>
+  </g>
+</svg>
