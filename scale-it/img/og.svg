@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#080a08"/>
+  <radialGradient id="glow" cx="62%" cy="62%" r="55%">
+    <stop offset="0%" stop-color="#243018"/>
+    <stop offset="72%" stop-color="#080a08"/>
+  </radialGradient>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <text x="56" y="118" fill="#d6ff00" font-family="ui-monospace,monospace" font-size="18" letter-spacing="3.5">DAILY SIZE PUZZLE</text>
+  <text x="56" y="214" fill="#f4f6ee" font-family="Arial Black,Arial,sans-serif" font-size="96">SCALE IT</text>
+  <text x="60" y="262" fill="#b7c0aa" font-family="ui-monospace,monospace" font-size="22">They park side by side, at true scale.</text>
+  <text x="60" y="300" fill="#6f7868" font-family="ui-monospace,monospace" font-size="16">dexmlabs.app/scale-it</text>
+
+  <!-- ground -->
+  <line x1="56" y1="500" x2="1144" y2="500" stroke="#d6ff00" stroke-width="2"/>
+
+  <g fill="#39ff88">
+    <circle cx="86" cy="486" r="3.5"/>
+    <path d="M83 489 h6 l1 7 h-2 l.6 7 h-2 l-1 -7 h-2 z"/>
+  </g>
+  <circle cx="168" cy="400" r="34" fill="#080a08" stroke="#39ff88" stroke-width="1.5"/>
+  <line x1="100" y1="474" x2="140" y2="424" stroke="#39ff88" stroke-width="1.5"/>
+  <g fill="#39ff88" transform="translate(168 418)">
+    <circle cy="-14" r="6"/>
+    <path d="M-5 -7 h10 l2 12 h-3.5 l1 14 h-3.2 l-1.6 -14 h-3.4 z"/>
+  </g>
+  <text x="210" y="396" fill="#39ff88" font-family="ui-monospace,monospace" font-size="14">1.75 m</text>
+
+  <!-- Concorde, nose to the right. 61.66 m over 380 px. -->
+  <g transform="translate(150,500)" fill="#e7f0df">
+    <path d="M6 -30 L18 -16 L300 -14 L360 -18 L380 -20 L372 -10 L300 -8 L40 -10 L22 -16 L10 -36 Z"/>
+    <path d="M48 -14 L230 -12 L120 -2 Z" fill="#c9d4c0"/>
+    <path d="M24 -16 L36 -46 L30 -16 Z"/>
+  </g>
+  <line x1="150" y1="522" x2="530" y2="522" stroke="#d6ff00" stroke-width="2"/>
+  <line x1="150" y1="500" x2="150" y2="522" stroke="#d6ff00" stroke-width="1.5"/>
+  <line x1="530" y1="500" x2="530" y2="522" stroke="#d6ff00" stroke-width="1.5"/>
+  <text x="286" y="554" fill="#d6ff00" font-family="Arial Black,Arial,sans-serif" font-size="22">61.7 m</text>
+
+  <!-- 747-8, nose to the right, hump forward. 76.25 m is 470 px. -->
+  <g transform="translate(620,500)" fill="#e7f0df">
+    <path d="M16 -34 L28 -18 L150 -16 L300 -16 L390 -20 L430 -34 L455 -36 L470 -28 L460 -14 L300 -12 L40 -14 L24 -18 L12 -40 Z"/>
+    <path d="M300 -18 L430 -22 L455 -36 L400 -24 L300 -16 Z" fill="#d5e0cc"/>
+    <path d="M90 -16 L250 -14 L210 -2 L100 -4 Z" fill="#c9d4c0"/>
+    <ellipse cx="140" cy="-1" rx="18" ry="7" fill="#e7f0df"/>
+    <ellipse cx="186" cy="0" rx="18" ry="7" fill="#e7f0df"/>
+    <path d="M22 -18 L34 -52 L28 -18 Z"/>
+  </g>
+  <line x1="620" y1="522" x2="1090" y2="522" stroke="#d6ff00" stroke-width="2"/>
+  <line x1="620" y1="500" x2="620" y2="522" stroke="#d6ff00" stroke-width="1.5"/>
+  <line x1="1090" y1="500" x2="1090" y2="522" stroke="#d6ff00" stroke-width="1.5"/>
+  <text x="800" y="554" fill="#d6ff00" font-family="Arial Black,Arial,sans-serif" font-size="22">76.3 m</text>
+</svg>

@@ -107,7 +107,7 @@ t("Cloudflare beacon once on every generated page, never on redirects", function
 });
 t("cookies table lists every storage key, hard and realistic rows after lorenz:stats", function () {
   var keys = [].map.call(dom("cookies/index.html").querySelectorAll("tbody tr td:first-child"), function (td) { return td.textContent; });
-  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "flightpath:stats", "flightpath:seen", "flightpath:sound", "flightpath:size", "vector:settings", "vector:stats", "orbit:settings", "orbit:stats", "fom:tle:<group>", "forge-shift-v1", "grid:power:v2", "grid:sound", "enigma:round:<date>", "enigma:stats", "rbmk:stats", "apollo:stats", "booster:stats", "docking:stats", "glider:stats", "glider:daily", "callsign:collection", "callsign:player", "callsign:nick", "sling:stats", "sling:daily", "roadster:stats", "roadster:daily", "rocket:stats", "puzzle:stats", "puzzle:nick", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
+  assert.deepStrictEqual(keys, ["skywave:settings", "skywave:round:<date>", "skywave:stats", "skywave:tutorial", "lorenz:settings", "lorenz:round:<date>", "lorenz:stats", "lorenz:difficulty", "lorenz:hard:round:<date>", "lorenz:hard:stats", "lorenz:real:round:<date>", "lorenz:real:stats", "lorenz:panels", "tolerance:round:<date>", "tolerance:stats", "flightpath:stats", "flightpath:seen", "flightpath:sound", "flightpath:size", "vector:settings", "vector:stats", "orbit:settings", "orbit:stats", "fom:tle:<group>", "forge-shift-v1", "grid:power:v2", "grid:sound", "enigma:round:<date>", "enigma:stats", "rbmk:stats", "apollo:stats", "booster:stats", "docking:stats", "glider:stats", "glider:daily", "callsign:collection", "callsign:player", "callsign:nick", "sling:stats", "sling:daily", "roadster:stats", "roadster:daily", "rocket:stats", "puzzle:stats", "puzzle:nick", "scaleit:stats", "dexm:storage-note-dismissed", "dexm:points", "dexm:theme"]);
 });
 t("old tool and template URLs are bare redirects to the new site", function () {
   MOVED.forEach(function (u) {
@@ -126,8 +126,8 @@ t("old tool and template URLs are bare redirects to the new site", function () {
 });
 t("sitemap and llms.txt: games, home and policies only", function () {
   var sm = read("sitemap.xml"), locs = sm.match(/<loc>[^<]*<\/loc>/g).map(function (l) { return l.slice(5, -6); });
-  assert.strictEqual(locs.length, 34); // Night Drop is listed, and it stays off the home page
-  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|flight-path\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|callsign-catch\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|hire\/|missions\/mmx\/|flying-over-me\/|night-drop-game\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
+  assert.strictEqual(locs.length, 35); // Scale It and Night Drop are listed, and both stay off the home page
+  locs.forEach(function (u) { assert.ok(/^https:\/\/dexmlabs\.app\/(|skywave\/.*|lorenz\/.*|tolerance\/|flight-path\/|enigma-machine\/|rocket-launch-game\/|apollo-lunar-landing-game\/|chernobyl-reactor-simulator\/|vector\/|orbit\/|forge\/|grid\/|repurposed\/|puzzle\/|booster-landing-game\/|glider-thermals-game\/|callsign-catch\/|docking-run-game\/|helicopter-sling-load-game\/|makes\/|hire\/|missions\/mmx\/|flying-over-me\/|night-drop-game\/|scale-it\/|(points|privacy|cookies|terms|disclaimer|contact)\/)$/.test(u), u); });
   var ll = read("llms.txt"); assert.ok(!TAX.test(ll) && /## Games/.test(ll) && /## Makes/.test(ll), "llms.txt");
   assert.ok(/Sitemap: https:\/\/dexmlabs\.app\/sitemap\.xml/.test(read("robots.txt")));
   assert.strictEqual(read("deec04819134d490fb0bce54af34ef6d.txt"), "deec04819134d490fb0bce54af34ef6d");
@@ -148,7 +148,7 @@ t("Roadster Thrusters is unlisted: still playable, noindex, no inbound links", f
     });
   })("");
 });
-var GAME_PAGES = ["apollo-lunar-landing-game", "booster-landing-game", "callsign-catch", "chernobyl-reactor-simulator", "docking-run-game", "enigma-machine", "flying-over-me", "forge", "glider-thermals-game", "grid", "helicopter-sling-load-game", "lorenz", "mars-base-game", "missions/mmx", "night-drop-game", "orbit", "play-test-8179d030/game", "puzzle", "repurposed", "rocket-launch-game", "skywave", "tesla-roadster-thruster-game", "tolerance", "vector"];
+var GAME_PAGES = ["apollo-lunar-landing-game", "booster-landing-game", "callsign-catch", "chernobyl-reactor-simulator", "docking-run-game", "enigma-machine", "flying-over-me", "forge", "glider-thermals-game", "grid", "helicopter-sling-load-game", "lorenz", "mars-base-game", "missions/mmx", "night-drop-game", "orbit", "play-test-8179d030/game", "puzzle", "repurposed", "rocket-launch-game", "scale-it", "skywave", "tesla-roadster-thruster-game", "tolerance", "vector"];
 t("every game page has the home bar: its own name on the left, a keyboard link to dexmlabs.app", function () {
   GAME_PAGES.forEach(function (g) {
     var f = g + "/index.html", d = dom(f), bar = d.body.firstElementChild;

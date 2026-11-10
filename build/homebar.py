@@ -12,7 +12,7 @@ PAGES = [('apollo-lunar-landing-game/index.html','Apollo'),('booster-landing-gam
  ('enigma-machine/index.html','Enigma'),('flight-path/index.html','Flight Path'),('flying-over-me/index.html','Flying Over Me'),('forge/index.html','FORGE'),('glider-thermals-game/index.html','Glider Thermals'),('callsign-catch/index.html','Callsign Catch'),
  ('grid/index.html','GRID'),('helicopter-sling-load-game/index.html','Sling Load'),('lorenz/index.html','Lorenz'),
  ('mars-base-game/index.html','Mars Base'),('missions/mmx/index.html','MMX Replay'),('night-drop-game/index.html','Night Drop'),('orbit/index.html','Orbit'),('play-test-8179d030/game/index.html','Repurposed beta'),
- ('repurposed/index.html','Repurposed'),('rocket-launch-game/index.html','Rocket Launch'),('skywave/index.html','Skywave'),
+ ('repurposed/index.html','Repurposed'),('rocket-launch-game/index.html','Rocket Launch'),('scale-it/index.html','Scale It'),('skywave/index.html','Skywave'),
  ('tesla-roadster-thruster-game/index.html','Roadster Thrusters'),('tolerance/index.html','Tolerance'),('vector/index.html','Vector')]
 # Pages that need the bar placed differently, with why.
 SPECIAL = {
