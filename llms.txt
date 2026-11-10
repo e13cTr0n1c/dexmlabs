@@ -26,6 +26,7 @@
 - [Callsign Catch](https://dexmlabs.app/callsign-catch/): A free plane spotting card game. Type the callsign, registration or hex code of a plane on a flight tracker or overhead; if the live adsb.lol feed shows it flying right now you catch a card for its aircraft type, logged with time, altitude and speed. Rarity by type, sets, a daily wanted plane, export and import. No account.
 - [Tolerance](https://dexmlabs.app/tolerance/): A daily engineering puzzle. One mechanism, six guesses at the output, each one higher, lower or within 5%. Free, no account, no cookies.
 - [Flight Path](https://dexmlabs.app/flight-path/): A daily path puzzle on a radar grid. Draw one path through every square, past the numbered beacons in order. One answer per puzzle, a new one every UTC day, plus endless practice. Free, no account, no cookies.
+- [Scale It](https://dexmlabs.app/scale-it/): A free daily size puzzle. Five rounds on the real size of aircraft, rockets and famous structures, the same for every player by the UK date. After each answer they park side by side at true scale. Free, no account, no cookies.
 - [MMX mission explained: interactive simulation](https://dexmlabs.app/missions/mmx/): Mission Replays: a time slider through JAXA's MMX mission to Phobos, from the H3 launch on 20 October 2026 to the planned sample return in 2031, with a heliocentric view and a Mars and Phobos close view.
 
 ## Makes
