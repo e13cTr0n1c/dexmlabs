@@ -1,0 +1,27 @@
+/* Voyager light day page. Colours come from the site variables, including the light theme. */
+.vld h1 { max-width: 12ch; }
+.vld .lead { font-size: 16px; }
+.count { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0 4px; }
+.count div { border: 1px solid var(--edge); background: var(--panel2); padding: 12px 12px 10px; }
+.count b { display: block; font: 900 clamp(36px, 8vw, 68px)/.9 var(--head); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.count span { color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.passed { border: 2px solid var(--acid); padding: 14px 16px; margin: 14px 0; }
+.passed h2 { margin: 0 0 6px; font: 900 clamp(22px, 4vw, 32px)/1.15 var(--head); text-transform: uppercase; }
+.passed p { margin: 0; }
+.readout td { font-variant-numeric: tabular-nums; font-size: 16px; }
+.photo, .ask { border: 2px solid var(--acid); padding: 12px 14px; margin: 12px 0; }
+.photo strong, .ask h2 { display: block; margin: 0 0 6px; font: 900 15px/1.2 var(--head); text-transform: uppercase; letter-spacing: .03em; }
+.ask h2 { font-size: 18px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+.actions .btn { margin-top: 0; justify-content: center; cursor: pointer; }
+.vld [hidden] { display: none; }
+.loop { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.loop input { width: 1.15rem; height: 1.15rem; accent-color: var(--acid); }
+#flash-layer { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 400; }
+#flash-layer.on { opacity: 1; }
+:root[data-theme=light] .passed,
+:root[data-theme=light] .photo,
+:root[data-theme=light] .ask { border-color: var(--acid-ink); }
+@media (min-width: 640px) {
+  .count { grid-template-columns: repeat(4, 1fr); }
+}
