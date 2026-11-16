@@ -30,7 +30,7 @@ const NOTES = {calm: 'Coast down, burn late and hard, then feather it onto the r
 // Daily Drop: one scored flight a day for everyone, then practice that doesn't count.
 const DAILY = makeStore('booster:daily'), SITE = 'https://dexmlabs.app/booster-landing-game/';
 function dailyCard(rec) {
-  const head = `DEXM Booster #${rec.no}`, tower = rec.kind === 'tower';
+  const head = `DEXM ${rec.ship ? 'Ship' : 'Booster'} #${rec.no}`, tower = rec.kind === 'tower';
   if (!rec.landed) return `${head} 💥 ${rec.lost}\n${grid([0, 0, 0, 0, 0])}\n${SITE}?daily`;
   return `${head} ${tower ? '🗼 Caught' : '🚀 Landed'} ${rec.impact.toFixed(1)} m/s · ${rec.dist.toFixed(1)} m off · ${rec.fuelPct}% fuel\n${grid(rec.grid)} ${rec.score} pts\n${SITE}?daily`;
 }
@@ -40,11 +40,14 @@ function startDaily() {
 }
 function renderDaily() {
   const box = $('daily'); if (!box) return; const L = dailyLevel(), rec = DAILY.get(L.date), pre = L.no < 0;
-  $('daily-h').textContent = pre ? `Daily Drop #0 lands at midnight` : `Daily Drop #${L.no}`;
-  $('daily-blurb').textContent = (pre ? 'Preview: ' : '') + L.blurb;
+  const eye = $('daily-eye'); if (eye) eye.textContent = L.themeName ? `${L.themeName} · today's Daily Drop` : 'Daily Drop · same flight for everyone, every UK day';
+  $('daily-h').textContent = pre ? `Daily Drop #0 lands at midnight` : L.themeName ? `Daily Drop #${L.no}: ${L.themeName}` : `Daily Drop #${L.no}`;
+  $('daily-blurb').textContent = (pre ? 'Preview: ' : '') + (L.themeLine || L.blurb);
+  const more = $('daily-more'); if (more) more.hidden = L.theme !== 'ship-catch';
   $('daily-status').textContent = pre ? 'Practise the preview now. Scoring starts with #0.' : rec ? (rec.landed ? `Today: ${rec.score} points. Practice flights don't count.` : `Today: ${rec.lost} Practice flights don't count.`) : 'One scored flight today, the same for everyone. Then practise as much as you like.';
-  $('daily-play').innerHTML = `${rec || pre ? 'Practise today\'s drop' : 'Fly today\'s drop'} <span aria-hidden="true">&rarr;</span>`;
-  $('daily-share').hidden = !rec; box.classList.toggle('played', !!rec);
+  const fresh = !rec && !pre && L.themeName;
+  $('daily-play').innerHTML = `${fresh ? `Fly today's ${L.themeName}` : rec || pre ? 'Practise today\'s drop' : 'Fly today\'s drop'} <span aria-hidden="true">&rarr;</span>`;
+  $('daily-share').hidden = !rec; box.classList.toggle('played', !!rec); box.classList.toggle('themed', !!L.theme);
 }
 function showDailyResult(rec) { const b = $('daily-result'); b.hidden = !rec; if (rec) { $('daily-card').textContent = dailyCard(rec); $('daily-result-next').textContent = `Next drop in ${countdown()}`; } }
 function tickDaily() { const e = $('daily-next'); if (e) e.textContent = `Next drop in ${countdown()}`; if (!$('daily-result').hidden) $('daily-result-next').textContent = `Next drop in ${countdown()}`; if (app.dailyDate && app.dailyDate !== ukDate()) renderDaily(); app.dailyDate = ukDate(); }
@@ -59,7 +62,10 @@ function start(id = app.level, seed = Math.floor(Math.random() * 2 ** 31), stage
   app.cam = {scale: camTarget(w, w.start).scale, x: w.start.x}; app.clouds = makeClouds(seed, L);
   $('flight').hidden = false; $('screen-title').hidden = true; document.body.dataset.screen = 'game'; document.body.dataset.kind = w.kind; scrollTo(0, 0); $('result').hidden = true; $('paused').hidden = true; say('');
   const dbl = app.double ? `Double Catch ${app.double.i + 1} of 2, ` : '';
-  $('flight-h').textContent = `${dbl}${L.name}${L.daily && app.daily.practice ? ' (practice)' : ''}: ${L.blurb}`; $('level-note').textContent = (L.daily ? (app.daily.practice ? 'Practice: this flight is not scored. ' : 'Your one scored flight today. ') + (w.kind === 'tower' ? NOTES['catch-calm'] : NOTES.calm) : NOTES[L.id] || '') + (w.kind === 'tower' && w.assist ? ' Arm assist is on.' : '');
+  const scored = L.daily ? (app.daily.practice ? 'Practice: this flight is not scored. ' : 'Your one scored flight today. ') : '';
+  const noteId = L.daily ? (w.v.flaps ? 'ship-catch' : w.kind === 'tower' ? 'catch-calm' : 'calm') : L.id;
+  $('flight-h').textContent = `${dbl}${L.name}${L.daily && app.daily.practice ? ' (practice)' : ''}: ${L.blurb}`;
+  $('level-note').textContent = scored + (L.themeLine ? L.themeLine + ' ' : '') + (NOTES[noteId] || '') + (w.kind === 'tower' && w.assist ? ' Arm assist is on.' : '');
   const tower = w.kind === 'tower', lab = (k, t) => { $('h-' + k).nextElementSibling.textContent = t; }; document.body.dataset.vehicle = w.v.id;
   lab('tilt', w.v.flaps ? 'Attitude' : 'Tilt'); lab('vx', w.v.flaps ? 'Drift' : 'Sideways speed');
   lab('alt', tower ? 'Pins above arms' : 'Height above deck'); lab('range', tower ? 'To the arms' : 'To deck centre'); lab('legs', tower ? 'Arms' : 'Legs'); lab('deck', tower ? 'Carriage height' : 'Deck, m/s');
@@ -93,6 +99,7 @@ function events(a, b) {
   if (!a.legsBroken && b.legsBroken) { say('The legs tore off. Too fast. You cannot land now.'); beep(160, 0.4); app.shake = Math.max(app.shake, 6); }
   if (a.legs < 1 && b.legs >= 1) clunk();
   if (!a.armsCmd && b.armsCmd === 1) { say(app.w.assist ? 'In the window. The arms are closing.' : 'Arms closing.'); clank(); }
+  if (!a.caught && b.caught && app.w.v.flaps && !reduced()) { app.flash = 0.45; app.shake = Math.max(app.shake, 6); app.rings.push({x: b.x, y: b.armY, r: 0, life: 0.7}); }
   if ((b.misses || 0) > (a.misses || 0)) { say(`Missed. ${b.lastMiss} The arms are opening again.`); beep(220, 0.25); }
   const g = wind(app.w, b.y, b.t), slot = 'gust' + Math.floor(b.t / 6);
   if (Math.abs(g - app.w.level.wind.base) > app.w.level.wind.gust * 0.9 && !app.said[slot] && app.w.level.wind.gust > 3) { app.said[slot] = 1; say(`Gust, ${Math.abs(g).toFixed(0)} m/s ${g > 0 ? 'to the right' : 'to the left'}.`); }
@@ -123,7 +130,7 @@ function readings() {
   const s = app.s, w = app.w, v = w.v, d = target(w, s), alt = s.y - d.y, wx = wind(w, s.y, s.t), tower = w.kind === 'tower';
   return {alt: `${alt.toFixed(Math.abs(alt) < 100 ? 1 : 0)} m`, vy: `${s.vy.toFixed(1)} m/s`, vx: `${(s.vx - d.vx).toFixed(1)} m/s`, range: `${Math.abs(s.x - d.x).toFixed(Math.abs(s.x - d.x) < 20 ? 1 : 0)} m ${s.x < d.x ? 'right' : 'left'}`,
     tilt: v.flaps ? `${(s.angle * DEG).toFixed(0)}° ${({belly: 'belly flop', flip: 'flipping', upright: 'upright'})[shipPhase(s)]}` : `${(s.angle * DEG).toFixed(0)}°`, th: s.throttle <= 0 || s.fuel <= 0 ? 'Off' : `${Math.round(s.throttle * 100)}%`, fuel: fuelText(s, v), rcs: `${Math.round(s.rcs / w.level.rcs * 100)}%`,
-    wind: `${Math.abs(wx).toFixed(0)} m/s ${wx > 0.5 ? '→' : wx < -0.5 ? '←' : ''}`, legs: tower ? (s.armsCmd === 1 ? 'Closing' : s.armsCmd === 2 ? 'Opening' : s.caught ? 'Closed' : 'Open') : s.legsBroken ? 'Torn off' : s.legs >= 1 ? 'Down' : s.legsOut ? 'Moving' : 'Stowed', mach: (s.mach || 0).toFixed(2), heat: `${Math.round(s.heat)}%`,
+    wind: `${Math.abs(wx).toFixed(0)} m/s ${wx > 0.5 ? '→' : wx < -0.5 ? '←' : ''}`, legs: tower ? (s.caught ? 'Closed' : s.armsCmd === 1 ? 'Closing' : s.armsCmd === 2 ? 'Opening' : 'Open') : s.legsBroken ? 'Torn off' : s.legs >= 1 ? 'Down' : s.legsOut ? 'Moving' : 'Stowed', mach: (s.mach || 0).toFixed(2), heat: `${Math.round(s.heat)}%`,
     deck: tower ? `${s.armY.toFixed(0)} m` : `${d.vy > 0.15 ? 'Rising' : d.vy < -0.15 ? 'Falling' : 'Level'} ${Math.abs(d.vy).toFixed(1)}`};
 }
 function hud() {
@@ -144,6 +151,8 @@ function juice(dt) {
     const ground = w.kind === 'tower' ? 0 : Math.abs(s.x) < d.half ? deckYAt(d, s.x) : seaY(w, s.x, s.t), alt = s.y - ground, reach = v.id === 'sh' ? 110 : 60;
     if (alt < reach) for (let i = 0; i < 4 * (v.id === 'sh' ? 2 : 1); i++) { const dir = Math.random() < 0.5 ? -1 : 1, near = 1 - alt / reach; app.parts.push({x: s.x + dir * Math.random() * 6, y: ground + 1, vx: dir * (15 + Math.random() * 35) * near * (v.id === 'sh' ? 1.6 : 1), vy: Math.random() * 6 * near, life: 1.2 + Math.random(), max: 2.2, k: w.kind === 'ship' && Math.abs(s.x) >= d.half ? 'spray' : 'smoke'}); }
   }
+  // Re-entry motes on the windward belly while the ship is still falling fast.
+  if (!red && !still && !s.done && v.flaps && Math.abs(s.angle) > 0.5) { const sp = Math.hypot(s.vx, s.vy); if (sp > 55) for (let i = 0; i < 2; i++) { const along = 4 + Math.random() * v.height * 0.45; app.parts.push({x: s.x + s.vx / sp * along + (Math.random() - 0.5) * 3, y: s.y + s.vy / sp * along + (Math.random() - 0.5) * 3, vx: s.vx * 0.15 + (Math.random() - 0.5) * 4, vy: s.vy * 0.1 + (Math.random() - 0.5) * 3, life: 0.25 + Math.random() * 0.35, max: 0.6, k: 'plasma'}); } }
   // Cold gas: little clouds that drift off the top
   if (!red && !still && !s.done && (app.keys.rl || app.keys.rr) && s.rcs > 0) { const side = app.keys.rl ? 1 : -1, top = v.height - 1.5; for (let i = 0; i < 2; i++) app.parts.push({x: s.x + Math.sin(s.angle) * top + Math.cos(s.angle) * side * (v.radius + 0.5), y: s.y + Math.cos(s.angle) * top - Math.sin(s.angle) * side * (v.radius + 0.5), vx: s.vx + Math.cos(s.angle) * side * (14 + Math.random() * 6), vy: s.vy - Math.sin(s.angle) * side * 14 + (Math.random() - 0.5) * 4, life: 0.5, max: 0.5, k: 'gas'}); }
   if (!still) { app.parts = app.parts.filter(p => (p.life -= dt) > 0); for (const p of app.parts) { const drag = p.k === 'fire' ? 0.9 : p.k === 'gas' ? 0.88 : 0.97; p.vx *= drag ** (dt * 60); p.vy *= drag ** (dt * 60); if (p.k === 'smoke') p.vy += 1.5 * dt; if (p.k === 'spray') p.vy -= 9.8 * dt; p.x += p.vx * dt; p.y += p.vy * dt; } }
@@ -192,12 +201,15 @@ function draw(dt) {
   const x0 = cam.x - W / 2 / scale - 10, x1 = cam.x + W / 2 / scale + 10, stp = Math.max(1, 6 / scale), se = SEA[L.sky];
   if (tower) drawLand(x, X, Y, W, H, SEAY, scale, L, cam); else { const sg = x.createLinearGradient(0, SEAY - 4, 0, H); sg.addColorStop(0, se[0]); sg.addColorStop(1, se[1]); x.fillStyle = sg; x.beginPath(); x.moveTo(0, H); for (let m = x0; m <= x1; m += stp) x.lineTo(X(m), Y(seaY(w, m, s.t)) - 2); x.lineTo(W, H); x.fill(); drawShip(x, X, Y, d, scale, L); }
   if (tower) drawTower(x, X, Y, scale, L, s, 'back');
+  if (v.flaps && !s.done) { const sp = Math.hypot(s.vx, s.vy), eg = Math.max(0, Math.min(1, (sp - 48) / 70)) * (Math.abs(s.angle) > 0.4 ? 1 : 0.2);
+    if (eg > 0.08) { const rad = Math.max(36, 70 * eg + 8 * scale), cx = X(s.x), cy = Y(s.y + v.height * 0.35), rg = x.createRadialGradient(cx, cy, 4, cx, cy, rad); rg.addColorStop(0, `rgba(255,210,140,${0.28 * eg})`); rg.addColorStop(0.4, `rgba(255,90,24,${0.16 * eg})`); rg.addColorStop(1, 'rgba(255,40,0,0)'); x.fillStyle = rg; x.fillRect(cx - rad, cy - rad, rad * 2, rad * 2); } }
   drawBooster(x, X, Y, scale, L, d);
   if (tower) drawTower(x, X, Y, scale, L, s, 'front');
   for (const p of app.parts) { const px = X(p.x), py = Y(p.y), f = p.life / p.max; if (px < -20 || px > W + 20 || py < -20 || py > H + 20) continue;
     if (p.k === 'fire') { x.fillStyle = `rgba(255,${150 + Math.round(90 * f)},${60 + Math.round(120 * f)},${0.5 * f})`; const r = Math.max(1.5, (1 - f) * 3 * Math.max(1, scale)); x.fillRect(px - r / 2, py - r / 2, r, r); }
     else if (p.k === 'smoke') { x.fillStyle = `rgba(220,220,215,${0.35 * f})`; const r = Math.max(2, (1 - f + 0.3) * 4 * scale); x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); }
     else if (p.k === 'spray') { x.fillStyle = `rgba(230,245,255,${0.6 * f})`; x.fillRect(px, py, 2, 2); }
+    else if (p.k === 'plasma') { x.fillStyle = `rgba(255,${90 + Math.round(100 * f)},30,${0.62 * f})`; const r = Math.max(1.6, (1.4 - f) * 4 * Math.max(1, scale * 0.35)); x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); }
     else { x.fillStyle = `rgba(255,255,255,${0.55 * f})`; x.beginPath(); x.arc(px, py, Math.max(1.5, (1.4 - f) * 1.6 * scale), 0, 7); x.fill(); } }
   if (!tower) { x.fillStyle = se[0]; x.globalAlpha = 0.75; x.beginPath(); x.moveTo(0, H); for (let m = x0; m <= x1; m += stp) x.lineTo(X(m), Y(seaY(w, m + 13, s.t) - 0.8 - L.sea.heave * 0.4)); x.lineTo(W, H); x.fill(); x.globalAlpha = 1;
     x.strokeStyle = L.sky === 'night' ? 'rgba(120,160,200,.18)' : 'rgba(255,255,255,.22)'; x.lineWidth = 1; for (let k = 1; k < 6; k++) { x.beginPath(); for (let m = x0; m <= x1; m += stp * 2) x.lineTo(X(m), Y(seaY(w, m * (1 + k * 0.1), s.t) - k * 1.5) + k * 9); x.stroke(); } }
@@ -274,6 +286,8 @@ function drawTower(x, X, Y, scale, L, s, layer) {
     // target marks: where the pins need to be
     if (!s.done) { const ok = inWindow(app.w, s); x.strokeStyle = ok ? '#d6ff00' : 'rgba(214,255,0,.55)'; x.lineWidth = 2; for (const sg of [-1, 1]) { const px = sg * (app.w.v.radius + 0.7); x.beginPath(); x.moveTo(X(px - CATCH.dx * 0.5), Y(s.armY + CATCH.dy)); x.lineTo(X(px), Y(s.armY + CATCH.dy)); x.lineTo(X(px), Y(s.armY - CATCH.dy)); x.lineTo(X(px - CATCH.dx * 0.5), Y(s.armY - CATCH.dy)); x.stroke(); } }
   } else arm(true);
+  if ((s.arms || 0) > 0.2) { const shut = s.arms, px = (app.w.v.radius + 0.7) * (layer === 'back' ? -1 : 1), rad = Math.max(7, (5 + 8 * shut) * Math.max(k, 0.6));
+    const gg = x.createRadialGradient(X(px), Y(s.armY), 0, X(px), Y(s.armY), rad); gg.addColorStop(0, `rgba(255,250,220,${0.28 * shut})`); gg.addColorStop(0.55, `rgba(214,255,0,${0.16 * shut})`); gg.addColorStop(1, 'rgba(255,160,40,0)'); x.fillStyle = gg; x.beginPath(); x.arc(X(px), Y(s.armY), rad, 0, 7); x.fill(); }
 }
 function drawShip(x, X, Y, d, scale, L) {
   const night = L.sky === 'night' || L.sky === 'storm';
@@ -298,7 +312,8 @@ function drawBooster(x, X, Y, scale, L, d) {
   if (s.done && !s.landed) return;
   x.save(); x.translate(X(s.x), Y(by)); x.rotate(ang);
   const on = !s.done && s.fuel > 0 ? s.throttle : 0, rcs = !s.done && s.rcs > 0 && (app.keys.rl || app.keys.rr) ? (app.keys.rl ? 1 : -1) : 0;
-  drawVehicle(x, v.id, k, {throttle: on, gimbal: s.gimbal, legs: s.legs, legsBroken: s.legsBroken, fins: s.fins ?? 1, soot: s.soot ?? 0.25, heat: s.heat, thin: 1 - Math.min(1, rho(s.y) / 1.225), rcs, flaps: s.flaps || 0, pitch: s.done ? 0 : (app.keys.rl ? -1 : app.keys.rr ? 1 : 0), night: L.sky === 'night', reduced: reduced()});
+  const sp = Math.hypot(s.vx, s.vy), entry = v.flaps && !s.done ? Math.max(0, Math.min(1, (sp - 48) / 70)) * (Math.abs(s.angle) > 0.4 ? 1 : 0.25) : 0, flip = v.flaps && !s.done && on > 0 && s.angle < -8 * D1 ? 1 : 0;
+  drawVehicle(x, v.id, k, {throttle: on, gimbal: s.gimbal, legs: s.legs, legsBroken: s.legsBroken, fins: s.fins ?? 1, soot: s.soot ?? 0.25, heat: s.heat, thin: 1 - Math.min(1, rho(s.y) / 1.225), rcs, flaps: s.flaps || 0, pitch: s.done ? 0 : (app.keys.rl ? -1 : app.keys.rr ? 1 : 0), night: L.sky === 'night', reduced: reduced(), entry, flip});
   if (!s.done && s.mach > 0.92 && s.mach < 1.08 && rho(s.y) > 0.25) { const a = 1 - Math.abs(s.mach - 1) / 0.08, r = v.radius; x.fillStyle = `rgba(255,255,255,${0.35 * a})`; x.beginPath(); x.moveTo(-r * k, -6 * k); x.quadraticCurveTo(-r * 5 * k, -14 * k, -r * 4.8 * k, -24 * k); x.lineTo(r * 4.8 * k, -24 * k); x.quadraticCurveTo(r * 5 * k, -14 * k, r * k, -6 * k); x.fill(); }
   x.restore();
 }
@@ -314,7 +329,7 @@ function finish() {
   if (s.landed) { const p = parts(s, w); $('result-parts').innerHTML = [['Soft', p.soft], ['Level', p.level], ['Still', p.still], ['Centre', p.centre], ['Fuel', p.fuel], ['Bullseye', p.bull]].map(([k, q]) => `<div><b>${q}</b><span>${k}</span></div>`).join('') + `<div><b>×${+p.mult.toFixed(3)}</b><span>${L.name}${w.assist ? ', assist' : ''}</span></div>`; $('result-parts').hidden = false; }
   else $('result-parts').hidden = true;
   st.best = st.best || {}; st.landed = st.landed || {};
-  if (L.daily) { const p = s.landed ? parts(s, w) : null, rec = {no: L.no, kind: w.kind, landed: !!s.landed, score: sc, impact: t.impact, dist: t.dist, fuelPct: Math.round(s.fuel / w.fuel * 100), lost: $('result-head').textContent,
+  if (L.daily) { const p = s.landed ? parts(s, w) : null, rec = {no: L.no, kind: w.kind, ship: !!w.v.flaps, landed: !!s.landed, score: sc, impact: t.impact, dist: t.dist, fuelPct: Math.round(s.fuel / w.fuel * 100), lost: $('result-head').textContent,
       grid: p ? [p.soft / 300, p.level / 150, p.still / 100, p.centre / 350, p.fuel / 250].map(x => x / p.mult) : []};
     if (!app.daily.practice && DAILY.put(L.date, rec)) txt += ' That was your scored flight for today. Fly again to practise.'; else txt += ' Practice flight, not scored.';
     app.daily.practice = true; }

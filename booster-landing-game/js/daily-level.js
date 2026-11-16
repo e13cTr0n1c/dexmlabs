@@ -1,8 +1,25 @@
 // The Daily Drop flight: wind and gusts, swell, start height, offset and speed, fuel and the vehicle,
-// all from the UK date, so everyone flies the same booster today. The seven levels are not touched.
+// all from the UK date, so everyone flies the same booster today. The nine levels are not touched.
+// A dated theme can stand in for a few UK days. Ship Catch does, after the first upper stage tower catch.
 import {ukDate, puzzleNo, seedFor, rng} from './daily.js';
+import {level} from './levels.js';
 const D = Math.PI / 180, lerp = (a, b, t) => a + (b - a) * t;
+// Inclusive UK dates. ISO strings sort in calendar order.
+export const THEMES = [
+  {id: 'ship-catch', name: 'Ship Catch', from: '2026-11-16', to: '2026-11-19',
+    line: 'On Saturday 14 November I watched a giant upper stage come back from orbit and get caught by the tower arms for the first time. The booster was not caught. It went into the Gulf after a low fuel alarm.'}
+];
+export const themeFor = date => THEMES.find(t => date >= t.from && date <= t.to) || null;
+// The Ship Catch level, same for everyone that day, with the news line on the card.
+function shipCatchDrop(date, theme) {
+  const base = level('ship-catch'), n = puzzleNo(date);
+  return {...base, id: 'daily', daily: true, date, no: n, seed: seedFor(date, 'booster'), theme: theme.id, themeName: theme.name, themeLine: theme.line,
+    start: {...base.start, jitter: 0}, name: n < 0 ? 'Daily Drop preview' : `Daily Drop #${n}`,
+    blurb: 'Ship Catch. Belly flop in, flip upright, and let the arms close.'};
+}
 export function dailyLevel(date = ukDate()) {
+  const theme = themeFor(date);
+  if (theme?.id === 'ship-catch') return shipCatchDrop(date, theme);
   const seed = seedFor(date, 'booster'), r = rng(seed), u = (a, b) => lerp(a, b, r()), sign = () => r() < 0.5 ? -1 : 1;
   const tower = r() < 0.3, k = r(); // k: how hard today is, 0 to 1
   const sky = ['day', 'dusk', 'night'][Math.floor(r() * 3)];

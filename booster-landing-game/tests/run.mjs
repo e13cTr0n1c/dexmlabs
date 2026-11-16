@@ -85,6 +85,15 @@ await t('Daily Drop: one scored attempt a day is kept, practice never overwrites
   assert.equal(S.put('2026-10-21', {score: 900}), true); assert.equal(S.put('2026-10-21', {score: 10}), false); assert.equal(S.get('2026-10-21').score, 900); S.put('2026-10-22', {score: 1}); assert.equal(S.streak('2026-10-22'), 2); });
 await t('Daily Drop: mixes ship and tower days with real variety', () => { const ls = Array.from({length: 60}, (_, i) => dailyLevel(Dd.addDays('2026-10-20', i)));
   assert.ok(ls.some(L => L.kind === 'tower') && ls.some(L => L.kind === 'ship')); assert.ok(new Set(ls.map(L => L.start.y)).size > 40); assert.ok(new Set(ls.map(L => L.wind.base)).size > 30); });
+await t('Ship Catch theme: 16 to 19 November 2026 is the upper stage, the days either side are not, and the pilot catches each one', () => {
+  for (const d of ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19']) {
+    const L = dailyLevel(d); assert.equal(L.theme, 'ship-catch'); assert.equal(L.vehicle, 'ship'); assert.equal(L.kind, 'tower'); assert.equal(L.start.jitter, 0); assert.equal(L.start.angle, level('ship-catch').start.angle);
+    assert.match(L.themeLine, /tower arms/); assert.match(L.themeLine, /orbit/); assert.match(L.blurb, /Ship Catch/);
+    assert.ok(!/starship|super heavy|spacex|falcon/i.test(L.themeLine + L.name + L.blurb)); assert.ok(!/[\u2013\u2014]|\s-\s/.test(L.themeLine + L.blurb));
+    const s = fly(P.makeWorld(L, L.seed)); assert.ok(s.caught, d + ' ' + s.fault?.k);
+  }
+  assert.equal(dailyLevel('2026-11-15').theme, undefined); assert.notEqual(dailyLevel('2026-11-20').vehicle, 'ship'); assert.equal(dailyLevel('2026-11-16').no, 27);
+});
 await t('Daily Drop: the autopilot lands or catches every one of the next 60 drops', () => { const bad = [], from = Dd.ukDate();
   for (let i = 0; i < 60; i++) { const d = Dd.addDays(from, i), L = dailyLevel(d), s = fly(P.makeWorld(L, L.seed)); if (!s.landed || P.score(s, P.makeWorld(L, L.seed)) <= 0) bad.push(`${d} ${L.kind} ${s.fault?.k}`); }
   console.log(`    60 drops from ${from}: ${60 - bad.length} solved`); assert.deepEqual(bad, []); });
