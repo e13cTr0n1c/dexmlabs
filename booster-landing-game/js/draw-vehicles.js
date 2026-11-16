@@ -103,15 +103,25 @@ export function drawSH(x, k, o) {
   lattice(x, -1.8 * k, -66.9 * k, 3.6 * k, 0.9 * k, 7, titan, line);
   if (o.rcs) puff(x, k, o.rcs, -68.4, r + 0.3, 8);
 }
+// Soft plasma along the windward side. o.entry is 0 to 1 while the belly is still moving fast.
+function entrySheath(x, k, o, r, top, bot) {
+  const g = Math.max(0, Math.min(1, o.entry || 0)); if (g < 0.05) return;
+  const cy = (top + bot) / 2 * k, ry = Math.abs(bot - top) * 0.46 * k;
+  const rg = x.createRadialGradient(-r * 0.35 * k, cy, r * 0.25 * k, -r * 0.2 * k, cy, r * 3.1 * k);
+  rg.addColorStop(0, `rgba(255,244,220,${0.5 * g})`); rg.addColorStop(0.28, `rgba(255,140,40,${0.34 * g})`); rg.addColorStop(0.6, `rgba(255,60,16,${0.16 * g})`); rg.addColorStop(1, 'rgba(80,10,0,0)');
+  x.fillStyle = rg; x.beginPath(); x.ellipse(-r * 0.15 * k, cy, r * 2.6 * k, ry, 0, 0, Math.PI * 2); x.fill();
+}
 // The Giant ship, the upper stage: a tall stainless cylinder with an ogive nose, black heat shield tiles on the windward
 // side (body left here, the belly when it falls flat), two big aft flaps and two smaller forward flaps, catch pins under
 // the forward flaps, three sea level engines and three wider vacuum bells. o.flaps -1 tucked to 1 spread, o.pitch the Q/E command.
 export function drawShipVehicle(x, k, o) {
   const r = 4.5, bodyBot = -3.4, noseY = -37.5, top = -50, night = o.night, fl = o.flaps || 0, pc = o.pitch || 0;
   x.save(); x.translate(0, -1.4 * k); x.rotate(o.gimbal || 0); x.translate(0, 1.4 * k);
-  for (const cx of [-3.1, 3.1]) bell(x, k, cx, -2.4, 2.4, 0.9, 1.9, true);
-  for (const cx of [-1.1, 1.1]) bell(x, k, cx, -2.2, 1.5, 0.5, 1.05, night);
-  plume(x, k, o, r * 0.85, -0.5, false); x.restore();
+  for (const cx of [-2.7, 0, 2.7]) bell(x, k, cx, -2.4, 2.5, 0.72, 1.55, true);
+  for (const cx of [-1.15, 1.15]) bell(x, k, cx, -2.1, 1.35, 0.42, 0.92, night);
+  const hot = o.flip ? Math.min(1, (o.throttle || 0) * 1.35 + 0.25) : o.throttle;
+  plume(x, k, {...o, throttle: hot}, r * 0.85, -0.5, !!o.flip); x.restore();
+  entrySheath(x, k, o, r, top, bodyBot);
   cyl(x, r, k, -2.4, bodyBot, [[0, '#24272a'], [0.5, '#45494e'], [1, '#1b1d20']]);
   engineGlow(x, k, o, r, -0.6, [[3, 0.68], [3, 0.24]]);
   const steel = night ? [[0, '#3f454b'], [0.25, '#8d959d'], [0.45, '#b9c0c6'], [0.7, '#a3aab1'], [1, '#353a3f']] : [[0, '#7d848a'], [0.3, '#d9dee2'], [0.5, '#f7f9fa'], [0.68, '#cfd4d8'], [0.86, '#b2b9be'], [1, '#6b7277']];
@@ -120,13 +130,15 @@ export function drawShipVehicle(x, k, o) {
   const noseG = x.createLinearGradient(-r * k, 0, r * k, 0); steel.forEach(([p, c]) => noseG.addColorStop(p, c)); x.fillStyle = noseG;
   const nose = () => { x.beginPath(); x.moveTo(-r * k, noseY * k); x.bezierCurveTo(-r * k, (noseY - 7) * k, -r * 0.45 * k, (top + 0.6) * k, 0, top * k); x.bezierCurveTo(r * 0.45 * k, (top + 0.6) * k, r * k, (noseY - 7) * k, r * k, noseY * k); x.closePath(); };
   nose(); x.fill();
-  // weld rings
+  // weld rings and a stringer on the bare stainless side
   x.strokeStyle = night ? 'rgba(20,24,28,.35)' : 'rgba(60,66,72,.28)'; x.lineWidth = Math.max(0.6, 0.06 * k); const st = k > 2 ? 1.8 : 9; x.beginPath(); for (let y = bodyBot - st; y > noseY; y -= st) { x.moveTo(0, y * k); x.lineTo(r * k, y * k); } x.stroke();
+  if (k > 1.4) { x.strokeStyle = 'rgba(255,255,255,.2)'; x.beginPath(); x.moveTo(r * 0.32 * k, bodyBot * k); x.lineTo(r * 0.32 * k, noseY * k); x.stroke(); x.strokeStyle = 'rgba(40,46,52,.5)'; x.beginPath(); x.moveTo(0.1 * k, (noseY + 2.4) * k); x.lineTo(r * k, (noseY + 2.4) * k); x.stroke(); }
   // heat shield: black hexagonal tiles over the windward half and round the nose
   x.save(); x.beginPath(); x.rect(-r * k - 1, (top - 1) * k, (r - 0.35) * k + 1, (bodyBot - top + 1) * k); x.clip(); nose(); x.rect(-r * k, noseY * k, 2 * r * k, (bodyBot - noseY) * k); x.clip();
   const tg = x.createLinearGradient(-r * k, 0, 0, 0); tg.addColorStop(0, '#060708'); tg.addColorStop(0.7, night ? '#15171a' : '#1d2023'); tg.addColorStop(1, night ? '#24272b' : '#33373b'); x.fillStyle = tg; x.fillRect(-r * k - 1, top * k, r * k + 1, (bodyBot - top) * k);
   if (k > 2.4) { x.strokeStyle = 'rgba(255,255,255,.07)'; x.lineWidth = 1; const ts = 0.9; x.beginPath(); for (let row = 0, y = bodyBot; y > top; y -= ts * 0.86, row++) for (let xx = -r + (row % 2) * ts / 2; xx < 0; xx += ts) { x.moveTo(xx * k, y * k); x.lineTo((xx + ts / 2) * k, (y - ts * 0.3) * k); x.lineTo((xx + ts) * k, y * k); } x.stroke();
     x.fillStyle = 'rgba(200,205,210,.18)'; for (let i = 0; i < 18; i++) { const tx = -r + hash(i) * (r - 0.5), ty = bodyBot - 1 - hash(i + 30) * 32; x.fillRect(tx * k, ty * k, 0.7 * k, 0.6 * k); } }
+  if ((o.entry || 0) > 0.08) { const e = o.entry, eg = x.createLinearGradient(-r * k, 0, r * 0.15 * k, 0); eg.addColorStop(0, `rgba(255,186,80,${0.62 * e})`); eg.addColorStop(0.45, `rgba(255,70,16,${0.28 * e})`); eg.addColorStop(1, 'rgba(255,40,0,0)'); x.fillStyle = eg; x.fillRect(-r * k - 1, top * k, (r + 0.2) * k, (bodyBot - top) * k); }
   x.restore();
   soot(x, k, r, bodyBot, {...o, soot: (o.soot || 0) * 0.4}, 8);
   // livery: DEXM LABS down the steel side, an acid band, a small stencil
@@ -136,7 +148,9 @@ export function drawShipVehicle(x, k, o) {
   for (const sg of [-1, 1]) { x.fillStyle = night ? '#9aa2a9' : '#5d646a'; x.fillRect((sg > 0 ? r : -r - 1.1) * k, -41.6 * k, 1.1 * k, 1 * k); x.fillStyle = '#d6ff00'; x.fillRect((sg > 0 ? r + 0.85 : -r - 1.1) * k, -41.6 * k, 0.25 * k, 1 * k); }
   // flaps: hinged at the tile line, swinging out past the belly. Q (nose down) spreads the aft pair, E the forward pair.
   const flap = (y0, y1, out, w0) => { const tip = -r - out; x.fillStyle = night ? '#121416' : '#17191b'; x.beginPath(); x.moveTo(-0.2 * k, y0 * k); x.lineTo(-0.2 * k, y1 * k); x.lineTo(tip * k, (y1 + w0) * k); x.lineTo(tip * k, (y0 - 0.4) * k); x.closePath(); x.fill();
-    x.strokeStyle = night ? '#2a2e32' : '#3a3f44'; x.lineWidth = Math.max(1, 0.12 * k); x.stroke(); x.fillStyle = night ? '#2a2e32' : '#4a5056'; x.fillRect(-0.6 * k, y1 * k, 0.8 * k, (y0 - y1) * k); };
+    x.strokeStyle = (o.entry || 0) > 0.2 ? `rgba(255,140,48,${0.55 * o.entry})` : (night ? '#2a2e32' : '#3a3f44'); x.lineWidth = Math.max(1, 0.12 * k); x.stroke();
+    x.fillStyle = night ? '#9aa2a8' : '#c5ccd1'; x.beginPath(); x.arc(-0.1 * k, (y0 + y1) / 2 * k, Math.max(1.1, 0.32 * k), 0, 7); x.fill();
+    x.fillStyle = night ? '#2a2e32' : '#4a5056'; x.fillRect(-0.6 * k, y1 * k, 0.8 * k, (y0 - y1) * k); };
   const ext = v => Math.max(0.4, Math.min(3.6, v));
   flap(-4.2, -15.5, ext(2.2 + 0.9 * fl - 0.9 * pc), 3.2);
   flap(-38.4, -45.2, ext(1.5 + 0.6 * fl + 0.7 * pc), 1.8);
