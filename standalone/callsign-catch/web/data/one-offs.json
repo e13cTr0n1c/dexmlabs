@@ -1,0 +1,16 @@
+{
+ "note": "One of a kind airframes, Mythic by registration or hex. A type that is one of a kind (only one was built) has oneOff in types.json instead. Each entry has a source.",
+ "airframes": [
+  {
+   "reg": "N2A",
+   "name": "Goodyear Blimp Wingfoot Two",
+   "source": "https://en.wikipedia.org/wiki/Goodyear_Blimp"
+  },
+  {
+   "reg": "N859NA",
+   "hex": "abc9f4",
+   "name": "NASA X-59 QueSST, the only one built",
+   "source": "https://www.nasa.gov/mission/quesst/"
+  }
+ ]
+}

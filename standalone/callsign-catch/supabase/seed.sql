@@ -1,0 +1,1 @@
+-- No seed rows. A profile appears when someone signs up.

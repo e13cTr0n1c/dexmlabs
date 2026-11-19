@@ -1,0 +1,156 @@
+{
+ "note": "Display team airframes. Only serials and hex codes from the sources listed are here; nothing is guessed. Callsign patterns are a fallback when the airframe is not listed.",
+ "teams": [
+  {
+   "id": "red-arrows",
+   "name": "Red Arrows",
+   "country": "United Kingdom",
+   "type": "HAWK",
+   "callsigns": "^RED(10|[1-9])$",
+   "sources": [
+    "https://parallelparliament.co.uk/question/23535/hawk-aircraft",
+    "https://theaviationist.com/2025/01/18/red-arrows-hawk-t1-future/",
+    "https://hexdb.io/"
+   ],
+   "sourceNote": "Serials: the 26 remaining RAF Hawk T1s (14 active, 12 sustainment) listed in the MoD written answer of 16 January 2025; the Red Arrows are the only RAF Hawk T1 user. Hex codes from hexdb.io reg lookups, confirmed by the reverse lookup; sustainment airframes with no hexdb entry carry the serial only.",
+   "airframes": [
+    {
+     "reg": "XX177",
+     "hex": "43c0ee"
+    },
+    {
+     "reg": "XX202",
+     "hex": "43c407"
+    },
+    {
+     "reg": "XX219",
+     "hex": "43c40d"
+    },
+    {
+     "reg": "XX221",
+     "hex": "43c40f"
+    },
+    {
+     "reg": "XX232",
+     "hex": "43c418"
+    },
+    {
+     "reg": "XX239",
+     "hex": "43c41f"
+    },
+    {
+     "reg": "XX242",
+     "hex": "43c421"
+    },
+    {
+     "reg": "XX278",
+     "hex": "43c434"
+    },
+    {
+     "reg": "XX295",
+     "hex": "43c440"
+    },
+    {
+     "reg": "XX310",
+     "hex": "43c44a"
+    },
+    {
+     "reg": "XX319",
+     "hex": "43c453"
+    },
+    {
+     "reg": "XX321",
+     "hex": "43c455"
+    },
+    {
+     "reg": "XX322",
+     "hex": "43c456"
+    },
+    {
+     "reg": "XX323",
+     "hex": "43c457"
+    },
+    {
+     "reg": "XX159"
+    },
+    {
+     "reg": "XX198"
+    },
+    {
+     "reg": "XX217"
+    },
+    {
+     "reg": "XX230"
+    },
+    {
+     "reg": "XX255"
+    },
+    {
+     "reg": "XX261"
+    },
+    {
+     "reg": "XX281"
+    },
+    {
+     "reg": "XX284"
+    },
+    {
+     "reg": "XX301"
+    },
+    {
+     "reg": "XX303"
+    },
+    {
+     "reg": "XX345"
+    },
+    {
+     "reg": "XX350"
+    }
+   ]
+  },
+  {
+   "id": "blue-angels",
+   "name": "Blue Angels",
+   "country": "United States",
+   "callsigns": "^BLUEANG",
+   "sources": [
+    "https://en.wikipedia.org/wiki/Blue_Angels"
+   ],
+   "sourceNote": "Callsign pattern only; no airframe list reliably sourced yet.",
+   "airframes": []
+  },
+  {
+   "id": "thunderbirds",
+   "name": "Thunderbirds",
+   "country": "United States",
+   "callsigns": "^THUNDER",
+   "sources": [
+    "https://en.wikipedia.org/wiki/United_States_Air_Force_Thunderbirds"
+   ],
+   "sourceNote": "Callsign pattern only; no airframe list reliably sourced yet.",
+   "airframes": []
+  },
+  {
+   "id": "snowbirds",
+   "name": "Snowbirds",
+   "country": "Canada",
+   "callsigns": "^SNOW",
+   "sources": [
+    "https://en.wikipedia.org/wiki/Snowbirds"
+   ],
+   "sourceNote": "Callsign pattern only; no airframe list reliably sourced yet.",
+   "airframes": []
+  },
+  {
+   "id": "frecce-tricolori",
+   "name": "Frecce Tricolori",
+   "country": "Italy",
+   "callsigns": "^FRECCE",
+   "sources": [
+    "https://en.wikipedia.org/wiki/Frecce_Tricolori"
+   ],
+   "sourceNote": "Callsign pattern only; no airframe list reliably sourced yet.",
+   "airframes": []
+  }
+ ]
+}
