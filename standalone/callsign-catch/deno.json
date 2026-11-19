@@ -1,0 +1,5 @@
+{
+  "tasks": {
+    "test": "deno test --allow-read supabase/tests/functions_test.mjs"
+  }
+}

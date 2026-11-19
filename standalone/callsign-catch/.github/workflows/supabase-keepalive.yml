@@ -1,0 +1,32 @@
+name: Keep the Supabase project awake
+
+# The daily ping stays commented out until the repository has
+# SUPABASE_URL and SUPABASE_ANON_KEY secrets. Uncomment the schedule
+# after those secrets exist. A manual run does nothing without them.
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "17 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the project
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Secrets are not set, so the keep alive ping stays off."
+            exit 0
+          fi
+          code=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+            --header "apikey: $SUPABASE_ANON_KEY" \
+            --header "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/auth/v1/health")
+          echo "Health check answered $code"
+          test "$code" != "000"

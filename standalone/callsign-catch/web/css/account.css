@@ -1,0 +1,12 @@
+.account{max-width:600px;margin:0 0 18px;padding:12px 14px;border:1px solid var(--edge);border-radius:16px;background:var(--panel)}
+.account p{margin:0 0 8px}
+.account-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.account-actions form{display:flex;gap:8px;flex:1;min-width:220px}
+.account-actions input{flex:1;min-width:0;min-height:44px;padding:0 12px;border:1px solid var(--edge);border-radius:10px;background:var(--bg);color:var(--ink);font:700 14px var(--mono)}
+.migrate{margin-top:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--acid) 8%,var(--panel));border:1px solid var(--edge)}
+.migrate ul{margin:8px 0 0;padding-left:18px}
+.migrate li{margin:4px 0}
+.legacy{padding:3px 8px;border-radius:20px;background:#142018;color:var(--acid);border:1px solid var(--acid);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.mock-link{margin-top:8px}
+.site-footer{padding:24px 16px 40px;color:var(--muted);font-size:13px}
+.site-footer a{margin-right:12px}
